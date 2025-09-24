@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:google_fonts/google_fonts.dart';
 
+import 'core/constants/app_colors.dart';
 import 'core/router/app_routes.dart';
 
 void main() {
@@ -20,9 +22,17 @@ class MyApp extends StatelessWidget {
       return MaterialApp.router(
           title: 'Sieves Mobile App',
           debugShowCheckedModeBanner: false,
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          theme: AppTheme.lightTheme.copyWith(
+            textTheme: GoogleFonts.nunitoTextTheme(
+              Theme.of(context).textTheme,
+            ),
           ),
+          darkTheme: AppTheme.darkTheme.copyWith(
+            textTheme: GoogleFonts.nunitoTextTheme(
+              Theme.of(context).textTheme,
+            )
+          ),
+          themeMode: ThemeMode.system,
           routerConfig: AppRoutes.router,
       );
       }

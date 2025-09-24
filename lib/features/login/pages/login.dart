@@ -35,8 +35,8 @@ class _LoginState extends State<Login> {
             CupertinoButton(
                 child: Icon(Icons.home, color: AppColors.cxBlack, size: 30.sp,),
                 onPressed: (){
-                  context.push(AppRoutes.home);
-                }
+                    context.push(AppRoutes.home);
+                  }
                 )
           ],
         )
