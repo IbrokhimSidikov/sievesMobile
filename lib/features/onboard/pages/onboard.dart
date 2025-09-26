@@ -5,6 +5,9 @@ import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_images.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/services/auth/auth_service.dart';
+import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/api/api_service.dart';
 
 class Onboard extends StatefulWidget {
   const Onboard({super.key});
@@ -14,6 +17,67 @@ class Onboard extends StatefulWidget {
 }
 
 class _OnboardState extends State<Onboard> {
+  bool _isLoading = false;
+  late AuthManager _authManager;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize AuthManager with Auth0Service and ApiService
+    final auth0Service = Auth0Service();
+    final apiService = ApiService(auth0Service);
+    _authManager = AuthManager(
+      authService: auth0Service,
+      apiService: apiService,
+    );
+  }
+
+
+  Future<void> _handleLogin() async {
+    if (_isLoading) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Use the new AuthManager for complete login flow
+      final loginSuccess = await _authManager.login(context);
+
+      if (!mounted) return;
+
+      if (loginSuccess) {
+        // Login successful - user profile and identity are now stored
+        final identity = _authManager.currentIdentity;
+        print('Login successful! User: ${identity?.username}');
+        
+        context.go(AppRoutes.home);
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text('Login canceled or failed. Please try again.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ));
+      }
+    } catch (e) {
+      if (!mounted) return;
+
+      print('Login error: $e');
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text('Authentication error: ${e.toString()}'),
+        backgroundColor: Colors.red,
+        duration: Duration(seconds: 4),
+      ));
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -80,29 +144,48 @@ class _OnboardState extends State<Onboard> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16.r),
-                      onTap: () {
-                        context.push(AppRoutes.login);
-                      },
+                      onTap: _isLoading ? null : _handleLogin,
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 12.h),
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Text(
-                              'Davom etish',
-                              style: TextStyle(
-                                fontSize: 24.sp,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.cxPureWhite,
-                                letterSpacing: 0.5,
+                            if (_isLoading) ...[
+                              SizedBox(
+                                width: 20.w,
+                                height: 20.h,
+                                child: CircularProgressIndicator(
+                                  color: AppColors.cxPureWhite,
+                                  strokeWidth: 2,
+                                ),
                               ),
-                            ),
-                            12.horizontalSpace,
-                            Icon(
-                              Icons.arrow_forward_rounded,
-                              color: AppColors.cxPureWhite,
-                              size: 24.sp,
-                            ),
+                              12.horizontalSpace,
+                              Text(
+                                'Kirish...',
+                                style: TextStyle(
+                                  fontSize: 24.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.cxPureWhite,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ] else ...[
+                              Text(
+                                'Davom etish',
+                                style: TextStyle(
+                                  fontSize: 24.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.cxPureWhite,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              12.horizontalSpace,
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: AppColors.cxPureWhite,
+                                size: 24.sp,
+                              ),
+                            ],
                           ],
                         ),
                       ),

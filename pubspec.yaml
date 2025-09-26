@@ -23,6 +23,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   iconsax: ^0.0.8
   http: ^1.1.0
+  flutter_appauth: ^10.0.0
 
 dev_dependencies:
   flutter_test:
