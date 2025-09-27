@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/router/app_routes.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -88,6 +90,143 @@ class _ProfileState extends State<Profile> {
           _error = e.toString();
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _handleLogout() async {
+    // Show confirmation dialog
+    final shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.logout_rounded,
+                color: Colors.red.shade600,
+                size: 28.sp,
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                'Logout',
+                style: TextStyle(
+                  fontSize: 22.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.cxBlack,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Are you sure you want to logout from your account?',
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: AppColors.cxBlack.withOpacity(0.7),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  color: AppColors.cxBlack.withOpacity(0.6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+            Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.red.shade600, Colors.red.shade700],
+                ),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(
+                  'Logout',
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    color: AppColors.cxPureWhite,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true) {
+      try {
+        // Show loading indicator
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (BuildContext context) {
+            return Center(
+              child: Container(
+                padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  color: AppColors.cxPureWhite,
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(
+                      color: Colors.red.shade600,
+                      strokeWidth: 3,
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Logging out...',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: AppColors.cxBlack.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+
+        // Perform logout
+        await _authManager.logout();
+
+        // Navigate to onboard page and clear navigation stack
+        if (mounted) {
+          context.go(AppRoutes.onboard);
+        }
+      } catch (e) {
+        // Hide loading dialog
+        if (mounted) {
+          Navigator.of(context).pop();
+          
+          // Show error message
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Failed to logout. Please try again.',
+                style: TextStyle(color: AppColors.cxPureWhite),
+              ),
+              backgroundColor: Colors.red.shade600,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+            ),
+          );
+        }
       }
     }
   }
@@ -230,13 +369,39 @@ class _ProfileState extends State<Profile> {
           ),
         ),
         SizedBox(width: 8.w),
-        Text(
-          'Profile',
-          style: TextStyle(
-            fontSize: 28.sp,
-            fontWeight: FontWeight.w700,
-            color: AppColors.cxBlack,
-            letterSpacing: 0.5,
+        Expanded(
+          child: Text(
+            'Profile',
+            style: TextStyle(
+              fontSize: 28.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.cxBlack,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                Colors.red.withOpacity(0.1),
+                Colors.red.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: Colors.red.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            onPressed: _handleLogout,
+            icon: Icon(
+              Icons.logout_rounded,
+              color: Colors.red.shade600,
+              size: 24.sp,
+            ),
+            tooltip: 'Logout',
           ),
         ),
       ],
