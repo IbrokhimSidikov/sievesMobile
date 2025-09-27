@@ -6,6 +6,7 @@ import '../auth/auth_service.dart';
 
 class ApiService {
   final String baseUrl = 'https://api.sievesapp.com/api';
+  // final String baseUrl = 'https://app.sievesapp.com/v1';
   final Auth0Service authService;
 
   ApiService(this.authService);
@@ -94,5 +95,65 @@ class ApiService {
       print('Exception getting employee details: $e');
       return null;
     }
+  }
+
+  // Get detailed employee profile data for profile page
+  Future<Map<String, dynamic>?> getEmployeeProfileData(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final now = DateTime.now();
+      final queryParams = {
+        'employeeId': employeeId.toString(),
+        'year': now.year.toString(),
+        'month': now.month.toString().padLeft(2, '0'),
+        'startBonus': _getWeekStart(now),
+        'endBonus': _getWeekEnd(now),
+        'expand': [
+          'individual.photo',
+          'branch',
+          'jobPosition',
+          'identity',
+          'workEntries',
+          'salaries',
+          'activeContract',
+          'reward',
+          'bonusInfo'
+        ].join(','),
+      };
+
+      // Use the app API base URL for this endpoint
+      final uri = Uri.parse('https://app.sievesapp.com/v1/employee/$employeeId').replace(
+        queryParameters: queryParams,
+      );
+
+      print('🔍 Fetching employee profile data from: $uri');
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Employee profile data received');
+        return data;
+      } else {
+        print('❌ Error getting employee profile data: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting employee profile data: $e');
+      return null;
+    }
+  }
+
+  // Helper method to get week start date (Sunday)
+  String _getWeekStart(DateTime date) {
+    final weekday = date.weekday;
+    final startOfWeek = date.subtract(Duration(days: weekday % 7));
+    return '${startOfWeek.year}-${startOfWeek.month.toString().padLeft(2, '0')}-${startOfWeek.day.toString().padLeft(2, '0')}';
+  }
+
+  // Helper method to get week end date (Saturday)
+  String _getWeekEnd(DateTime date) {
+    final weekday = date.weekday;
+    final endOfWeek = date.add(Duration(days: 6 - (weekday % 7)));
+    return '${endOfWeek.year}-${endOfWeek.month.toString().padLeft(2, '0')}-${endOfWeek.day.toString().padLeft(2, '0')}';
   }
 }

@@ -18,19 +18,7 @@ class Onboard extends StatefulWidget {
 
 class _OnboardState extends State<Onboard> {
   bool _isLoading = false;
-  late AuthManager _authManager;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize AuthManager with Auth0Service and ApiService
-    final auth0Service = Auth0Service();
-    final apiService = ApiService(auth0Service);
-    _authManager = AuthManager(
-      authService: auth0Service,
-      apiService: apiService,
-    );
-  }
+  final AuthManager _authManager = AuthManager(); // Use singleton instance
 
 
   Future<void> _handleLogin() async {
@@ -144,7 +132,11 @@ class _OnboardState extends State<Onboard> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16.r),
-                      onTap: _isLoading ? null : _handleLogin,
+                      // onTap: _isLoading ? null : _handleLogin,
+                      onTap:(){
+                        context.go(AppRoutes.home);
+                      },
+
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 12.h),
                         child: Row(

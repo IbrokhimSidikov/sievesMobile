@@ -1,19 +1,30 @@
 import 'package:flutter/material.dart';
+import '../../model/employee_model.dart';
 import '../../model/identity_model.dart';
 import '../api/api_service.dart';
 import 'auth_service.dart';
 
 class AuthManager {
-  final Auth0Service authService;
-  final ApiService apiService;
+  // Singleton pattern to share the same instance across the app
+  static final AuthManager _instance = AuthManager._internal();
+  factory AuthManager() => _instance;
+  
+  AuthManager._internal() {
+    // Initialize services in the singleton
+    final auth0Service = Auth0Service();
+    final apiService = ApiService(auth0Service);
+    authService = auth0Service;
+    this.apiService = apiService;
+  }
+
+  late final Auth0Service authService;
+  late final ApiService apiService;
 
   Identity? _currentIdentity;
   Identity? get currentIdentity => _currentIdentity;
-
-  AuthManager({
-    required this.authService,
-    required this.apiService,
-  });
+  
+  // Get employee ID from current identity
+  int? get currentEmployeeId => _currentIdentity?.employee?.id;
 
   // Complete login flow
   Future<bool> login(BuildContext context) async {
@@ -38,19 +49,8 @@ class AuthManager {
       }
       print('✅ User info received: ${userInfo['email']}');
 
-      // 3. Get identity from API using Auth0 ID
-      print('3️⃣ Getting identity from API...');
-      final authId = userInfo['sub'] as String;
-      print('Auth ID: $authId');
-      final identity = await apiService.getIdentityByAuthId(authId);
-      if (identity == null) {
-        print('❌ Failed to get identity from API');
-        return false;
-      }
-      print('✅ Identity received: ${identity.username}');
-
-      // 4. Get access token
-      print('4️⃣ Getting access token...');
+      // 3. Get access token for API calls
+      print('3️⃣ Getting access token...');
       final accessToken = await authService.getAccessToken();
       if (accessToken == null) {
         print('❌ Failed to get access token');
@@ -58,21 +58,91 @@ class AuthManager {
       }
       print('✅ Access token received');
 
-      // 5. Update identity with token
-      print('5️⃣ Updating identity with token...');
-      identity.token = accessToken;
-      final updatedIdentity = await apiService.updateIdentityToken(identity.id!, accessToken);
-      if (updatedIdentity == null) {
-        print('❌ Failed to update identity with token');
+      // 4. Get identity from backend API
+      print('4️⃣ Fetching identity from backend API...');
+      final authId = userInfo['sub'] as String;
+      print('Auth ID: $authId');
+      
+      try {
+        final identity = await apiService.getIdentityByAuthId(authId);
+        if (identity == null) {
+          print('❌ Failed to get identity from backend API');
+          return false;
+        }
+        
+        print('✅ Identity received from backend API');
+        print('   Identity ID: ${identity.id}');
+        print('   Email: ${identity.email}');
+        print('   Username: ${identity.username}');
+        print('   Role: ${identity.role}');
+        
+        // Store the real identity from backend
+        _currentIdentity = identity;
+        
+        // 🔍 LOG ALL AVAILABLE USER DATA
+        print('');
+        print('📊 ========== COMPLETE USER DATA AFTER LOGIN ==========');
+        print('');
+        
+        // Core Identity Information
+        print('👤 IDENTITY INFORMATION:');
+        print('   ID: ${identity.id}');
+        print('   Auth ID: ${identity.authId}');
+        print('   Email: ${identity.email}');
+        print('   Username: ${identity.username}');
+        print('   Role: ${identity.role}');
+        print('   Phone: ${identity.phone ?? 'Not provided'}');
+        print('   Allowance: \$${identity.allowance}');
+        print('   Token: ${identity.token?.substring(0, 20)}...');
+        print('');
+        
+        // Employee Information
+        if (identity.employee != null) {
+          print('👔 EMPLOYEE INFORMATION:');
+          print('   Employee ID: ${identity.employee!.id}');
+          print('   Status: ${identity.employee!.status}');
+          print('   Company ID: ${identity.employee!.companyId ?? 'Not set'}');
+          print('   Branch ID: ${identity.employee!.branchId ?? 'Not set'}');
+          print('   Department ID: ${identity.employee!.departmentId ?? 'Not set'}');
+          print('');
+          
+          // Personal Information
+          if (identity.employee!.individual != null) {
+            print('🧑 PERSONAL INFORMATION:');
+            print('   First Name: ${identity.employee!.individual!.firstName}');
+            print('   Last Name: ${identity.employee!.individual!.lastName}');
+            print('   Full Name: ${identity.employee!.individual!.firstName} ${identity.employee!.individual!.lastName}');
+            print('   Personal Email: ${identity.employee!.individual!.email}');
+            print('   Personal Phone: ${identity.employee!.individual!.phone ?? 'Not provided'}');
+            print('');
+        }
+        
+          // Branch Information
+          if (identity.employee!.branch != null) {
+            print('🏢 BRANCH INFORMATION:');
+            print('   Branch Name: ${identity.employee!.branch!.name}');
+            print('   Branch Address: ${identity.employee!.branch!.address}');
+            print('');
+          }
+        }
+        
+        // Raw Auth0 Data
+        print('🔐 RAW AUTH0 DATA:');
+        userInfo.forEach((key, value) {
+          print('   $key: $value');
+        });
+        print('');
+        print('📊 ================================================');
+        print('');
+        
+        print('🎉 Complete login flow successful!');
+        return true;
+        
+      } catch (apiError) {
+        print('❌ Backend API error: $apiError');
+        print('Error type: ${apiError.runtimeType}');
         return false;
       }
-      print('✅ Identity updated with token');
-
-      // 6. Store identity
-      _currentIdentity = updatedIdentity;
-      print('🎉 Complete login flow successful!');
-
-      return true;
     } catch (e) {
       print('❌ Login flow error: $e');
       print('Error type: ${e.runtimeType}');
