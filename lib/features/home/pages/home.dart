@@ -19,8 +19,8 @@ class _HomeState extends State<Home> {
   final List<_ModuleItem> modules = [
     _ModuleItem("Profile", Icons.person_outline, AppColors.cxPrimary, '/profile'),
     _ModuleItem("Attendance", Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
-    _ModuleItem("Break Records", Icons.coffee_outlined, AppColors.cxWarning, null),
-    _ModuleItem("History", Icons.history_outlined, AppColors.cxBlue, null),
+    _ModuleItem("Break Records", Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
+    _ModuleItem("History", Icons.history_outlined, AppColors.cxBlue, '/history'),
     _ModuleItem("Achievements", Icons.emoji_events_outlined, AppColors.cxPurple, null),
   ];
 
