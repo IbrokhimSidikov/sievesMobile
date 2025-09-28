@@ -6,6 +6,7 @@ import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
 import '../../features/history/pages/history.dart';
 import '../../features/login/pages/login.dart';
+import '../../features/notification/pages/notification.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
 
@@ -18,6 +19,7 @@ class AppRoutes {
   static const String attendance = '/attendance';
   static const String breakRecords = '/breakRecords';
   static const String history = '/history';
+  static const String notification = '/notification';
 
   static final GoRouter router = GoRouter(
       initialLocation: onboard,
@@ -56,6 +58,11 @@ class AppRoutes {
           path: '/history',
           name: history,
           builder: (context, state) => const History()
+        ),
+        GoRoute(
+          path: '/notification',
+          name: notification,
+          builder: (context, state) => const NotificationsPage()
         )
       ]);
 }

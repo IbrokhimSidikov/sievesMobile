@@ -92,10 +92,10 @@ class _HomeState extends State<Home> {
         actions: [
           Padding(
             padding: EdgeInsets.only(right: 16.sp),
-            child: Icon(
-              Icons.notifications_none,
-              color: AppColors.cxBlack,
-              size: 28.sp,
+            child: IconButton(
+              onPressed: () {
+                context.push(AppRoutes.notification);
+              }, icon: Icon(Icons.notifications_none),
             ),
           ),
         ],
