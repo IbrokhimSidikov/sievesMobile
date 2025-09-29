@@ -132,11 +132,10 @@ class _OnboardState extends State<Onboard> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16.r),
-                      // onTap: _isLoading ? null : _handleLogin,
-                      onTap:(){
-                        context.go(AppRoutes.home);
-                      },
-
+                      onTap: _isLoading ? null : _handleLogin,
+                      // onTap:(){
+                      //   context.go(AppRoutes.home);
+                      // },
                       child: Padding(
                         padding: EdgeInsets.symmetric(vertical: 12.h),
                         child: Row(

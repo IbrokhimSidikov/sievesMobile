@@ -5,7 +5,7 @@ import '../../model/identity_model.dart';
 import '../auth/auth_service.dart';
 
 class ApiService {
-  final String baseUrl = 'https://api.sievesapp.com/api';
+  final String baseUrl = 'https://app.sievesapp.com/v1';
   // final String baseUrl = 'https://app.sievesapp.com/v1';
   final Auth0Service authService;
 
@@ -20,6 +20,8 @@ class ApiService {
     };
   }
 
+
+
   // Get identity by Auth0 ID
   Future<Identity?> getIdentityByAuthId(String authId) async {
     try {
@@ -32,6 +34,9 @@ class ApiService {
       final uri = Uri.parse('$baseUrl/identity/0').replace(
         queryParameters: queryParams,
       );
+
+      // test uri
+      // final uri = Uri.parse('https://app.sievesapp.com/v1/identity/0?auth_id=auth0%7C65bcde009830a9e7bbce75d4&expand=employee.branch,employee.individual,employee.reward');
 
       final response = await http.get(uri, headers: headers);
 

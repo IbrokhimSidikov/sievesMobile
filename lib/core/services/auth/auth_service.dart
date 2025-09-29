@@ -11,6 +11,7 @@ class Auth0Service {
   final String domain = 'exodelicainc.eu.auth0.com';
   final String clientId = 'HzIOKK7VlhRTVJxLVdL0djqCWwuGK5wH';
   final String audience = 'https://exodelicainc.eu.auth0.com/api/v2/';
+  // final String audience = 'http://localhost:8080/look-api/web';
   final String redirectUrl = 'sievesmob://callback'; // Match your Auth0 config
   final String issuer = 'https://exodelicainc.eu.auth0.com';
 

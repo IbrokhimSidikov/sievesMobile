@@ -49,6 +49,7 @@ class AuthManager {
       }
       print('✅ User info received: ${userInfo['email']}');
 
+
       // 3. Get access token for API calls
       print('3️⃣ Getting access token...');
       final accessToken = await authService.getAccessToken();
@@ -57,17 +58,19 @@ class AuthManager {
         return false;
       }
       print('✅ Access token received');
+      print('   Token: $accessToken');
 
       // 4. Get identity from backend API
       print('4️⃣ Fetching identity from backend API...');
       final authId = userInfo['sub'] as String;
+
       print('Auth ID: $authId');
       
       try {
         final identity = await apiService.getIdentityByAuthId(authId);
         if (identity == null) {
           print('❌ Failed to get identity from backend API');
-          return false;
+          return true;
         }
         
         print('✅ Identity received from backend API');
