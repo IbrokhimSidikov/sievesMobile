@@ -7,7 +7,7 @@ import '../auth/auth_service.dart';
 class ApiService {
   final String baseUrl = 'https://app.sievesapp.com/v1';
   // final String baseUrl = 'https://app.sievesapp.com/v1';
-  final Auth0Service authService;
+  final AuthService authService;
 
   ApiService(this.authService);
 

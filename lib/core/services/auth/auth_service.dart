@@ -3,40 +3,41 @@ import 'package:flutter_appauth/flutter_appauth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
-class Auth0Service {
-  final FlutterAppAuth appAuth = FlutterAppAuth();
-  final FlutterSecureStorage secureStorage = FlutterSecureStorage();
+class AuthService {
+  final FlutterAppAuth _appAuth = FlutterAppAuth();
+  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
 
   // Auth0 configuration
-  final String domain = 'exodelicainc.eu.auth0.com';
-  final String clientId = 'HzIOKK7VlhRTVJxLVdL0djqCWwuGK5wH';
-  final String audience = 'https://exodelicainc.eu.auth0.com/api/v2/';
-  // final String audience = 'http://localhost:8080/look-api/web';
-  final String redirectUrl = 'sievesmob://callback'; // Match your Auth0 config
-  final String issuer = 'https://exodelicainc.eu.auth0.com';
+  static const String _domain = 'exodelicainc.eu.auth0.com';
+  static const String _clientId = 'HzIOKK7VlhRTVJxLVdL0djqCWwuGK5wH';
+  static const String _redirectUri = 'sievesmob://callback';
+  static const String _audience = 'localhost:8080/loook-api/web'; // Fixed spelling
+  static const String _issuer = 'https://$_domain';
 
   // Storage keys
-  final String accessTokenKey = 'access_token';
-  final String refreshTokenKey = 'refresh_token';
-  final String idTokenKey = 'id_token';
-  final String expiresAtKey = 'expires_at';
+  final String _accessTokenKey = 'access_token';
+  final String _refreshTokenKey = 'refresh_token';
+  final String _idTokenKey = 'id_token';
+  final String _expiresAtKey = 'expires_at';
 
   // Login with Auth0
   Future<bool> login() async {
     try {
       print('🚀 Starting Auth0 login...');
-      print('Client ID: $clientId');
-      print('Redirect URL: $redirectUrl');
-      print('Issuer: $issuer');
+      print('Client ID: $_clientId');
+      print('Redirect URL: $_redirectUri');
+      print('Issuer: $_issuer');
       
-      final AuthorizationTokenResponse? result = await appAuth.authorizeAndExchangeCode(
+      final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
         AuthorizationTokenRequest(
-          clientId,
-          redirectUrl,
-          issuer: issuer,
+          _clientId,
+          _redirectUri,
+          issuer: _issuer,
           scopes: ['openid', 'profile', 'email', 'offline_access'],
           promptValues: ['login'],
-          additionalParameters: {'audience': audience},
+          additionalParameters: {
+            'audience': _audience, // Correct audience
+          },
         ),
       );
 
@@ -45,6 +46,10 @@ class Auth0Service {
       if (result != null) {
         print('✅ Tokens received, storing...');
         await _storeTokens(result);
+        
+        // Get user profile
+        await _getUserProfile(result.accessToken!);
+        
         print('✅ Login completed successfully');
         return true;
       } else {
@@ -71,65 +76,130 @@ class Auth0Service {
   // Store tokens securely
   Future<void> _storeTokens(AuthorizationTokenResponse response) async {
     print('📝 Storing tokens...');
-    await secureStorage.write(key: accessTokenKey, value: response.accessToken);
-    await secureStorage.write(key: refreshTokenKey, value: response.refreshToken);
-    await secureStorage.write(key: idTokenKey, value: response.idToken);
+    await _secureStorage.write(key: _accessTokenKey, value: response.accessToken);
+    await _secureStorage.write(key: _refreshTokenKey, value: response.refreshToken);
+    await _secureStorage.write(key: _idTokenKey, value: response.idToken);
 
     // Fix: Use the actual expiration time, not just the seconds
     if (response.accessTokenExpirationDateTime != null) {
       final expiresAt = response.accessTokenExpirationDateTime!
           .millisecondsSinceEpoch
           .toString();
-      await secureStorage.write(key: expiresAtKey, value: expiresAt);
+      await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
       print('📅 Token expires at: ${response.accessTokenExpirationDateTime}');
     }
     print('✅ Tokens stored successfully');
   }
 
+  // Get user profile from Auth0
+  Future<void> _getUserProfile(String accessToken) async {
+    try {
+      final response = await http.get(
+        Uri.parse('https://$_domain/userinfo'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final userProfile = json.decode(response.body);
+        print('✅ User profile: $userProfile');
+        
+        // Now call your backend identity service
+        await _getBackendIdentity(userProfile['sub'], accessToken);
+      } else {
+        print('❌ Get user profile failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Get user profile error: $e');
+    }
+  }
+
+  // Get backend identity (same flow as Angular app)
+  Future<void> _getBackendIdentity(String authId, String accessToken) async {
+    try {
+      // Call your backend identity service (same as Angular)
+      final response = await http.get(
+        Uri.parse('https://app.sievesapp.com/v1/identity/0?auth_id=$authId&expand[]=employee.branch&expand[]=employee.individual&expand[]=employee.reward'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final identityData = json.decode(response.body);
+        print('✅ Backend identity: $identityData');
+        
+        // Update identity with token (same as Angular)
+        identityData['token'] = accessToken;
+        
+        final updateResponse = await http.put(
+          Uri.parse('https://app.sievesapp.com/v1/identity/${identityData['id']}'),
+          headers: {
+            'Authorization': 'Bearer $accessToken',
+            'Content-Type': 'application/json',
+          },
+          body: json.encode(identityData),
+        );
+
+        if (updateResponse.statusCode == 200) {
+          print('✅ Identity updated successfully');
+        } else {
+          print('❌ Identity update failed: ${updateResponse.statusCode}');
+        }
+      } else {
+        print('❌ Backend identity failed: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Backend identity error: $e');
+    }
+  }
+
   // Get access token (with auto-refresh if expired)
   Future<String?> getAccessToken() async {
-    final expiresAt = await secureStorage.read(key: expiresAtKey);
+    final expiresAt = await _secureStorage.read(key: _expiresAtKey);
     final currentTime = DateTime.now().millisecondsSinceEpoch.toString();
 
     if (expiresAt != null && int.parse(expiresAt) < int.parse(currentTime)) {
       await refreshToken();
     }
 
-    return await secureStorage.read(key: accessTokenKey);
+    return await _secureStorage.read(key: _accessTokenKey);
   }
 
   // Refresh the access token
   Future<bool> refreshToken() async {
     try {
-      final refreshToken = await secureStorage.read(key: refreshTokenKey);
+      final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
 
       if (refreshToken == null) {
         return false;
       }
 
-      final TokenResponse? result = await appAuth.token(
+      final TokenResponse? result = await _appAuth.token(
         TokenRequest(
-          clientId,
-          redirectUrl,
-          issuer: issuer,
+          _clientId,
+          _redirectUri,
+          issuer: _issuer,
           refreshToken: refreshToken,
           scopes: ['openid', 'profile', 'email', 'offline_access'],
-          additionalParameters: {'audience': audience},
+          additionalParameters: {'audience': _audience},
         ),
       );
 
       if (result != null) {
-        await secureStorage.write(key: accessTokenKey, value: result.accessToken);
+        await _secureStorage.write(key: _accessTokenKey, value: result.accessToken);
 
         if (result.refreshToken != null) {
-          await secureStorage.write(key: refreshTokenKey, value: result.refreshToken);
+          await _secureStorage.write(key: _refreshTokenKey, value: result.refreshToken);
         }
 
         final expiresAt = DateTime.now()
             .add(Duration(seconds: result.accessTokenExpirationDateTime!.second))
             .millisecondsSinceEpoch
             .toString();
-        await secureStorage.write(key: expiresAtKey, value: expiresAt);
+        await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
 
         return true;
       }
@@ -149,7 +219,7 @@ class Auth0Service {
     }
 
     final response = await http.get(
-      Uri.parse('https://$domain/userinfo'),
+      Uri.parse('https://$_domain/userinfo'),
       headers: {'Authorization': 'Bearer $accessToken'},
     );
 
@@ -163,9 +233,9 @@ class Auth0Service {
 
   // Logout
   Future<void> logout() async {
-    await secureStorage.delete(key: accessTokenKey);
-    await secureStorage.delete(key: refreshTokenKey);
-    await secureStorage.delete(key: idTokenKey);
-    await secureStorage.delete(key: expiresAtKey);
+    await _secureStorage.delete(key: _accessTokenKey);
+    await _secureStorage.delete(key: _refreshTokenKey);
+    await _secureStorage.delete(key: _idTokenKey);
+    await _secureStorage.delete(key: _expiresAtKey);
   }
 }

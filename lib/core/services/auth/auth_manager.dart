@@ -11,13 +11,13 @@ class AuthManager {
   
   AuthManager._internal() {
     // Initialize services in the singleton
-    final auth0Service = Auth0Service();
-    final apiService = ApiService(auth0Service);
-    authService = auth0Service;
+    final authService = AuthService();
+    final apiService = ApiService(authService);
+    this.authService = authService;
     this.apiService = apiService;
   }
 
-  late final Auth0Service authService;
+  late final AuthService authService;
   late final ApiService apiService;
 
   Identity? _currentIdentity;
@@ -34,10 +34,12 @@ class AuthManager {
       // 1. Authenticate with Auth0
       print('1️⃣ Authenticating with Auth0...');
       final loginSuccess = await authService.login();
+
       if (!loginSuccess) {
         print('❌ Auth0 authentication failed');
         return false;
       }
+
       print('✅ Auth0 authentication successful');
 
       // 2. Get user info from Auth0
@@ -48,6 +50,7 @@ class AuthManager {
         return false;
       }
       print('✅ User info received: ${userInfo['email']}');
+      print('User info:  ${userInfo}');
 
 
       // 3. Get access token for API calls

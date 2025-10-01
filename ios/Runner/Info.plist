@@ -27,6 +27,10 @@
 		<dict>
 			<key>CFBundleURLName</key>
 			<string>sievesmob</string>
+			<key>CFBundleTypeRole</key>
+            <string>None</string>
+			<key>CFBundleURLName</key>
+            <string>auth0</string>
 			<key>CFBundleURLSchemes</key>
 			<array>
 				<string>sievesmob</string>
