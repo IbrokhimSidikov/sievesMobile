@@ -42,50 +42,51 @@ class _ProfileState extends State<Profile> {
         _error = null;
       });
 
-      // For testing UI - use static data
-      await Future.delayed(Duration(seconds: 1)); // Simulate API delay
+      // Get current identity from AuthManager
+      final identity = _authManager.currentIdentity;
       
-      final testData = {
-        'id': 1748,
-        'status': 'active',
-        'individual': {
-          'id': 2156,
-          'firstName': 'Ibrokhim',
-          'lastName': 'Sidikov',
-          'email': '2281@sieves.uz',
-          'phone': '+998 77 8783454',
-          'photo': 'https://s.gravatar.com/avatar/da49ff38e3736fecdd6f56dd29b828dd?s=480&r=pg&d=https%3A%2F%2Fcdn.auth0.com%2Favatars%2Fis.png'
-        },
-        'branch': {
-          'id': 1,
-          'name': 'Administration',
-          'address': 'Uqchi Street 3A'
-        },
-        'jobPosition': {
-          'id': 5,
-          'name': 'Senior Mobile Developer'
-        },
-        'department': {
-          'id': 3,
-          'name': 'IT Department'
-        },
-        'identity': {
-          'email': 'Ibrokhim.sidikov@gmail.com'
-        },
-        'activeContract': {
-          'id': 1,
-          'type': 'Full-time',
-          'status': 'active'
-        },
-        'bonusInfo': {
-          'amount': 5000,
-          'type': 'Performance Bonus'
-        }
+      if (identity == null) {
+        throw Exception('No user identity found. Please login again.');
+      }
+
+      // Convert Identity model to Map for UI consumption
+      final identityData = {
+        'id': identity.id,
+        'email': identity.email,
+        'username': identity.username,
+        'role': identity.role,
+        'phone': identity.phone,
+        'allowance': identity.allowance,
+        'employee': identity.employee != null ? {
+          'id': identity.employee!.id,
+          'status': identity.employee!.status,
+          'individual': identity.employee!.individual != null ? {
+            'firstName': identity.employee!.individual!.firstName,
+            'lastName': identity.employee!.individual!.lastName,
+            'email': identity.employee!.individual!.email,
+            'phone': identity.employee!.individual!.phone,
+            'photo': identity.employee!.individual!.photo,
+          } : null,
+          'branch': identity.employee!.branch != null ? {
+            'name': identity.employee!.branch!.name,
+            'address': identity.employee!.branch!.address,
+          } : null,
+          'jobPosition': identity.employee!.jobPosition != null ? {
+            'name': identity.employee!.jobPosition!.name,
+          } : null,
+          'department': identity.employee!.department != null ? {
+            'name': identity.employee!.department!.name,
+          } : null,
+          'reward': identity.employee!.reward != null ? {
+            'amount': identity.employee!.reward!.amount,
+            'type': identity.employee!.reward!.type,
+          } : null,
+        } : null,
       };
       
       if (mounted) {
         setState(() {
-          _profileData = testData;
+          _profileData = identityData;
           _isLoading = false;
         });
       }
@@ -479,8 +480,10 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildProfileCard() {
-    final individual = _profileData?['individual'];
-    final identity = _profileData?['identity'];
+    final individual = _profileData?['employee']?['individual'];
+    final identity = _profileData;
+    final employee = _profileData?['employee'];
+    final employeeIndividual = employee?['individual'];
     
     return Container(
       width: double.infinity,
@@ -537,7 +540,9 @@ class _ProfileState extends State<Profile> {
             SizedBox(height: 16.h),
             // Name
             Text(
-              '${individual?['firstName'] ?? ''} ${individual?['lastName'] ?? ''}'.trim(),
+              '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'.trim().isNotEmpty 
+                  ? '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'.trim()
+                  : 'No name',
               style: TextStyle(
                 fontSize: 24.sp,
                 fontWeight: FontWeight.w700,
@@ -548,7 +553,7 @@ class _ProfileState extends State<Profile> {
             SizedBox(height: 8.h),
             // Email
             Text(
-              identity?['email'] ?? individual?['email'] ?? 'No email',
+              identity?['email'] ?? 'No email',
               style: TextStyle(
                 fontSize: 16.sp,
                 color: AppColors.cxPureWhite.withOpacity(0.9),
@@ -836,8 +841,8 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildJobInfoCard() {
-    final jobPosition = _profileData?['jobPosition'];
-    final branch = _profileData?['branch'];
+    final jobPosition = _profileData?['employee']?['jobPosition'];
+    final branch = _profileData?['employee']?['branch'];
     
     return _buildInfoCard(
       title: 'Job Information',
@@ -845,8 +850,8 @@ class _ProfileState extends State<Profile> {
       children: [
         _buildInfoRow('Position', jobPosition?['name'] ?? 'Not specified'),
         _buildInfoRow('Branch', branch?['name'] ?? 'Not specified'),
-        _buildInfoRow('Department', _profileData?['department']?['name'] ?? 'Not specified'),
-        _buildInfoRow('Employee ID', _profileData?['id']?.toString() ?? 'N/A'),
+        _buildInfoRow('Department', _profileData?['employee']?['department']?['name'] ?? 'Not specified'),
+        _buildInfoRow('Employee ID', _profileData?['employee']?['id']?.toString() ?? 'N/A'),
       ],
     );
   }
