@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
@@ -29,6 +32,8 @@ class _ProfileState extends State<Profile> {
   List<WorkEntry> _workEntries = [];
   bool _isLoading = true;
   bool _isLoadingWorkEntries = true;
+  bool _isLoadingPrePaid = true;
+  double _prePaidAmount = 0.0;
   String? _error;
 
   @override
@@ -36,6 +41,7 @@ class _ProfileState extends State<Profile> {
     super.initState();
     _loadProfileData();
     _loadCurrentMonthWorkEntries();
+    _loadPrePaidAmount();
   }
 
   Future<void> _loadProfileData() async {
@@ -158,7 +164,114 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  /// Fetch and calculate pre-paid amount for current month from transactions
+  Future<void> _loadPrePaidAmount() async {
+    try {
+      setState(() {
+        _isLoadingPrePaid = true;
+      });
+
+      // Get individual_id from employee
+      final identity = _authManager.currentIdentity;
+      final individualId = identity?.employee?.individualId;
+      
+      if (individualId == null) {
+        print('❌ No individual ID found');
+        setState(() {
+          _isLoadingPrePaid = false;
+          _prePaidAmount = 0.0;
+        });
+        return;
+      }
+
+      print('📊 Fetching transactions for individual ID: $individualId');
+
+      // Fetch transactions from API using the new method
+      final response = await _apiService.getTransactions(
+        vendorType: 'individual',
+        source: 'regular',
+        vendorId: individualId,
+      );
+
+      // Log the complete response
+      print('🔍 Transaction API Response: $response');
+      
+      if (response != null) {
+        print('📦 Response keys: ${response.keys.toList()}');
+        if (response['models'] != null) {
+          final transactions = response['models'] as List;
+          print('📊 Total transactions received: ${transactions.length}');
+          
+          // Log first transaction for structure inspection
+          if (transactions.isNotEmpty) {
+            print('📝 First transaction sample: ${transactions.first}');
+          }
+        }
+      }
+
+      if (response != null && response['models'] != null) {
+        final transactions = response['models'] as List;
+        
+        // Get current month and year
+        final now = DateTime.now();
+        final currentMonth = now.month;
+        final currentYear = now.year;
+        
+        print('📅 Filtering for current month: $currentMonth/$currentYear');
+        
+        // Filter transactions for current month and sum amounts
+        double totalAmount = 0.0;
+        int transactionCount = 0;
+        
+        for (var transaction in transactions) {
+          try {
+            final dateStr = transaction['date'] as String?;
+            if (dateStr != null) {
+              final transactionDate = DateTime.parse(dateStr);
+              
+              // Check if transaction is in current month
+              if (transactionDate.month == currentMonth && 
+                  transactionDate.year == currentYear) {
+                final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+                totalAmount += amount;
+                transactionCount++;
+                print('✅ Current month transaction: ${transaction['id']} - Amount: $amount - Date: $dateStr');
+              }
+            }
+          } catch (e) {
+            print('⚠️ Error parsing transaction date: $e');
+          }
+        }
+
+        if (mounted) {
+          setState(() {
+            _prePaidAmount = totalAmount;
+            _isLoadingPrePaid = false;
+          });
+          print('💰 Total pre-paid amount: $totalAmount UZS from $transactionCount transactions');
+        }
+      } else {
+        print('⚠️ No models found in response');
+        if (mounted) {
+          setState(() {
+            _prePaidAmount = 0.0;
+            _isLoadingPrePaid = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading pre-paid amount: $e');
+      if (mounted) {
+        setState(() {
+          _prePaidAmount = 0.0;
+          _isLoadingPrePaid = false;
+        });
+      }
+    }
+  }
+
   Future<void> _handleLogout() async {
+    _loadPrePaidAmount();
     // Show confirmation dialog
     final shouldLogout = await showDialog<bool>(
       context: context,
@@ -424,6 +537,8 @@ class _ProfileState extends State<Profile> {
           _buildProfileCard(),
           SizedBox(height: 20.h),
           _buildWorkHoursCard(),
+          SizedBox(height: 20.h),
+          _buildPrePaidCard(),
           SizedBox(height: 20.h),
           _buildJobInfoCard(),
         ],
@@ -1016,6 +1131,334 @@ class _ProfileState extends State<Profile> {
     );
   }
 
+  Widget _buildPrePaidCard() {
+    // Use actual data from API
+    final double prePaidAmount = _prePaidAmount;
+    final String month = _getCurrentMonthString();
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.cxWarning,
+            Color(0xFFFFA726), // Lighter orange
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxWarning.withOpacity(0.4),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+          BoxShadow(
+            color: AppColors.cxWarning.withOpacity(0.2),
+            blurRadius: 40,
+            offset: Offset(0, 20),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: _isLoadingPrePaid
+            ? _buildPrePaidShimmer()
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with icon and title
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(16.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.1),
+                              blurRadius: 8,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: AppColors.cxPureWhite,
+                          size: 28.sp,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Pre-Paid Amount',
+                              style: TextStyle(
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.cxPureWhite,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                            Text(
+                              month,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.cxPureWhite.withOpacity(0.85),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Badge
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.25),
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(
+                            color: AppColors.cxPureWhite.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Text(
+                          'ADVANCE',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cxPureWhite,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24.h),
+                  
+                  // Amount display - prominent and elegant
+                  Center(
+                    child: Column(
+                      children: [
+                        // Currency symbol and amount
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Padding(
+                              padding: EdgeInsets.only(top: 8.h),
+                              child: Text(
+                                'UZS',
+                                style: TextStyle(
+                                  fontSize: 20.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.cxPureWhite.withOpacity(0.9),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ),
+                            SizedBox(width: 8.w),
+                            Text(
+                              prePaidAmount.toStringAsFixed(0).replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                (Match m) => '${m[1]} ',
+                              ),
+                              style: TextStyle(
+                                fontSize: 48.sp,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.cxPureWhite,
+                                height: 1.0,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                                shadows: [
+                                  Shadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    offset: Offset(0, 4),
+                                    blurRadius: 8,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                        SizedBox(height: 8.h),
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxPureWhite.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20.r),
+                            border: Border.all(
+                              color: AppColors.cxPureWhite.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Text(
+                            'Current Month Balance',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.cxPureWhite.withOpacity(0.95),
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 20.h),
+                  
+                  // Info note with icon
+                  Container(
+                    padding: EdgeInsets.all(16.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.cxPureWhite.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(16.r),
+                      border: Border.all(
+                        color: AppColors.cxPureWhite.withOpacity(0.25),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline_rounded,
+                          color: AppColors.cxPureWhite.withOpacity(0.9),
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Text(
+                            'Pre-payment received for current month',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w500,
+                              color: AppColors.cxPureWhite.withOpacity(0.9),
+                              height: 1.3,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPrePaidShimmer() {
+    return Shimmer.fromColors(
+      baseColor: AppColors.cxPureWhite.withOpacity(0.2),
+      highlightColor: AppColors.cxPureWhite.withOpacity(0.4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header shimmer
+          Row(
+            children: [
+              Container(
+                width: 52.w,
+                height: 52.h,
+                decoration: BoxDecoration(
+                  color: AppColors.cxPureWhite.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 140.w,
+                      height: 24.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      width: 80.w,
+                      height: 14.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          
+          // Amount shimmer
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 200.w,
+                  height: 56.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Container(
+                  width: 160.w,
+                  height: 32.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 20.h),
+          
+          // Info box shimmer
+          Container(
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: AppColors.cxPureWhite.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 20.w,
+                  height: 20.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Container(
+                    height: 14.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.cxPureWhite.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildJobInfoCard() {
     final jobPosition = _profileData?['employee']?['jobPosition'];
     final branch = _profileData?['employee']?['branch'];
@@ -1031,7 +1474,6 @@ class _ProfileState extends State<Profile> {
       ],
     );
   }
-
 
   Widget _buildInfoCard({
     required String title,

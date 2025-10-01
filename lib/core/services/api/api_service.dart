@@ -391,4 +391,39 @@ class ApiService {
       return null;
     }
   }
+
+  // Get transactions for an individual
+  Future<Map<String, dynamic>?> getTransactions({
+    required String vendorType,
+    required String source,
+    required int vendorId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'vendor_type': vendorType,
+        'source': source,
+        'vendor_id': vendorId.toString(),
+      };
+
+      final uri = Uri.parse('$baseUrl/transaction').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📊 Fetching transactions: $uri');
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Fetched transactions successfully');
+        return data;
+      } else {
+        print('❌ Error getting transactions: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting transactions: $e');
+      return null;
+    }
+  }
 }
