@@ -1536,8 +1536,8 @@ class _ProfileState extends State<Profile> {
 
   Widget _buildPrePaidShimmer() {
     return Shimmer.fromColors(
-      baseColor: AppColors.cxPureWhite.withOpacity(0.2),
-      highlightColor: AppColors.cxPureWhite.withOpacity(0.4),
+      baseColor: AppColors.cxF5F7F9,
+      highlightColor: AppColors.cxPureWhite,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1548,7 +1548,7 @@ class _ProfileState extends State<Profile> {
                 width: 52.w,
                 height: 52.h,
                 decoration: BoxDecoration(
-                  color: AppColors.cxPureWhite.withOpacity(0.3),
+                  color: AppColors.cxF5F7F9,
                   borderRadius: BorderRadius.circular(16.r),
                 ),
               ),
@@ -1559,18 +1559,18 @@ class _ProfileState extends State<Profile> {
                   children: [
                     Container(
                       width: 140.w,
-                      height: 24.h,
+                      height: 20.h,
                       decoration: BoxDecoration(
-                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        color: AppColors.cxF5F7F9,
                         borderRadius: BorderRadius.circular(8.r),
                       ),
                     ),
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 6.h),
                     Container(
                       width: 80.w,
-                      height: 14.h,
+                      height: 13.h,
                       decoration: BoxDecoration(
-                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        color: AppColors.cxF5F7F9,
                         borderRadius: BorderRadius.circular(6.r),
                       ),
                     ),
@@ -1579,26 +1579,31 @@ class _ProfileState extends State<Profile> {
               ),
             ],
           ),
-          SizedBox(height: 24.h),
+          SizedBox(height: 20.h),
           
-          // Amount shimmer
-          Center(
+          // Amount box shimmer
+          Container(
+            padding: EdgeInsets.all(20.w),
+            decoration: BoxDecoration(
+              color: AppColors.cxF5F7F9,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
             child: Column(
               children: [
                 Container(
-                  width: 200.w,
-                  height: 56.h,
+                  width: 180.w,
+                  height: 42.h,
                   decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    color: AppColors.cxPureWhite.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                 ),
                 SizedBox(height: 12.h),
                 Container(
-                  width: 160.w,
-                  height: 32.h,
+                  width: 140.w,
+                  height: 24.h,
                   decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    color: AppColors.cxPureWhite.withOpacity(0.5),
                     borderRadius: BorderRadius.circular(20.r),
                   ),
                 ),
@@ -1606,37 +1611,30 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           
-          SizedBox(height: 20.h),
+          SizedBox(height: 16.h),
           
-          // Info box shimmer
-          Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: AppColors.cxPureWhite.withOpacity(0.15),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 20.w,
-                  height: 20.h,
+          // Info row shimmer
+          Row(
+            children: [
+              Container(
+                width: 18.w,
+                height: 18.h,
+                decoration: BoxDecoration(
+                  color: AppColors.cxF5F7F9,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Container(
+                  height: 12.h,
                   decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
-                    shape: BoxShape.circle,
+                    color: AppColors.cxF5F7F9,
+                    borderRadius: BorderRadius.circular(6.r),
                   ),
                 ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Container(
-                    height: 14.h,
-                    decoration: BoxDecoration(
-                      color: AppColors.cxPureWhite.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(6.r),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
