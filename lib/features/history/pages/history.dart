@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/model/history_model.dart';
+import '../../../core/services/auth/auth_manager.dart';
 
 class History extends StatefulWidget {
   const History({super.key});
@@ -11,65 +13,10 @@ class History extends StatefulWidget {
 }
 
 class _HistoryState extends State<History> {
-  // Sample data for demonstration
-  final List<Map<String, dynamic>> historyRecords = [
-    {
-      'type': 'Информация',
-      'date': '02-02-2024 17:20:17',
-      'comment': 'Системада рўйхатдан утди\nРегистровала: Abdugani Alimxanov',
-      'branch': 'Администрация',
-      'color': AppColors.cxBlue,
-    },
-    {
-      'type': 'Информация',
-      'date': '02-02-2024 17:23:24',
-      'comment': 'Odob bo\'yicha trening',
-      'branch': 'Администрация',
-      'color': AppColors.cxBlue,
-    },
-    {
-      'type': 'Информация',
-      'date': '02-02-2024 18:43:14',
-      'comment': 'Синов муддатини утди.Кабул килди: Abdugani Alimxanov',
-      'branch': 'Администрация',
-      'color': AppColors.cxBlue,
-    },
-    {
-      'type': 'Информация',
-      'date': '10-02-2024 18:49:25',
-      'comment': 'Синов муддатини утди.Кабул килди: Abdugani Alimxanov',
-      'branch': 'Администрация',
-      'color': AppColors.cxBlue,
-    },
-    {
-      'type': 'Достижение',
-      'date': '14-02-2024 12:25:40',
-      'comment': 'Ходим оформить килинди.Оформить килди: Abdugani Alimxanov',
-      'branch': 'Администрация',
-      'color': AppColors.cxEmeraldGreen,
-    },
-    {
-      'type': 'Устное предупреждение',
-      'date': '15-03-2024 09:15:30',
-      'comment': 'Опоздание на работу без уважительной причины',
-      'branch': 'Администрация',
-      'color': AppColors.cxWarning,
-    },
-    {
-      'type': 'Объяснительное письмо',
-      'date': '20-03-2024 14:30:45',
-      'comment': 'Нарушение дресс-кода компании',
-      'branch': 'Администрация',
-      'color': AppColors.cxAmberGold,
-    },
-    {
-      'type': 'Испытательный срок',
-      'date': '25-03-2024 11:20:15',
-      'comment': 'Продление испытательного срока на 1 месяц',
-      'branch': 'Администрация',
-      'color': AppColors.cxPurple,
-    },
-  ];
+  final AuthManager _authManager = AuthManager();
+  List<HistoryRecord> historyRecords = [];
+  bool isLoading = true;
+  String? errorMessage;
 
   // Record type filter
   String selectedFilter = 'Все';
@@ -82,6 +29,76 @@ class _HistoryState extends State<History> {
     'Испытательный срок',
     'Освобождение от должности'
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchHistoryData();
+  }
+
+  Future<void> _fetchHistoryData() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+    });
+
+    try {
+      final employeeId = _authManager.currentEmployeeId;
+      
+      if (employeeId == null) {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Employee ID not found. Please log in again.';
+        });
+        return;
+      }
+
+      final records = await _authManager.apiService.getHistory(employeeId);
+
+      if (records != null) {
+        setState(() {
+          historyRecords = records;
+          isLoading = false;
+        });
+      } else {
+        setState(() {
+          isLoading = false;
+          errorMessage = 'Failed to load history records. Please try again.';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        isLoading = false;
+        errorMessage = 'An error occurred: $e';
+      });
+    }
+  }
+
+  // Helper method to get color based on history type
+  Color _getColorForType(String type) {
+    switch (type.toLowerCase()) {
+      case 'информация':
+      case 'information':
+        return AppColors.cxBlue;
+      case 'достижение':
+      case 'achievement':
+        return AppColors.cxEmeraldGreen;
+      case 'устное предупреждение':
+      case 'verbal warning':
+        return AppColors.cxWarning;
+      case 'объяснительное письмо':
+      case 'explanatory letter':
+        return AppColors.cxAmberGold;
+      case 'испытательный срок':
+      case 'probation':
+        return AppColors.cxPurple;
+      case 'освобождение от должности':
+      case 'dismissal':
+        return AppColors.cxWarning;
+      default:
+        return AppColors.cxGraphiteGray;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -101,12 +118,173 @@ class _HistoryState extends State<History> {
               _buildFilterSection(),
               SizedBox(height: 20.h),
               
-              // History Timeline
+              // History Timeline with loading/error states
               Expanded(
-                child: _buildHistoryTimeline(),
+                child: isLoading
+                    ? _buildLoadingState()
+                    : errorMessage != null
+                        ? _buildErrorState()
+                        : historyRecords.isEmpty
+                            ? _buildEmptyState()
+                            : _buildHistoryTimeline(),
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxBlack.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.cxBlue),
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'Loading history records...',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: AppColors.cxGraphiteGray,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxBlack.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.error_outline_rounded,
+                size: 64.sp,
+                color: AppColors.cxWarning,
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'Error',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.cxDarkCharcoal,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                errorMessage ?? 'An unexpected error occurred',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: AppColors.cxGraphiteGray,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 24.h),
+              InkWell(
+                onTap: _fetchHistoryData,
+                borderRadius: BorderRadius.circular(12.r),
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.cxBlue, AppColors.cx02D5F5],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.cxWhite,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxBlack.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.history_rounded,
+              size: 64.sp,
+              color: AppColors.cxSilverTint,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No History Records',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.cxDarkCharcoal,
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Text(
+              'Your history will appear here',
+              style: TextStyle(
+                fontSize: 14.sp,
+                color: AppColors.cxSilverTint,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -304,8 +482,9 @@ class _HistoryState extends State<History> {
     );
   }
 
-  Widget _buildTimelineItem(Map<String, dynamic> record, int index, int totalItems) {
+  Widget _buildTimelineItem(HistoryRecord record, int index, int totalItems) {
     final isLast = index == totalItems - 1;
+    final color = _getColorForType(record.displayType);
     
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -317,7 +496,7 @@ class _HistoryState extends State<History> {
               width: 12.w,
               height: 12.w,
               decoration: BoxDecoration(
-                color: record['color'],
+                color: color,
                 shape: BoxShape.circle,
                 border: Border.all(
                   color: AppColors.cxWhite,
@@ -325,7 +504,7 @@ class _HistoryState extends State<History> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: record['color'].withOpacity(0.3),
+                    color: color.withOpacity(0.3),
                     blurRadius: 4,
                     offset: const Offset(0, 1),
                   ),
@@ -351,15 +530,15 @@ class _HistoryState extends State<History> {
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  record['color'].withOpacity(0.05),
-                  record['color'].withOpacity(0.02),
+                  color.withOpacity(0.05),
+                  color.withOpacity(0.02),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(
-                color: record['color'].withOpacity(0.2),
+                color: color.withOpacity(0.2),
                 width: 1,
               ),
             ),
@@ -373,11 +552,11 @@ class _HistoryState extends State<History> {
                     Container(
                       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                       decoration: BoxDecoration(
-                        color: record['color'],
+                        color: color,
                         borderRadius: BorderRadius.circular(6.r),
                       ),
                       child: Text(
-                        record['type'],
+                        record.displayType,
                         style: TextStyle(
                           fontSize: 10.sp,
                           fontWeight: FontWeight.w600,
@@ -386,7 +565,7 @@ class _HistoryState extends State<History> {
                       ),
                     ),
                     Text(
-                      record['date'],
+                      record.formattedDateTime,
                       style: TextStyle(
                         fontSize: 10.sp,
                         color: AppColors.cxSilverTint,
@@ -398,9 +577,9 @@ class _HistoryState extends State<History> {
                 
                 SizedBox(height: 12.h),
                 
-                // Comment
+                // Description
                 Text(
-                  record['comment'],
+                  record.displayDescription,
                   style: TextStyle(
                     fontSize: 12.sp,
                     color: AppColors.cxGraphiteGray,
@@ -417,14 +596,14 @@ class _HistoryState extends State<History> {
                     Icon(
                       Icons.business_rounded,
                       size: 14.sp,
-                      color: record['color'],
+                      color: color,
                     ),
                     SizedBox(width: 6.w),
                     Text(
-                      record['branch'],
+                      record.branchName,
                       style: TextStyle(
                         fontSize: 11.sp,
-                        color: record['color'],
+                        color: color,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
@@ -438,10 +617,10 @@ class _HistoryState extends State<History> {
     );
   }
 
-  List<Map<String, dynamic>> _getFilteredRecords() {
+  List<HistoryRecord> _getFilteredRecords() {
     if (selectedFilter == 'Все') {
       return historyRecords;
     }
-    return historyRecords.where((record) => record['type'] == selectedFilter).toList();
+    return historyRecords.where((record) => record.displayType == selectedFilter).toList();
   }
 }

@@ -4,6 +4,7 @@ import '../../model/employee_model.dart';
 import '../../model/identity_model.dart';
 import '../../model/work_entry_model.dart';
 import '../../model/break_order_model.dart';
+import '../../model/history_model.dart';
 import '../auth/auth_service.dart';
 
 class ApiService {
@@ -335,6 +336,58 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Exception getting break orders: $e');
+      return null;
+    }
+  }
+
+  // Get history records for an employee
+  Future<List<HistoryRecord>?> getHistory(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'employee_id': employeeId.toString(),
+        'expand': 'branch',
+      };
+
+      final uri = Uri.parse('$baseUrl/history').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📜 Fetching history records: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        print('📋 Response type: ${responseData.runtimeType}');
+        print('📋 Response data: $responseData');
+        
+        // Handle both direct list and wrapped object responses
+        List<dynamic> data;
+        if (responseData is List) {
+          data = responseData;
+        } else if (responseData is Map<String, dynamic>) {
+          // Try common property names for wrapped responses
+          data = (responseData['models'] ?? 
+                  responseData['data'] ?? 
+                  responseData['results'] ?? 
+                  responseData['records'] ?? 
+                  responseData['items'] ?? 
+                  []) as List<dynamic>;
+        } else {
+          print('❌ Unexpected response type: ${responseData.runtimeType}');
+          return null;
+        }
+        
+        final historyRecords = data.map((json) => HistoryRecord.fromJson(json)).toList();
+        print('✅ Fetched ${historyRecords.length} history records');
+        return historyRecords;
+      } else {
+        print('❌ Error getting history records: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting history records: $e');
       return null;
     }
   }
