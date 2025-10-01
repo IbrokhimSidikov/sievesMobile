@@ -12,11 +12,13 @@ class History extends StatefulWidget {
   State<History> createState() => _HistoryState();
 }
 
-class _HistoryState extends State<History> {
+class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
   List<HistoryRecord> historyRecords = [];
   bool isLoading = true;
   String? errorMessage;
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
 
   // Record type filter
   String selectedFilter = 'Все';
@@ -33,7 +35,26 @@ class _HistoryState extends State<History> {
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    
+    _shimmerAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+    
     _fetchHistoryData();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchHistoryData() async {
@@ -121,7 +142,7 @@ class _HistoryState extends State<History> {
               // History Timeline with loading/error states
               Expanded(
                 child: isLoading
-                    ? _buildLoadingState()
+                    ? _buildSkeletonLoader()
                     : errorMessage != null
                         ? _buildErrorState()
                         : historyRecords.isEmpty
@@ -136,6 +157,10 @@ class _HistoryState extends State<History> {
   }
 
   Widget _buildLoadingState() {
+    return _buildSkeletonLoader();
+  }
+
+  Widget _buildSkeletonLoader() {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cxWhite,
@@ -148,24 +173,12 @@ class _HistoryState extends State<History> {
           ),
         ],
       ),
-      child: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(AppColors.cxBlue),
-            ),
-            SizedBox(height: 16.h),
-            Text(
-              'Loading history records...',
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: AppColors.cxGraphiteGray,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
+      child: ListView.builder(
+        padding: EdgeInsets.all(16.w),
+        itemCount: 6, // Show 6 skeleton timeline items
+        itemBuilder: (context, index) {
+          return _buildSkeletonTimelineItem(index, 6);
+        },
       ),
     );
   }
@@ -622,5 +635,112 @@ class _HistoryState extends State<History> {
       return historyRecords;
     }
     return historyRecords.where((record) => record.displayType == selectedFilter).toList();
+  }
+
+  Widget _buildSkeletonTimelineItem(int index, int totalItems) {
+    final isLast = index == totalItems - 1;
+    
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Timeline indicator
+        Column(
+          children: [
+            AnimatedBuilder(
+              animation: _shimmerAnimation,
+              builder: (context, child) {
+                return Container(
+                  width: 12.w,
+                  height: 12.w,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                        AppColors.cxSilverTint.withOpacity(_shimmerAnimation.value * 0.5),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    shape: BoxShape.circle,
+                  ),
+                );
+              },
+            ),
+            if (!isLast)
+              Container(
+                width: 2.w,
+                height: 80.h,
+                color: AppColors.cxPlatinumGray.withOpacity(0.2),
+              ),
+          ],
+        ),
+        
+        SizedBox(width: 16.w),
+        
+        // Content skeleton
+        Expanded(
+          child: Container(
+            margin: EdgeInsets.only(bottom: isLast ? 0 : 20.h),
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: AppColors.cxF5F7F9.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: AppColors.cxPlatinumGray.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Type and Date row skeleton
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildShimmerBox(width: 100.w, height: 16.h),
+                    _buildShimmerBox(width: 80.w, height: 14.h),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                
+                // Description skeleton
+                _buildShimmerBox(width: double.infinity, height: 12.h),
+                SizedBox(height: 6.h),
+                _buildShimmerBox(width: 200.w, height: 12.h),
+                
+                SizedBox(height: 12.h),
+                
+                // Branch skeleton
+                _buildShimmerBox(width: 150.w, height: 12.h),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShimmerBox({required double width, required double height}) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                AppColors.cxSilverTint.withOpacity(_shimmerAnimation.value * 0.5),
+                AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(6.r),
+          ),
+        );
+      },
+    );
   }
 }

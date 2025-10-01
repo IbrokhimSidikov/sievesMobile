@@ -13,18 +13,39 @@ class Attendance extends StatefulWidget {
   State<Attendance> createState() => _AttendanceState();
 }
 
-class _AttendanceState extends State<Attendance> {
+class _AttendanceState extends State<Attendance> with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
   List<WorkEntry> workEntries = [];
   bool isLoading = true;
   String? errorMessage;
   String currentMonth = '';
   DateTime selectedDate = DateTime.now(); // Track selected month/year
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    
+    _shimmerAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+    
     _loadWorkEntries();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   // Get current month date range (first day to last day)
@@ -242,11 +263,7 @@ class _AttendanceState extends State<Attendance> {
 
   Widget _buildWorkEntriesTable() {
     if (isLoading) {
-      return Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation<Color>(AppColors.cx43C19F),
-        ),
-      );
+      return _buildSkeletonLoader();
     }
 
     if (errorMessage != null) {
@@ -334,6 +351,39 @@ class _AttendanceState extends State<Attendance> {
               itemCount: workEntries.length,
               itemBuilder: (context, index) {
                 return _buildTableRow(workEntries[index], index);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonLoader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxBlack.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // Table Header (static)
+          _buildTableHeader(),
+          
+          // Skeleton Rows
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              itemCount: 8, // Show 8 skeleton rows
+              itemBuilder: (context, index) {
+                return _buildSkeletonRow(index);
               },
             ),
           ),
@@ -464,6 +514,61 @@ class _AttendanceState extends State<Attendance> {
         child: Text(
           emoji,
           style: TextStyle(fontSize: 20.sp),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSkeletonRow(int index) {
+    final isEvenRow = index % 2 == 0;
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: isEvenRow ? AppColors.cxWhite : AppColors.cxF5F7F9.withOpacity(0.3),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.cxPlatinumGray.withOpacity(0.3),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildSkeletonCell(flex: 2, width: 60.w), // Date
+          _buildSkeletonCell(flex: 2, width: 50.w), // Check-in
+          _buildSkeletonCell(flex: 2, width: 50.w), // Check-out
+          _buildSkeletonCell(flex: 2, width: 45.w, isStatus: true), // Status
+          _buildSkeletonCell(flex: 1, width: 24.w, isEmoji: true), // Mood
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCell({required int flex, required double width, bool isStatus = false, bool isEmoji = false}) {
+    return Expanded(
+      flex: flex,
+      child: Center(
+        child: AnimatedBuilder(
+          animation: _shimmerAnimation,
+          builder: (context, child) {
+            return Container(
+              width: width,
+              height: isEmoji ? 24.h : (isStatus ? 24.h : 12.h),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                    AppColors.cxSilverTint.withOpacity(_shimmerAnimation.value * 0.5),
+                    AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                  ],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+                borderRadius: BorderRadius.circular(isStatus ? 12.r : (isEmoji ? 12.r : 6.r)),
+              ),
+            );
+          },
         ),
       ),
     );

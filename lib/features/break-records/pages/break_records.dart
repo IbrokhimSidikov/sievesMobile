@@ -15,16 +15,37 @@ class BreakRecords extends StatefulWidget {
   State<BreakRecords> createState() => _BreakRecordsState();
 }
 
-class _BreakRecordsState extends State<BreakRecords> {
+class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
   bool _isLoading = true;
   String? _errorMessage;
   List<BreakOrder> _breakOrders = [];
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    
+    _shimmerAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+    
     _fetchBreakOrders();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _fetchBreakOrders() async {
@@ -79,7 +100,7 @@ class _BreakRecordsState extends State<BreakRecords> {
               // Content based on state
               Expanded(
                 child: _isLoading
-                    ? _buildLoadingState()
+                    ? _buildSkeletonLoader()
                     : _errorMessage != null
                         ? _buildErrorState()
                         : _buildBreakRecordsList(),
@@ -179,25 +200,127 @@ class _BreakRecordsState extends State<BreakRecords> {
     );
   }
 
-  Widget _buildLoadingState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.cxWarning),
+  Widget _buildSkeletonLoader() {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(16.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxBlack.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 4),
           ),
-          SizedBox(height: 16.h),
-          Text(
-            'Loading break records...',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: AppColors.cxGraphiteGray,
-              fontWeight: FontWeight.w500,
+        ],
+      ),
+      child: Column(
+        children: [
+          // Table Header (static)
+          _buildTableHeader(),
+          
+          // Skeleton Rows
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              itemCount: 8, // Show 8 skeleton rows
+              itemBuilder: (context, index) {
+                return _buildSkeletonRow(index);
+              },
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSkeletonRow(int index) {
+    final isEvenRow = index % 2 == 0;
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
+      decoration: BoxDecoration(
+        color: isEvenRow ? AppColors.cxWhite : AppColors.cxF5F7F9.withOpacity(0.5),
+        border: Border(
+          bottom: BorderSide(
+            color: AppColors.cxPlatinumGray.withOpacity(0.2),
+            width: 0.5,
+          ),
+        ),
+      ),
+      child: Row(
+        children: [
+          // ID skeleton
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: _buildShimmerBox(width: 24.w, height: 24.w, circular: true),
+            ),
+          ),
+          
+          // Date & Time skeleton
+          Expanded(
+            flex: 3,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _buildShimmerBox(width: 80.w, height: 12.h),
+                  SizedBox(height: 4.h),
+                  _buildShimmerBox(width: 50.w, height: 10.h),
+                ],
+              ),
+            ),
+          ),
+          
+          // Amount skeleton
+          Expanded(
+            flex: 2,
+            child: Center(
+              child: _buildShimmerBox(width: 70.w, height: 24.h, borderRadius: 8.r),
+            ),
+          ),
+          
+          // Details indicator skeleton
+          Expanded(
+            flex: 1,
+            child: Center(
+              child: _buildShimmerBox(width: 32.w, height: 32.w, borderRadius: 8.r),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerBox({
+    required double width,
+    required double height,
+    double? borderRadius,
+    bool circular = false,
+  }) {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          width: width,
+          height: height,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                AppColors.cxSilverTint.withOpacity(_shimmerAnimation.value * 0.5),
+                AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: circular 
+                ? BorderRadius.circular(width / 2) 
+                : BorderRadius.circular(borderRadius ?? 6.r),
+            shape: circular ? BoxShape.rectangle : BoxShape.rectangle,
+          ),
+        );
+      },
     );
   }
 

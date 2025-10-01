@@ -2,7 +2,10 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
@@ -623,23 +626,7 @@ class _ProfileState extends State<Profile> {
       child: Padding(
         padding: EdgeInsets.all(24.w),
         child: _isLoadingWorkEntries
-            ? Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(
-                      color: AppColors.cxPureWhite,
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Loading work hours...',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: AppColors.cxPureWhite.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              )
+            ? _buildWorkHoursShimmer()
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -836,6 +823,195 @@ class _ProfileState extends State<Profile> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildWorkHoursShimmer() {
+    return Shimmer.fromColors(
+      baseColor: AppColors.cxPureWhite.withOpacity(0.2),
+      highlightColor: AppColors.cxPureWhite.withOpacity(0.4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header shimmer
+          Row(
+            children: [
+              Container(
+                width: 52.w,
+                height: 52.h,
+                decoration: BoxDecoration(
+                  color: AppColors.cxPureWhite.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 120.w,
+                      height: 24.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      width: 80.w,
+                      height: 14.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          
+          // Total hours shimmer - prominent display
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 180.w,
+                  height: 56.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Container(
+                  width: 140.w,
+                  height: 18.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 24.h),
+          
+          // Day and Night hours shimmer breakdown
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: AppColors.cxPureWhite.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 24.w,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        width: 60.w,
+                        height: 20.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: 40.w,
+                        height: 16.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Container(
+                        width: 70.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: AppColors.cxPureWhite.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 24.w,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        width: 60.w,
+                        height: 20.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: 40.w,
+                        height: 16.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Container(
+                        width: 70.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
       ),
     );
   }
