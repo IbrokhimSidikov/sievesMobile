@@ -34,6 +34,7 @@ class _ProfileState extends State<Profile> {
   bool _isLoadingWorkEntries = true;
   bool _isLoadingPrePaid = true;
   double _prePaidAmount = 0.0;
+  List<Map<String, dynamic>> _currentMonthTransactions = [];
   String? _error;
 
   @override
@@ -180,6 +181,7 @@ class _ProfileState extends State<Profile> {
         setState(() {
           _isLoadingPrePaid = false;
           _prePaidAmount = 0.0;
+          _currentMonthTransactions = [];
         });
         return;
       }
@@ -222,6 +224,7 @@ class _ProfileState extends State<Profile> {
         // Filter transactions for current month and sum amounts
         double totalAmount = 0.0;
         int transactionCount = 0;
+        List<Map<String, dynamic>> currentMonthTxns = [];
         
         for (var transaction in transactions) {
           try {
@@ -235,6 +238,7 @@ class _ProfileState extends State<Profile> {
                 final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
                 totalAmount += amount;
                 transactionCount++;
+                currentMonthTxns.add(transaction as Map<String, dynamic>);
                 print('✅ Current month transaction: ${transaction['id']} - Amount: $amount - Date: $dateStr');
               }
             }
@@ -246,6 +250,7 @@ class _ProfileState extends State<Profile> {
         if (mounted) {
           setState(() {
             _prePaidAmount = totalAmount;
+            _currentMonthTransactions = currentMonthTxns;
             _isLoadingPrePaid = false;
           });
           print('💰 Total pre-paid amount: $totalAmount UZS from $transactionCount transactions');
@@ -255,6 +260,7 @@ class _ProfileState extends State<Profile> {
         if (mounted) {
           setState(() {
             _prePaidAmount = 0.0;
+            _currentMonthTransactions = [];
             _isLoadingPrePaid = false;
           });
         }
@@ -264,6 +270,7 @@ class _ProfileState extends State<Profile> {
       if (mounted) {
         setState(() {
           _prePaidAmount = 0.0;
+          _currentMonthTransactions = [];
           _isLoadingPrePaid = false;
         });
       }
@@ -416,6 +423,183 @@ class _ProfileState extends State<Profile> {
       'July', 'August', 'September', 'October', 'November', 'December'
     ];
     return '${months[now.month - 1]} ${now.year}';
+  }
+
+  void _showTransactionDetails() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Container(
+            constraints: BoxConstraints(maxHeight: 500.h),
+            decoration: BoxDecoration(
+              color: AppColors.cxPureWhite,
+              borderRadius: BorderRadius.circular(20.r),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.cxEmeraldGreen,
+                        Color(0xFF4AC1A7),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(20.r),
+                      topRight: Radius.circular(20.r),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long_rounded,
+                        color: AppColors.cxPureWhite,
+                        size: 22.sp,
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          'Transactions (${_currentMonthTransactions.length})',
+                          style: TextStyle(
+                            fontSize: 18.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.cxPureWhite,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: () => Navigator.pop(context),
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: AppColors.cxPureWhite,
+                          size: 22.sp,
+                        ),
+                        padding: EdgeInsets.zero,
+                        constraints: BoxConstraints(),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Transaction List
+                Flexible(
+                  child: ListView.separated(
+                    shrinkWrap: true,
+                    padding: EdgeInsets.all(16.w),
+                    itemCount: _currentMonthTransactions.length,
+                    separatorBuilder: (context, index) => SizedBox(height: 8.h),
+                    itemBuilder: (context, index) {
+                      final transaction = _currentMonthTransactions[index];
+                      final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+                      final description = transaction['description'] as String? ?? 'No description';
+                      final dateStr = transaction['date'] as String?;
+                      
+                      String formattedDate = 'N/A';
+                      if (dateStr != null) {
+                        try {
+                          final date = DateTime.parse(dateStr);
+                          formattedDate = '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+                        } catch (e) {
+                          print('Error parsing date: $e');
+                        }
+                      }
+                      
+                      return Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxF5F7F9,
+                          borderRadius: BorderRadius.circular(12.r),
+                          border: Border.all(
+                            color: AppColors.cxEmeraldGreen.withOpacity(0.1),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Icon
+                            Container(
+                              padding: EdgeInsets.all(8.w),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    AppColors.cxEmeraldGreen.withOpacity(0.1),
+                                    Color(0xFF4AC1A7).withOpacity(0.1),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(8.r),
+                              ),
+                              child: Icon(
+                                Icons.account_balance_wallet_outlined,
+                                color: AppColors.cxEmeraldGreen,
+                                size: 18.sp,
+                              ),
+                            ),
+                            SizedBox(width: 12.w),
+                            
+                            // Content
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    description,
+                                    style: TextStyle(
+                                      fontSize: 14.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.cxBlack,
+                                      height: 1.3,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                  SizedBox(height: 4.h),
+                                  Text(
+                                    formattedDate,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      color: AppColors.cxBlack.withOpacity(0.5),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            
+                            SizedBox(width: 8.w),
+                            
+                            // Amount
+                            Text(
+                              '${amount.toStringAsFixed(0).replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                (Match m) => '${m[1]} ',
+                              )}',
+                              style: TextStyle(
+                                fontSize: 15.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.cxEmeraldGreen,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -1140,212 +1324,212 @@ class _ProfileState extends State<Profile> {
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
           colors: [
-            AppColors.cxWarning,
-            Color(0xFFFFA726), // Lighter orange
+            AppColors.cxPureWhite,
+            AppColors.cxF5F7F9,
           ],
         ),
         borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: AppColors.cxEmeraldGreen.withOpacity(0.2),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxWarning.withOpacity(0.4),
+            color: AppColors.cxEmeraldGreen.withOpacity(0.1),
             blurRadius: 20,
-            offset: Offset(0, 10),
-          ),
-          BoxShadow(
-            color: AppColors.cxWarning.withOpacity(0.2),
-            blurRadius: 40,
-            offset: Offset(0, 20),
+            offset: Offset(0, 8),
           ),
         ],
       ),
-      child: Padding(
-        padding: EdgeInsets.all(24.w),
-        child: _isLoadingPrePaid
-            ? _buildPrePaidShimmer()
-            : Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Header with icon and title
-                  Row(
+      child: Stack(
+        children: [
+          Padding(
+            padding: EdgeInsets.all(24.w),
+            child: _isLoadingPrePaid
+                ? _buildPrePaidShimmer()
+                : Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header with icon and title
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12.w),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  AppColors.cxEmeraldGreen.withOpacity(0.15),
+                                  Color(0xFF4AC1A7).withOpacity(0.15),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(16.r),
+                            ),
+                            child: Icon(
+                              Icons.account_balance_wallet_rounded,
+                              color: AppColors.cxEmeraldGreen,
+                              size: 28.sp,
+                            ),
+                          ),
+                          SizedBox(width: 16.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Pre-Paid Amount',
+                                  style: TextStyle(
+                                    fontSize: 20.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.cxBlack,
+                                    letterSpacing: 0.3,
+                                  ),
+                                ),
+                                Text(
+                                  month,
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.cxBlack.withOpacity(0.5),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20.h),
+                      
+                      // Amount display - prominent and elegant
                       Container(
-                        padding: EdgeInsets.all(12.w),
+                        padding: EdgeInsets.all(20.w),
                         decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(16.r),
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.cxEmeraldGreen,
+                              Color(0xFF4AC1A7),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20.r),
                           boxShadow: [
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.1),
-                              blurRadius: 8,
+                              color: AppColors.cxEmeraldGreen.withOpacity(0.3),
+                              blurRadius: 12,
                               offset: Offset(0, 4),
                             ),
                           ],
                         ),
-                        child: Icon(
-                          Icons.account_balance_wallet_rounded,
-                          color: AppColors.cxPureWhite,
-                          size: 28.sp,
-                        ),
-                      ),
-                      SizedBox(width: 16.w),
-                      Expanded(
                         child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              'Pre-Paid Amount',
-                              style: TextStyle(
-                                fontSize: 22.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.cxPureWhite,
-                                letterSpacing: 0.3,
-                              ),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: EdgeInsets.only(top: 6.h),
+                                  child: Text(
+                                    'UZS',
+                                    style: TextStyle(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.cxPureWhite.withOpacity(0.9),
+                                    ),
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Text(
+                                  prePaidAmount.toStringAsFixed(0).replaceAllMapped(
+                                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                    (Match m) => '${m[1]} ',
+                                  ),
+                                  style: TextStyle(
+                                    fontSize: 42.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.cxPureWhite,
+                                    height: 1.0,
+                                    fontFeatures: [FontFeature.tabularFigures()],
+                                  ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              month,
-                              style: TextStyle(
-                                fontSize: 14.sp,
-                                fontWeight: FontWeight.w500,
-                                color: AppColors.cxPureWhite.withOpacity(0.85),
+                            SizedBox(height: 8.h),
+                            Container(
+                              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                              decoration: BoxDecoration(
+                                color: AppColors.cxPureWhite.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(20.r),
                               ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      // Badge
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.25),
-                          borderRadius: BorderRadius.circular(12.r),
-                          border: Border.all(
-                            color: AppColors.cxPureWhite.withOpacity(0.3),
-                            width: 1,
-                          ),
-                        ),
-                        child: Text(
-                          'ADVANCE',
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.cxPureWhite,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24.h),
-                  
-                  // Amount display - prominent and elegant
-                  Center(
-                    child: Column(
-                      children: [
-                        // Currency symbol and amount
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Padding(
-                              padding: EdgeInsets.only(top: 8.h),
                               child: Text(
-                                'UZS',
+                                'Current Month Balance',
                                 style: TextStyle(
-                                  fontSize: 20.sp,
+                                  fontSize: 12.sp,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.cxPureWhite.withOpacity(0.9),
-                                  letterSpacing: 0.5,
+                                  color: AppColors.cxPureWhite.withOpacity(0.95),
                                 ),
                               ),
                             ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              prePaidAmount.toStringAsFixed(0).replaceAllMapped(
-                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                (Match m) => '${m[1]} ',
-                              ),
-                              style: TextStyle(
-                                fontSize: 48.sp,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.cxPureWhite,
-                                height: 1.0,
-                                fontFeatures: [FontFeature.tabularFigures()],
-                                shadows: [
-                                  Shadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    offset: Offset(0, 4),
-                                    blurRadius: 8,
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
-                        SizedBox(height: 8.h),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxPureWhite.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(20.r),
-                            border: Border.all(
-                              color: AppColors.cxPureWhite.withOpacity(0.3),
-                              width: 1,
-                            ),
-                          ),
-                          child: Text(
-                            'Current Month Balance',
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.cxPureWhite.withOpacity(0.95),
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  
-                  SizedBox(height: 20.h),
-                  
-                  // Info note with icon
-                  Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.cxPureWhite.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: AppColors.cxPureWhite.withOpacity(0.25),
-                        width: 1,
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.info_outline_rounded,
-                          color: AppColors.cxPureWhite.withOpacity(0.9),
-                          size: 20.sp,
-                        ),
-                        SizedBox(width: 12.w),
-                        Expanded(
-                          child: Text(
-                            'Pre-payment received for current month',
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w500,
-                              color: AppColors.cxPureWhite.withOpacity(0.9),
-                              height: 1.3,
+                      
+                      SizedBox(height: 16.h),
+                      
+                      // Info note with icon
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.info_outline_rounded,
+                            color: AppColors.cxEmeraldGreen,
+                            size: 18.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Expanded(
+                            child: Text(
+                              'Pre-payment received for current month',
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                                color: AppColors.cxBlack.withOpacity(0.6),
+                              ),
                             ),
                           ),
-                        ),
+                        ],
+                      ),
+                    ],
+                  ),
+          ),
+          // Details button in top-right corner
+          if (!_isLoadingPrePaid && _currentMonthTransactions.isNotEmpty)
+            Positioned(
+              top: 16.h,
+              right: 16.w,
+              child: InkWell(
+                onTap: _showTransactionDetails,
+                borderRadius: BorderRadius.circular(12.r),
+                child: Container(
+                  padding: EdgeInsets.all(10.w),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        AppColors.cxEmeraldGreen.withOpacity(0.15),
+                        Color(0xFF4AC1A7).withOpacity(0.15),
                       ],
                     ),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: AppColors.cxEmeraldGreen.withOpacity(0.3),
+                      width: 1,
+                    ),
                   ),
-                ],
+                  child: Icon(
+                    Icons.receipt_long_rounded,
+                    color: AppColors.cxEmeraldGreen,
+                    size: 20.sp,
+                  ),
+                ),
               ),
+            ),
+        ],
       ),
     );
   }
