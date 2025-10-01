@@ -1,9 +1,15 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/auth/auth_service.dart';
+import '../../../core/services/api/api_service.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/utils/work_time_calculator.dart';
+import '../../../core/model/work_entry_model.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -14,14 +20,19 @@ class Profile extends StatefulWidget {
 
 class _ProfileState extends State<Profile> {
   final AuthManager _authManager = AuthManager();
+  final AuthService _authService = AuthService();
+  late final ApiService _apiService = ApiService(_authService);
   Map<String, dynamic>? _profileData;
+  List<WorkEntry> _workEntries = [];
   bool _isLoading = true;
+  bool _isLoadingWorkEntries = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     _loadProfileData();
+    _loadCurrentMonthWorkEntries();
   }
 
   Future<void> _loadProfileData() async {
@@ -69,12 +80,6 @@ class _ProfileState extends State<Profile> {
         'bonusInfo': {
           'amount': 5000,
           'type': 'Performance Bonus'
-        },
-        'workHours': {
-          'totalHours': 168.5,
-          'dayHours': 142.0,
-          'nightHours': 26.5,
-          'month': 'January 2024'
         }
       };
       
@@ -89,6 +94,61 @@ class _ProfileState extends State<Profile> {
         setState(() {
           _error = e.toString();
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  /// Get current month's start and end dates in ISO format
+  Map<String, String> _getCurrentMonthDateRange() {
+    final now = DateTime.now();
+    final firstDayOfMonth = DateTime(now.year, now.month, 1);
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+    
+    return {
+      'startDate': firstDayOfMonth.toIso8601String().split('T')[0],
+      'endDate': lastDayOfMonth.toIso8601String().split('T')[0],
+    };
+  }
+
+  /// Fetch work entries for the current month from API
+  Future<void> _loadCurrentMonthWorkEntries() async {
+    try {
+      setState(() {
+        _isLoadingWorkEntries = true;
+      });
+
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        print('❌ No employee ID found');
+        setState(() {
+          _isLoadingWorkEntries = false;
+        });
+        return;
+      }
+
+      final dateRange = _getCurrentMonthDateRange();
+      print('📅 Fetching work entries from ${dateRange['startDate']} to ${dateRange['endDate']}');
+
+      final workEntries = await _apiService.getWorkEntries(
+        employeeId,
+        dateRange['startDate']!,
+        dateRange['endDate']!,
+      );
+
+      if (mounted) {
+        setState(() {
+          _workEntries = workEntries ?? [];
+          _isLoadingWorkEntries = false;
+        });
+        print('✅ Loaded ${_workEntries.length} work entries for current month');
+      }
+    } catch (e) {
+      print('❌ Error loading work entries: $e');
+      if (mounted) {
+        setState(() {
+          _workEntries = [];
+          _isLoadingWorkEntries = false;
         });
       }
     }
@@ -229,6 +289,16 @@ class _ProfileState extends State<Profile> {
         }
       }
     }
+  }
+
+  /// Get formatted current month string
+  String _getCurrentMonthString() {
+    final now = DateTime.now();
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+    return '${months[now.month - 1]} ${now.year}';
   }
 
   @override
@@ -510,11 +580,20 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildWorkHoursCard() {
-    final workHours = _profileData?['workHours'];
-    final totalHours = workHours?['totalHours']?.toDouble() ?? 0.0;
-    final dayHours = workHours?['dayHours']?.toDouble() ?? 0.0;
-    final nightHours = workHours?['nightHours']?.toDouble() ?? 0.0;
-    final month = workHours?['month'] ?? 'Current Month';
+    // Use work entries fetched from API (already filtered to current month)
+    final currentMonthEntries = _workEntries;
+    
+    // Calculate hours using WorkTimeCalculator
+    final totalHoursFormatted = WorkTimeCalculator.calculateTotalHours(currentMonthEntries);
+    final totalHours = WorkTimeCalculator.getTotalHoursAsDouble(currentMonthEntries);
+    final dayHoursFormatted = WorkTimeCalculator.calculateDayHours(currentMonthEntries);
+    final dayHours = WorkTimeCalculator.getDayHoursAsDouble(currentMonthEntries);
+    final nightHoursFormatted = WorkTimeCalculator.calculateNightHours(currentMonthEntries);
+    final nightHours = WorkTimeCalculator.getNightHoursAsDouble(currentMonthEntries);
+    final isOvertime = WorkTimeCalculator.isOvertime(currentMonthEntries);
+    
+    // Display current month
+    final month = _getCurrentMonthString();
     
     return Container(
       width: double.infinity,
@@ -538,163 +617,220 @@ class _ProfileState extends State<Profile> {
       ),
       child: Padding(
         padding: EdgeInsets.all(24.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with icon and title
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(12.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(16.r),
-                  ),
-                  child: Icon(
-                    Icons.access_time_rounded,
-                    color: AppColors.cxPureWhite,
-                    size: 28.sp,
-                  ),
+        child: _isLoadingWorkEntries
+            ? Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(
+                      color: AppColors.cxPureWhite,
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Loading work hours...',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        color: AppColors.cxPureWhite.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
                 ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with icon and title
+                  Row(
                     children: [
-                      Text(
-                        'Work Hours',
-                        style: TextStyle(
-                          fontSize: 22.sp,
-                          fontWeight: FontWeight.w700,
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Icon(
+                          Icons.access_time_rounded,
                           color: AppColors.cxPureWhite,
+                          size: 28.sp,
                         ),
                       ),
-                      Text(
-                        month,
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: AppColors.cxPureWhite.withOpacity(0.8),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Work Hours',
+                              style: TextStyle(
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.cxPureWhite,
+                              ),
+                            ),
+                            Text(
+                              month,
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.cxPureWhite.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Overtime badge
+                      if (isOvertime)
+                        Container(
+                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          child: Text(
+                            'OVERTIME',
+                            style: TextStyle(
+                              fontSize: 10.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.cxPureWhite,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  SizedBox(height: 24.h),
+                  
+                  // Total hours - prominent display with formatted time
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          totalHoursFormatted,
+                          style: TextStyle(
+                            fontSize: 48.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.cxPureWhite,
+                            height: 1.0,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        SizedBox(height: 4.h),
+                        Text(
+                          'Total Hours (${totalHours.toStringAsFixed(1)}h)',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.cxPureWhite.withOpacity(0.9),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 24.h),
+                  
+                  // Day and Night hours breakdown
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxPureWhite.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: AppColors.cxPureWhite.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.wb_sunny_outlined,
+                                color: AppColors.cxPureWhite,
+                                size: 24.sp,
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                dayHoursFormatted,
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.cxPureWhite,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                '${dayHours.toStringAsFixed(1)}h',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.cxPureWhite.withOpacity(0.9),
+                                ),
+                              ),
+                              Text(
+                                'Day Hours',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.cxPureWhite.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxPureWhite.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: AppColors.cxPureWhite.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.nightlight_round_outlined,
+                                color: AppColors.cxPureWhite,
+                                size: 24.sp,
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                nightHoursFormatted,
+                                style: TextStyle(
+                                  fontSize: 18.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.cxPureWhite,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                '${nightHours.toStringAsFixed(1)}h',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.cxPureWhite.withOpacity(0.9),
+                                ),
+                              ),
+                              Text(
+                                'Night Hours',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.cxPureWhite.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-              ],
-            ),
-            SizedBox(height: 24.h),
-            
-            // Total hours - prominent display
-            Center(
-              child: Column(
-                children: [
-                  Text(
-                    '${totalHours.toStringAsFixed(1)}',
-                    style: TextStyle(
-                      fontSize: 48.sp,
-                      fontWeight: FontWeight.w800,
-                      color: AppColors.cxPureWhite,
-                      height: 1.0,
-                    ),
-                  ),
-                  Text(
-                    'Total Hours',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.w500,
-                      color: AppColors.cxPureWhite.withOpacity(0.9),
-                      letterSpacing: 0.5,
-                    ),
-                  ),
                 ],
               ),
-            ),
-            
-            SizedBox(height: 24.h),
-            
-            // Day and Night hours breakdown
-            Row(
-              children: [
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.cxPureWhite.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: AppColors.cxPureWhite.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.wb_sunny_outlined,
-                          color: AppColors.cxPureWhite,
-                          size: 24.sp,
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          '${dayHours.toStringAsFixed(1)}h',
-                          style: TextStyle(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.cxPureWhite,
-                          ),
-                        ),
-                        Text(
-                          'Day Hours',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppColors.cxPureWhite.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-                SizedBox(width: 16.w),
-                Expanded(
-                  child: Container(
-                    padding: EdgeInsets.all(16.w),
-                    decoration: BoxDecoration(
-                      color: AppColors.cxPureWhite.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(16.r),
-                      border: Border.all(
-                        color: AppColors.cxPureWhite.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Column(
-                      children: [
-                        Icon(
-                          Icons.nightlight_round_outlined,
-                          color: AppColors.cxPureWhite,
-                          size: 24.sp,
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          '${nightHours.toStringAsFixed(1)}h',
-                          style: TextStyle(
-                            fontSize: 20.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.cxPureWhite,
-                          ),
-                        ),
-                        Text(
-                          'Night Hours',
-                          style: TextStyle(
-                            fontSize: 12.sp,
-                            color: AppColors.cxPureWhite.withOpacity(0.8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -754,12 +890,19 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
                 SizedBox(width: 12.w),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: 20.sp,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.cxBlack,
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: TextStyle(
+                          fontSize: 20.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.cxBlack,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
