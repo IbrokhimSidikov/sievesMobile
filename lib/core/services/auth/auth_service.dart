@@ -6,6 +6,9 @@ import 'package:http/http.dart' as http;
 class AuthService {
   final FlutterAppAuth _appAuth = FlutterAppAuth();
   final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  
+  // Expose secure storage for use by AuthManager
+  FlutterSecureStorage get secureStorage => _secureStorage;
 
   // Auth0 configuration
   static const String _domain = 'exodelicainc.eu.auth0.com';

@@ -1,4 +1,3 @@
-
 import 'package:go_router/go_router.dart';
 import 'package:sieves_mob/features/home/pages/home.dart';
 
@@ -9,9 +8,11 @@ import '../../features/login/pages/login.dart';
 import '../../features/notification/pages/notification.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
+import '../../features/splash/pages/splash.dart';
 
 class AppRoutes {
 
+  static const String splash = '/';
   static const String onboard = '/onboard';
   static const String login = '/login';
   static const String home = '/home';
@@ -22,13 +23,18 @@ class AppRoutes {
   static const String notification = '/notification';
 
   static final GoRouter router = GoRouter(
-      initialLocation: onboard,
+      initialLocation: splash,
       routes: [
           GoRoute(
-              path: '/onboard',
-              name: onboard,
-              builder: (context, state) => const Onboard()
+              path: '/',
+              name: splash,
+              builder: (context, state) => const SplashScreen()
           ),
+        GoRoute(
+          path: '/onboard',
+          name: onboard,
+          builder: (context, state) => const Onboard()
+        ),
         GoRoute(
           path: '/login',
           name: login,

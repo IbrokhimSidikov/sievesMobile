@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
 import '../../model/employee_model.dart';
 import '../../model/identity_model.dart';
 import '../api/api_service.dart';
@@ -25,6 +26,75 @@ class AuthManager {
   
   // Get employee ID from current identity
   int? get currentEmployeeId => _currentIdentity?.employee?.id;
+
+  // Storage key for identity
+  static const String _identityKey = 'user_identity';
+
+  /// Save identity to secure storage for persistent login
+  Future<void> _saveIdentity(Identity identity) async {
+    try {
+      final identityJson = json.encode(identity.toJson());
+      await authService.secureStorage.write(key: _identityKey, value: identityJson);
+      print('💾 Identity saved to secure storage');
+    } catch (e) {
+      print('❌ Error saving identity: $e');
+    }
+  }
+
+  /// Restore session from secure storage
+  Future<bool> restoreSession() async {
+    try {
+      print('🔄 Attempting to restore session...');
+      
+      // Check if we have a valid access token
+      final accessToken = await authService.getAccessToken();
+      if (accessToken == null) {
+        print('ℹ️ No access token found');
+        return false;
+      }
+
+      // Try to load saved identity
+      final identityJson = await authService.secureStorage.read(key: _identityKey);
+      if (identityJson == null) {
+        print('ℹ️ No saved identity found');
+        return false;
+      }
+
+      // Parse the identity
+      final identityMap = json.decode(identityJson) as Map<String, dynamic>;
+      _currentIdentity = Identity.fromJson(identityMap);
+      
+      print('✅ Session restored successfully');
+      print('   User: ${_currentIdentity!.email}');
+      print('   Employee ID: ${currentEmployeeId}');
+      
+      return true;
+    } catch (e) {
+      print('❌ Error restoring session: $e');
+      // Clear invalid data
+      await authService.secureStorage.delete(key: _identityKey);
+      return false;
+    }
+  }
+
+  /// Refresh identity data from API
+  Future<void> refreshIdentity() async {
+    if (_currentIdentity == null) return;
+    
+    try {
+      print('🔄 Refreshing identity data...');
+      final authId = _currentIdentity!.authId;
+      
+      final identity = await apiService.getIdentityByAuthId(authId);
+      if (identity != null) {
+        _currentIdentity = identity;
+        await _saveIdentity(identity);
+        print('✅ Identity data refreshed');
+      }
+    } catch (e) {
+      print('❌ Error refreshing identity: $e');
+    }
+  }
 
   // Complete login flow
   Future<bool> login(BuildContext context) async {
@@ -84,6 +154,9 @@ class AuthManager {
         
         // Store the real identity from backend
         _currentIdentity = identity;
+        
+        // Save identity to secure storage for persistent login
+        await _saveIdentity(identity);
         
         // 🔍 LOG ALL AVAILABLE USER DATA
         print('');
@@ -159,6 +232,7 @@ class AuthManager {
   // Logout
   Future<void> logout() async {
     await authService.logout();
+    await authService.secureStorage.delete(key: _identityKey);
     _currentIdentity = null;
   }
 }
