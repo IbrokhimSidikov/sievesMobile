@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/model/work_entry_model.dart';
+import '../../../core/services/auth/auth_manager.dart';
 
 class Attendance extends StatefulWidget {
   const Attendance({super.key});
@@ -11,65 +14,90 @@ class Attendance extends StatefulWidget {
 }
 
 class _AttendanceState extends State<Attendance> {
-  // Sample data for demonstration
-  final List<Map<String, dynamic>> workEntries = [
-    {
-      'date': '2025-09-01',
-      'startTime': '10:27:40',
-      'endTime': '19:00:00',
-      'status': 'Closed',
-      'mood': '😊'
-    },
-    {
-      'date': '2025-09-02',
-      'startTime': '10:08:07',
-      'endTime': '19:00:00',
-      'status': 'Closed',
-      'mood': '🤔'
-    },
-    {
-      'date': '2025-09-03',
-      'startTime': '09:51:32',
-      'endTime': '18:51:32',
-      'status': 'Closed',
-      'mood': '😊'
-    },
-    {
-      'date': '2025-09-04',
-      'startTime': '10:16:41',
-      'endTime': '18:03:21',
-      'status': 'Closed',
-      'mood': '😊'
-    },
-    {
-      'date': '2025-09-05',
-      'startTime': '10:22:03',
-      'endTime': '19:00:00',
-      'status': 'Closed',
-      'mood': '😊'
-    },
-    {
-      'date': '2025-09-06',
-      'startTime': '10:48:50',
-      'endTime': '17:49:02',
-      'status': 'Closed',
-      'mood': '😊'
-    },
-    {
-      'date': '2025-09-07',
-      'startTime': '',
-      'endTime': '',
-      'status': 'Open',
-      'mood': ''
-    },
-    {
-      'date': '2025-09-08',
-      'startTime': '10:01:19',
-      'endTime': '17:30:00',
-      'status': 'Closed',
-      'mood': '😊'
-    },
-  ];
+  final AuthManager _authManager = AuthManager();
+  List<WorkEntry> workEntries = [];
+  bool isLoading = true;
+  String? errorMessage;
+  String currentMonth = '';
+  DateTime selectedDate = DateTime.now(); // Track selected month/year
+
+  @override
+  void initState() {
+    super.initState();
+    _loadWorkEntries();
+  }
+
+  // Get current month date range (first day to last day)
+  String _getCurrentMonthDateRange() {
+    final firstDay = DateTime(selectedDate.year, selectedDate.month, 1);
+    final lastDay = DateTime(selectedDate.year, selectedDate.month + 1, 0);
+    
+    final dateFormat = DateFormat('yyyy-MM-dd');
+    return '${dateFormat.format(firstDay)},${dateFormat.format(lastDay)}';
+  }
+
+  // Get current month name
+  String _getCurrentMonthName() {
+    return DateFormat('MMMM yyyy').format(selectedDate);
+  }
+
+  // Load work entries from API
+  Future<void> _loadWorkEntries() async {
+    setState(() {
+      isLoading = true;
+      errorMessage = null;
+      currentMonth = _getCurrentMonthName();
+    });
+
+    try {
+      final employeeId = _authManager.currentEmployeeId;
+      
+      if (employeeId == null) {
+        setState(() {
+          errorMessage = 'Employee ID not found. Please log in again.';
+          isLoading = false;
+        });
+        return;
+      }
+
+      final dateRange = _getCurrentMonthDateRange();
+      print('📅 Loading work entries for employee $employeeId, date range: $dateRange');
+      
+      // Split the date range into start and end dates
+      final dates = dateRange.split(',');
+      final startDate = dates[0];
+      final endDate = dates[1];
+      
+      final entries = await _authManager.apiService.getWorkEntries(employeeId, startDate, endDate);
+      
+      setState(() {
+        workEntries = entries ?? [];
+        isLoading = false;
+      });
+    } catch (e) {
+      print('❌ Error loading work entries: $e');
+      setState(() {
+        errorMessage = 'Failed to load work entries. Please try again.';
+        isLoading = false;
+      });
+    }
+  }
+
+  // Navigate to previous month
+  void _goToPreviousMonth() {
+    setState(() {
+      selectedDate = DateTime(selectedDate.year, selectedDate.month - 1, 1);
+    });
+    _loadWorkEntries();
+  }
+
+  // Navigate to next month
+  void _goToNextMonth() {
+    setState(() {
+      selectedDate = DateTime(selectedDate.year, selectedDate.month + 1, 1);
+    });
+    _loadWorkEntries();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -149,15 +177,62 @@ class _AttendanceState extends State<Attendance> {
                   ),
                 ),
                 SizedBox(height: 4.h),
-                Text(
-                  'September 2025',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: AppColors.cxSilverTint,
-                    fontWeight: FontWeight.w500,
-                  ),
+                Row(
+                  children: [
+                    // Previous month button
+                    InkWell(
+                      onTap: _goToPreviousMonth,
+                      child: Container(
+                        padding: EdgeInsets.all(4.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cx43C19F.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Icon(
+                          Icons.chevron_left,
+                          size: 16.sp,
+                          color: AppColors.cx43C19F,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      currentMonth,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: AppColors.cxSilverTint,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    // Next month button
+                    InkWell(
+                      onTap: _goToNextMonth,
+                      child: Container(
+                        padding: EdgeInsets.all(4.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cx43C19F.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                        child: Icon(
+                          Icons.chevron_right,
+                          size: 16.sp,
+                          color: AppColors.cx43C19F,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
+            ),
+          ),
+          // Refresh button
+          IconButton(
+            onPressed: _loadWorkEntries,
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: AppColors.cx43C19F,
+              size: 24.sp,
             ),
           ),
         ],
@@ -166,6 +241,75 @@ class _AttendanceState extends State<Attendance> {
   }
 
   Widget _buildWorkEntriesTable() {
+    if (isLoading) {
+      return Center(
+        child: CircularProgressIndicator(
+          valueColor: AlwaysStoppedAnimation<Color>(AppColors.cx43C19F),
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline_rounded,
+              size: 64.sp,
+              color: AppColors.cxWarning,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              errorMessage!,
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: AppColors.cxGraphiteGray,
+              ),
+            ),
+            SizedBox(height: 24.h),
+            ElevatedButton.icon(
+              onPressed: _loadWorkEntries,
+              icon: Icon(Icons.refresh_rounded),
+              label: Text('Retry'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.cx43C19F,
+                foregroundColor: AppColors.cxWhite,
+                padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (workEntries.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 64.sp,
+              color: AppColors.cxSilverTint,
+            ),
+            SizedBox(height: 16.h),
+            Text(
+              'No work entries found for this month',
+              style: TextStyle(
+                fontSize: 16.sp,
+                color: AppColors.cxGraphiteGray,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cxWhite,
@@ -243,9 +387,9 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  Widget _buildTableRow(Map<String, dynamic> entry, int index) {
+  Widget _buildTableRow(WorkEntry entry, int index) {
     final isEvenRow = index % 2 == 0;
-    final isOpenStatus = entry['status'] == 'Open';
+    final isOpenStatus = entry.isOpen;
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
@@ -260,11 +404,11 @@ class _AttendanceState extends State<Attendance> {
       ),
       child: Row(
         children: [
-          _buildDataCell(_formatDate(entry['date']), flex: 2),
-          _buildDataCell(entry['startTime'], flex: 2, isEmpty: entry['startTime'].isEmpty),
-          _buildDataCell(entry['endTime'], flex: 2, isEmpty: entry['endTime'].isEmpty),
-          _buildStatusCell(entry['status'], flex: 2),
-          _buildMoodCell(entry['mood'], flex: 1),
+          _buildDataCell(entry.formattedDate, flex: 2),
+          _buildDataCell(entry.formattedCheckInTime, flex: 2, isEmpty: entry.checkInTime == null),
+          _buildDataCell(entry.formattedCheckOutTime, flex: 2, isEmpty: entry.checkOutTime == null),
+          _buildStatusCell(entry.displayStatus, flex: 2),
+          _buildMoodCell(entry.moodEmoji, flex: 1),
         ],
       ),
     );
@@ -286,7 +430,7 @@ class _AttendanceState extends State<Attendance> {
   }
 
   Widget _buildStatusCell(String status, {int flex = 1}) {
-    final isOpen = status == 'Open';
+    final isOpen = status.toLowerCase() == 'open';
     return Expanded(
       flex: flex,
       child: Center(
@@ -313,32 +457,15 @@ class _AttendanceState extends State<Attendance> {
     );
   }
 
-  Widget _buildMoodCell(String mood, {int flex = 1}) {
+  Widget _buildMoodCell(String emoji, {int flex = 1}) {
     return Expanded(
       flex: flex,
       child: Center(
-        child: mood.isEmpty 
-          ? Text(
-              '-',
-              style: TextStyle(
-                fontSize: 12.sp,
-                color: AppColors.cxSilverTint,
-              ),
-            )
-          : Text(
-              mood,
-              style: TextStyle(fontSize: 18.sp),
-            ),
+        child: Text(
+          emoji,
+          style: TextStyle(fontSize: 20.sp),
+        ),
       ),
     );
-  }
-
-  String _formatDate(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}';
-    } catch (e) {
-      return dateStr;
-    }
   }
 }

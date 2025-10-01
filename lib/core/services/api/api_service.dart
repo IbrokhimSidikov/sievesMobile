@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../model/employee_model.dart';
 import '../../model/identity_model.dart';
+import '../../model/work_entry_model.dart';
+import '../../model/break_order_model.dart';
 import '../auth/auth_service.dart';
 
 class ApiService {
@@ -148,6 +150,86 @@ class ApiService {
     }
   }
 
+  // Get work entries for a given date range
+  Future<List<WorkEntry>?> getWorkEntries(int employeeId, String startDate, String endDate) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'employee_id': employeeId.toString(),
+        'date_range': '$startDate,$endDate',
+      };
+
+      final uri = Uri.parse('$baseUrl/work-entry').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📋 Request URL: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      print('📊 Response Status: ${response.statusCode}');
+      print('📊 Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print('📊 JSON Type: ${jsonData.runtimeType}');
+        print('📊 JSON Data: $jsonData');
+        
+        // Handle both array and object responses
+        List<dynamic> entriesList;
+        if (jsonData is List) {
+          entriesList = jsonData;
+        } else if (jsonData is Map && jsonData.containsKey('models')) {
+          entriesList = jsonData['models'] as List;
+        } else if (jsonData is Map && jsonData.containsKey('data')) {
+          entriesList = jsonData['data'] as List;
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return null;
+        }
+        
+        print('✅ Found ${entriesList.length} work entries');
+        return entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+      } else {
+        print('Error getting work entries: ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('Exception getting work entries: $e');
+      return null;
+    }
+  }
+
+  // Get work entries for an employee within a date range
+  Future<List<WorkEntry>> getWorkEntriesInRange(int employeeId, String dateRange) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/work-entry').replace(
+        queryParameters: {
+          'employee_id': employeeId.toString(),
+          'date_range': dateRange,
+        },
+      );
+
+      print('📅 Fetching work entries: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final entries = data.map((json) => WorkEntry.fromJson(json)).toList();
+        print('✅ Fetched ${entries.length} work entries');
+        return entries;
+      } else {
+        print('❌ Error getting work entries: ${response.statusCode} - ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception getting work entries: $e');
+      return [];
+    }
+  }
+
   // Helper method to get week start date (Sunday)
   String _getWeekStart(DateTime date) {
     final weekday = date.weekday;
@@ -160,5 +242,100 @@ class ApiService {
     final weekday = date.weekday;
     final endOfWeek = date.add(Duration(days: 6 - (weekday % 7)));
     return '${endOfWeek.year}-${endOfWeek.month.toString().padLeft(2, '0')}-${endOfWeek.day.toString().padLeft(2, '0')}';
+  }
+
+  // Get break orders for an employee within a date range
+  Future<List<BreakOrder>> getBreakOrders(int breakEmployeeId, {String? startDate, String? endDate}) async {
+    try {
+      final headers = await _getHeaders();
+      
+      // If dates not provided, use current month
+      final now = DateTime.now();
+      final firstDayOfMonth = DateTime(now.year, now.month, 1);
+      final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+      
+      final start = startDate ?? '${firstDayOfMonth.year}-${firstDayOfMonth.month.toString().padLeft(2, '0')}-${firstDayOfMonth.day.toString().padLeft(2, '0')}';
+      final end = endDate ?? '${lastDayOfMonth.year}-${lastDayOfMonth.month.toString().padLeft(2, '0')}-${lastDayOfMonth.day.toString().padLeft(2, '0')}';
+      
+      final queryParams = {
+        'orderType': 'break',
+        'break_employee_id': breakEmployeeId.toString(),
+        'expand': 'orderItems.product,breakPhoto',
+        'dateRange': '$start,$end',
+      };
+
+      final uri = Uri.parse('$baseUrl/order').replace(
+        queryParameters: queryParams,
+      );
+
+      print('🍔 Fetching break orders: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      print('📊 Response Status: ${response.statusCode}');
+      print('📊 Response Body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print('📊 JSON Type: ${jsonData.runtimeType}');
+        
+        // Handle both array and object responses
+        List<dynamic> ordersList;
+        if (jsonData is List) {
+          ordersList = jsonData;
+        } else if (jsonData is Map && jsonData.containsKey('models')) {
+          ordersList = jsonData['models'] as List;
+        } else if (jsonData is Map && jsonData.containsKey('data')) {
+          ordersList = jsonData['data'] as List;
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return [];
+        }
+        
+        final orders = ordersList.map((json) => BreakOrder.fromJson(json)).toList();
+        print('✅ Fetched ${orders.length} break orders');
+        return orders;
+      } else {
+        print('❌ Error getting break orders: ${response.statusCode} - ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception getting break orders: $e');
+      return [];
+    }
+  }
+
+  // Get break orders for the current month
+  Future<List<BreakOrder>?> getBreakOrdersForCurrentMonth(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final now = DateTime.now();
+      final queryParams = {
+        'employee_id': employeeId.toString(),
+        'year': now.year.toString(),
+        'month': now.month.toString().padLeft(2, '0'),
+      };
+
+      final uri = Uri.parse('$baseUrl/break-order').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📅 Fetching break orders: $uri');
+
+      final response = await http.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final breakOrders = data.map((json) => BreakOrder.fromJson(json)).toList();
+        print('✅ Fetched ${breakOrders.length} break orders');
+        return breakOrders;
+      } else {
+        print('❌ Error getting break orders: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting break orders: $e');
+      return null;
+    }
   }
 }

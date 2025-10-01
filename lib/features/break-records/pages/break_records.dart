@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:intl/intl.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/model/break_order_model.dart';
+import '../../../core/services/auth/auth_manager.dart';
+
+import '../../../core/services/api/api_service.dart';
 
 class BreakRecords extends StatefulWidget {
   const BreakRecords({super.key});
@@ -11,37 +16,51 @@ class BreakRecords extends StatefulWidget {
 }
 
 class _BreakRecordsState extends State<BreakRecords> {
-  // Sample data for demonstration
-  final List<Map<String, dynamic>> breakRecords = [
-    {
-      'id': 1,
-      'photo': 'https://via.placeholder.com/150x150/43C19F/FFFFFF?text=Photo1',
-      'date': '2025-08-31 13:07:41',
-      'items': ['CHEESE BURGER x 1', 'ICE TEA x 1', 'MAYO 1 POT x 1'],
-      'amount': 52000,
-    },
-    {
-      'id': 2,
-      'photo': 'https://via.placeholder.com/150x150/4AC1A7/FFFFFF?text=Photo2',
-      'date': '2025-09-01 13:06:20',
-      'items': ['COMBO x 1 → ICE TEA', 'BURGER x 1'],
-      'amount': 53000,
-    },
-    {
-      'id': 3,
-      'photo': 'https://via.placeholder.com/150x150/78D9BF/FFFFFF?text=Photo3',
-      'date': '2025-09-02 13:15:13',
-      'items': ['COMBO x 1 → ICE TEA', 'CHEESE BURGER x 1'],
-      'amount': 57000,
-    },
-    {
-      'id': 4,
-      'photo': 'https://via.placeholder.com/150x150/FEDA84/FFFFFF?text=Photo4',
-      'date': '2025-09-03 13:08:01',
-      'items': ['SPECIAL COMBO x 1', 'EXTRA SAUCE x 2'],
-      'amount': 59000,
-    },
-  ];
+  final AuthManager _authManager = AuthManager();
+  bool _isLoading = true;
+  String? _errorMessage;
+  List<BreakOrder> _breakOrders = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchBreakOrders();
+  }
+
+  Future<void> _fetchBreakOrders() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        setState(() {
+          _errorMessage = 'Employee ID not found. Please log in again.';
+          _isLoading = false;
+        });
+        return;
+      }
+
+      print('🔍 Fetching break orders for employee ID: $employeeId');
+      
+      final orders = await _authManager.apiService.getBreakOrders(employeeId);
+      
+      setState(() {
+        _breakOrders = orders;
+        _isLoading = false;
+      });
+
+      print('✅ Successfully loaded ${orders.length} break orders');
+    } catch (e) {
+      print('❌ Error fetching break orders: $e');
+      setState(() {
+        _errorMessage = 'Failed to load break records. Please try again.';
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -57,9 +76,13 @@ class _BreakRecordsState extends State<BreakRecords> {
               _buildHeader(),
               SizedBox(height: 24.h),
               
-              // Break Records List
+              // Content based on state
               Expanded(
-                child: _buildBreakRecordsList(),
+                child: _isLoading
+                    ? _buildLoadingState()
+                    : _errorMessage != null
+                        ? _buildErrorState()
+                        : _buildBreakRecordsList(),
               ),
             ],
           ),
@@ -143,11 +166,77 @@ class _BreakRecordsState extends State<BreakRecords> {
               ),
             ),
             child: Text(
-              '${breakRecords.length} Records',
+              '${_breakOrders.length} Records',
               style: TextStyle(
                 fontSize: 12.sp,
                 fontWeight: FontWeight.w600,
                 color: AppColors.cxWarning,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.cxWarning),
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            'Loading break records...',
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: AppColors.cxGraphiteGray,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64.sp,
+            color: AppColors.cxWarning,
+          ),
+          SizedBox(height: 16.h),
+          Text(
+            _errorMessage ?? 'An error occurred',
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: AppColors.cxGraphiteGray,
+              fontWeight: FontWeight.w500,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: 24.h),
+          ElevatedButton(
+            onPressed: _fetchBreakOrders,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.cxWarning,
+              padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+            ),
+            child: Text(
+              'Retry',
+              style: TextStyle(
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w600,
+                color: AppColors.cxWhite,
               ),
             ),
           ),
@@ -178,9 +267,9 @@ class _BreakRecordsState extends State<BreakRecords> {
           Expanded(
             child: ListView.builder(
               padding: EdgeInsets.zero,
-              itemCount: breakRecords.length,
+              itemCount: _breakOrders.length,
               itemBuilder: (context, index) {
-                return _buildRecordCard(breakRecords[index], index);
+                return _buildRecordCard(_breakOrders[index], index);
               },
             ),
           ),
@@ -233,7 +322,7 @@ class _BreakRecordsState extends State<BreakRecords> {
     );
   }
 
-  Widget _buildRecordCard(Map<String, dynamic> record, int index) {
+  Widget _buildRecordCard(BreakOrder record, int index) {
     final isEvenRow = index % 2 == 0;
     
     return InkWell(
@@ -270,7 +359,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                 ),
                 child: Center(
                   child: Text(
-                    '${record['id']}',
+                    '${index + 1}',
                     style: TextStyle(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w700,
@@ -290,7 +379,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    _formatDate(record['date']),
+                    _formatDate(record.createdAt),
                     style: TextStyle(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
@@ -300,7 +389,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                   ),
                   SizedBox(height: 2.h),
                   Text(
-                    _formatTime(record['date']),
+                    _formatTime(record.createdAt),
                     style: TextStyle(
                       fontSize: 10.sp,
                       color: AppColors.cxSilverTint,
@@ -335,7 +424,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                   ),
                 ),
                 child: Text(
-                  '${record['amount']}',
+                  _formatAmount(record.value),
                   style: TextStyle(
                     fontSize: 11.sp,
                     fontWeight: FontWeight.w700,
@@ -375,7 +464,7 @@ class _BreakRecordsState extends State<BreakRecords> {
     );
   }
 
-  void _showItemDetailsPopup(Map<String, dynamic> record) {
+  void _showItemDetailsPopup(BreakOrder record) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
@@ -423,27 +512,43 @@ class _BreakRecordsState extends State<BreakRecords> {
                       ),
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(12.r),
-                        child: Image.network(
-                          record['photo'],
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Container(
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [AppColors.cxWarning, AppColors.cxFEDA84],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
+                        child: record.breakPhoto != null
+                            ? Image.network(
+                                record.breakPhoto!.fullUrl,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    decoration: BoxDecoration(
+                                      gradient: LinearGradient(
+                                        colors: [AppColors.cxWarning, AppColors.cxFEDA84],
+                                        begin: Alignment.topLeft,
+                                        end: Alignment.bottomRight,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.restaurant_rounded,
+                                      color: AppColors.cxWhite,
+                                      size: 24.sp,
+                                    ),
+                                  );
+                                },
+                              )
+                            : Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [AppColors.cxWarning, AppColors.cxFEDA84],
+                                    begin: Alignment.topLeft,
+                                    end: Alignment.bottomRight,
+                                  ),
+                                  borderRadius: BorderRadius.circular(12.r),
                                 ),
-                                borderRadius: BorderRadius.circular(12.r),
+                                child: Icon(
+                                  Icons.restaurant_rounded,
+                                  color: AppColors.cxWhite,
+                                  size: 24.sp,
+                                ),
                               ),
-                              child: Icon(
-                                Icons.restaurant_rounded,
-                                color: AppColors.cxWhite,
-                                size: 24.sp,
-                              ),
-                            );
-                          },
-                        ),
                       ),
                     ),
                     SizedBox(width: 16.w),
@@ -452,7 +557,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Break Record #${record['id']}',
+                            'Break Record #${record.id}',
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w700,
@@ -461,7 +566,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                           ),
                           SizedBox(height: 4.h),
                           Text(
-                            '${_formatDate(record['date'])} at ${_formatTime(record['date'])}',
+                            '${_formatDate(record.createdAt)} at ${_formatTime(record.createdAt)}',
                             style: TextStyle(
                               fontSize: 14.sp,
                               color: AppColors.cxSilverTint,
@@ -487,7 +592,7 @@ class _BreakRecordsState extends State<BreakRecords> {
                               ),
                             ),
                             child: Text(
-                              'Total: ${record['amount']}',
+                              'Total: ${_formatAmount(record.value)}',
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w700,
@@ -530,49 +635,75 @@ class _BreakRecordsState extends State<BreakRecords> {
                       width: 1,
                     ),
                   ),
-                  child: Column(
-                    children: record['items'].map<Widget>((item) {
-                      return Container(
-                        margin: EdgeInsets.only(bottom: 8.h),
-                        padding: EdgeInsets.all(12.w),
-                        decoration: BoxDecoration(
-                          color: AppColors.cxEmeraldGreen.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(
-                            color: AppColors.cxEmeraldGreen.withOpacity(0.3),
-                            width: 1,
+                  child: record.orderItems.isEmpty
+                      ? Text(
+                          'No items found',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            color: AppColors.cxSilverTint,
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(6.w),
+                        )
+                      : Column(
+                          children: record.orderItems.map<Widget>((item) {
+                            final productName = item.product?.name ?? 'Unknown Product';
+                            final quantity = item.quantity;
+                            final price = _formatAmount(item.totalPrice);
+                            
+                            return Container(
+                              margin: EdgeInsets.only(bottom: 8.h),
+                              padding: EdgeInsets.all(12.w),
                               decoration: BoxDecoration(
-                                color: AppColors.cxEmeraldGreen,
-                                borderRadius: BorderRadius.circular(6.r),
-                              ),
-                              child: Icon(
-                                Icons.restaurant_menu_rounded,
-                                color: AppColors.cxWhite,
-                                size: 16.sp,
-                              ),
-                            ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Text(
-                                item,
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.cxEmeraldGreen,
+                                color: AppColors.cxEmeraldGreen.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8.r),
+                                border: Border.all(
+                                  color: AppColors.cxEmeraldGreen.withOpacity(0.3),
+                                  width: 1,
                                 ),
                               ),
-                            ),
-                          ],
+                              child: Row(
+                                children: [
+                                  Container(
+                                    padding: EdgeInsets.all(6.w),
+                                    decoration: BoxDecoration(
+                                      color: AppColors.cxEmeraldGreen,
+                                      borderRadius: BorderRadius.circular(6.r),
+                                    ),
+                                    child: Icon(
+                                      Icons.restaurant_menu_rounded,
+                                      color: AppColors.cxWhite,
+                                      size: 16.sp,
+                                    ),
+                                  ),
+                                  SizedBox(width: 12.w),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          '$productName x $quantity',
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: AppColors.cxEmeraldGreen,
+                                          ),
+                                        ),
+                                        SizedBox(height: 2.h),
+                                        Text(
+                                          price,
+                                          style: TextStyle(
+                                            fontSize: 12.sp,
+                                            fontWeight: FontWeight.w500,
+                                            color: AppColors.cxEmeraldGreen.withOpacity(0.8),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          }).toList(),
                         ),
-                      );
-                    }).toList(),
-                  ),
                 ),
                 
                 SizedBox(height: 20.h),
@@ -633,7 +764,9 @@ class _BreakRecordsState extends State<BreakRecords> {
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      return '${date.day.toString().padLeft(2, '0')}-${date.month.toString().padLeft(2, '0')}-${date.year}';
+      // Convert from GMT 0 to GMT +5
+      final localDate = date.add(const Duration(hours: 5));
+      return '${localDate.day.toString().padLeft(2, '0')}-${localDate.month.toString().padLeft(2, '0')}-${localDate.year}';
     } catch (e) {
       return dateStr.split(' ')[0];
     }
@@ -642,9 +775,17 @@ class _BreakRecordsState extends State<BreakRecords> {
   String _formatTime(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      return '${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+      // Convert from GMT 0 to GMT +5
+      final localDate = date.add(const Duration(hours: 5));
+      return '${localDate.hour.toString().padLeft(2, '0')}:${localDate.minute.toString().padLeft(2, '0')}';
     } catch (e) {
       return dateStr.split(' ')[1] ?? '';
     }
+  }
+
+  String _formatAmount(int amount) {
+    // Format amount with thousand separators (amount is already in the correct currency unit)
+    final formatter = NumberFormat('#,###', 'en_US');
+    return '${formatter.format(amount)} UZS';
   }
 }
