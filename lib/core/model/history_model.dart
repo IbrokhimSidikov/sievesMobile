@@ -105,8 +105,8 @@ class Branch {
       endWork: json['end_work'],
       isHq: json['is_hq'],
       workDays: json['work_days'],
-      lat: json['lat'],
-      lng: json['lng'],
+      lat: json['lat']?.toString(),
+      lng: json['lng']?.toString(),
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
