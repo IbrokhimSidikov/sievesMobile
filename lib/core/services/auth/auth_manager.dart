@@ -16,6 +16,12 @@ class AuthManager {
     final apiService = ApiService(authService);
     this.authService = authService;
     this.apiService = apiService;
+    
+    // Set up callback for when token refresh fails
+    apiService.onTokenRefreshFailed = () {
+      print('🚨 Token refresh failed - logging out user');
+      _handleTokenExpired();
+    };
   }
 
   late final AuthService authService;
@@ -26,6 +32,9 @@ class AuthManager {
   
   // Get employee ID from current identity
   int? get currentEmployeeId => _currentIdentity?.employee?.id;
+  
+  // Callback for when session expires (refresh token failed)
+  Function()? onSessionExpired;
 
   // Storage key for identity
   static const String _identityKey = 'user_identity';
@@ -227,6 +236,14 @@ class AuthManager {
       print('Error type: ${e.runtimeType}');
       return false;
     }
+  }
+
+  // Handle when token refresh fails (refresh token expired)
+  Future<void> _handleTokenExpired() async {
+    print('⏰ Refresh token expired - clearing session');
+    await logout();
+    // Notify listeners that session has expired
+    onSessionExpired?.call();
   }
 
   // Logout

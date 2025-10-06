@@ -6,13 +6,26 @@ import '../../model/work_entry_model.dart';
 import '../../model/break_order_model.dart';
 import '../../model/history_model.dart';
 import '../auth/auth_service.dart';
+import 'http_client.dart';
 
 class ApiService {
   final String baseUrl = 'https://app.sievesapp.com/v1';
   // final String baseUrl = 'https://app.sievesapp.com/v1';
   final AuthService authService;
+  late final AuthHttpClient _httpClient;
+  
+  // Callback for when token refresh fails (logout needed)
+  Function()? onTokenRefreshFailed;
 
-  ApiService(this.authService);
+  ApiService(this.authService) {
+    _httpClient = AuthHttpClient(
+      authService,
+      onRefreshFailed: () {
+        print('⚠️ Token refresh failed completely - logout required');
+        onTokenRefreshFailed?.call();
+      },
+    );
+  }
 
   // Helper method to get headers with auth token
   Future<Map<String, String>> _getHeaders() async {
@@ -41,7 +54,7 @@ class ApiService {
       // test uri
       // final uri = Uri.parse('https://app.sievesapp.com/v1/identity/0?auth_id=auth0%7C65bcde009830a9e7bbce75d4&expand=employee.branch,employee.individual,employee.reward');
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         return Identity.fromJson(jsonDecode(response.body));
@@ -61,7 +74,7 @@ class ApiService {
       final headers = await _getHeaders();
       final uri = Uri.parse('$baseUrl/identity/$id');
 
-      final response = await http.put(
+      final response = await _httpClient.put(
         uri,
         headers: headers,
         body: jsonEncode({'token': token}),
@@ -91,7 +104,7 @@ class ApiService {
         queryParameters: queryParams,
       );
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         return Employee.fromJson(jsonDecode(response.body));
@@ -135,7 +148,7 @@ class ApiService {
       );
 
       print('🔍 Fetching employee profile data from: $uri');
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -166,7 +179,7 @@ class ApiService {
 
       print('📋 Request URL: $uri');
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       print('📊 Response Status: ${response.statusCode}');
       print('📊 Response Body: ${response.body}');
@@ -214,7 +227,7 @@ class ApiService {
 
       print('📅 Fetching work entries: $uri');
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -271,7 +284,7 @@ class ApiService {
 
       print('🍔 Fetching break orders: $uri');
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       print('📊 Response Status: ${response.statusCode}');
       print('📊 Response Body: ${response.body}');
@@ -323,7 +336,7 @@ class ApiService {
 
       print('📅 Fetching break orders: $uri');
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
@@ -355,7 +368,7 @@ class ApiService {
 
       print('📜 Fetching history records: $uri');
 
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final responseData = jsonDecode(response.body);
@@ -411,7 +424,7 @@ class ApiService {
       );
 
       print('📊 Fetching transactions: $uri');
-      final response = await http.get(uri, headers: headers);
+      final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
