@@ -162,10 +162,21 @@ class AuthService {
   // Get access token (with auto-refresh if expired)
   Future<String?> getAccessToken() async {
     final expiresAt = await _secureStorage.read(key: _expiresAtKey);
-    final currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
 
-    if (expiresAt != null && int.parse(expiresAt) < int.parse(currentTime)) {
-      await refreshToken();
+    // Check if token is expired or about to expire (within 5 minutes)
+    if (expiresAt != null) {
+      final expiryTime = int.parse(expiresAt);
+      final bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
+      
+      if (expiryTime < currentTime + bufferTime) {
+        print('⏰ Token expired or expiring soon, refreshing...');
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          print('❌ Failed to refresh token');
+          return null;
+        }
+      }
     }
 
     return await _secureStorage.read(key: _accessTokenKey);
@@ -174,9 +185,11 @@ class AuthService {
   // Refresh the access token
   Future<bool> refreshToken() async {
     try {
+      print('🔄 Refreshing access token...');
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
 
       if (refreshToken == null) {
+        print('❌ No refresh token available');
         return false;
       }
 
@@ -198,17 +211,22 @@ class AuthService {
           await _secureStorage.write(key: _refreshTokenKey, value: result.refreshToken);
         }
 
-        final expiresAt = DateTime.now()
-            .add(Duration(seconds: result.accessTokenExpirationDateTime!.second))
-            .millisecondsSinceEpoch
-            .toString();
-        await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
+        // Fix: Use the actual expiration time from the token response
+        if (result.accessTokenExpirationDateTime != null) {
+          final expiresAt = result.accessTokenExpirationDateTime!
+              .millisecondsSinceEpoch
+              .toString();
+          await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
+          print('✅ Token refreshed successfully');
+          print('📅 New token expires at: ${result.accessTokenExpirationDateTime}');
+        }
 
         return true;
       }
+      print('❌ Token refresh returned null result');
       return false;
     } catch (e) {
-      print('Error refreshing token: $e');
+      print('❌ Error refreshing token: $e');
       return false;
     }
   }

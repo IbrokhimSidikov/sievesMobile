@@ -8,7 +8,7 @@ plugins {
 android {
     namespace = "com.sieves.v1.sieves_mob"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -28,7 +28,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders["appAuthRedirectScheme"] = "sievesmob"
+        manifestPlaceholders["appAuthRedirectScheme"] = "com.sieves.v1.sieves_mob"
     }
 
     buildTypes {

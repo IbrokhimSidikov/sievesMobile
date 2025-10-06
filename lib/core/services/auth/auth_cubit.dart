@@ -7,7 +7,19 @@ import 'auth_state.dart';
 class AuthCubit extends Cubit<AuthState> {
   final AuthManager _authManager;
 
-  AuthCubit(this._authManager) : super(const AuthInitial());
+  AuthCubit(this._authManager) : super(const AuthInitial()) {
+    // Set up callback for when session expires automatically
+    _authManager.onSessionExpired = () {
+      print('🔔 Session expired notification received');
+      emit(const AuthError('Your session has expired. Please log in again.'));
+      // After showing error, return to unauthenticated state
+      Future.delayed(const Duration(seconds: 3), () {
+        if (!isClosed) {
+          emit(const AuthUnauthenticated());
+        }
+      });
+    };
+  }
 
   /// Check if user is already authenticated on app startup
   Future<void> checkAuthStatus() async {
