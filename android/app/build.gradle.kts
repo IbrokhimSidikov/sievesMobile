@@ -28,7 +28,10 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders["appAuthRedirectScheme"] = "com.sieves.v1.sieves_mob"
+        
+        // Manifest placeholders for auth0_flutter
+        manifestPlaceholders["auth0Domain"] = "exodelicainc.eu.auth0.com"
+        manifestPlaceholders["auth0Scheme"] = "sievesmob"
     }
 
     buildTypes {

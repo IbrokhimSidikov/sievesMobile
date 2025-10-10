@@ -24,7 +24,7 @@ dependencies:
   flutter_secure_storage: ^9.2.4
   iconsax: ^0.0.8
   http: ^1.1.0
-  flutter_appauth: ^10.0.0
+  auth0_flutter: ^1.7.2
   flutter_launcher_icons: ^0.14.4
   intl: ^0.19.0
   shimmer: ^3.0.0

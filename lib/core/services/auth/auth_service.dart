@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'package:flutter_appauth/flutter_appauth.dart';
+import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  final FlutterAppAuth _appAuth = FlutterAppAuth();
-  final FlutterSecureStorage _secureStorage = FlutterSecureStorage();
+  late final Auth0 _auth0;
+  final FlutterSecureStorage _secureStorage = const FlutterSecureStorage();
   
   // Expose secure storage for use by AuthManager
   FlutterSecureStorage get secureStorage => _secureStorage;
@@ -13,9 +13,7 @@ class AuthService {
   // Auth0 configuration
   static const String _domain = 'exodelicainc.eu.auth0.com';
   static const String _clientId = 'HzIOKK7VlhRTVJxLVdL0djqCWwuGK5wH';
-  static const String _redirectUri = 'sievesmob://callback';
-  static const String _audience = 'localhost:8080/loook-api/web'; // Fixed spelling
-  static const String _issuer = 'https://$_domain';
+  static const String _audience = 'localhost:8080/loook-api/web';
 
   // Storage keys
   final String _accessTokenKey = 'access_token';
@@ -23,42 +21,37 @@ class AuthService {
   final String _idTokenKey = 'id_token';
   final String _expiresAtKey = 'expires_at';
 
+  // Initialize Auth0
+  AuthService() {
+    _auth0 = Auth0(_domain, _clientId);
+  }
+
   // Login with Auth0
   Future<bool> login() async {
     try {
-      print('🚀 Starting Auth0 login...');
+      print('🚀 Starting Auth0 login with auth0_flutter...');
+      print('Domain: $_domain');
       print('Client ID: $_clientId');
-      print('Redirect URL: $_redirectUri');
-      print('Issuer: $_issuer');
+      print('Audience: $_audience');
       
-      final AuthorizationTokenResponse? result = await _appAuth.authorizeAndExchangeCode(
-        AuthorizationTokenRequest(
-          _clientId,
-          _redirectUri,
-          issuer: _issuer,
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
-          promptValues: ['login'],
-          additionalParameters: {
-            'audience': _audience, // Correct audience
-          },
-        ),
-      );
+      final credentials = await _auth0
+          .webAuthentication(scheme: 'sievesmob')
+          .login(
+            audience: _audience,
+            scopes: {'openid', 'profile', 'email', 'offline_access'},
+          );
 
-      print('🔍 Auth result: ${result != null ? 'Success' : 'Null'}');
+      print('✅ Credentials received!');
+      print('Access Token: ${credentials.accessToken.substring(0, 20)}...');
+      print('Has Refresh Token: ${credentials.refreshToken != null}');
       
-      if (result != null) {
-        print('✅ Tokens received, storing...');
-        await _storeTokens(result);
-        
-        // Get user profile
-        await _getUserProfile(result.accessToken!);
-        
-        print('✅ Login completed successfully');
-        return true;
-      } else {
-        print('❌ No result returned from Auth0');
-        return false;
-      }
+      await _storeCredentials(credentials);
+      
+      // Get user profile
+      await _getUserProfile(credentials.accessToken);
+      
+      print('✅ Login completed successfully');
+      return true;
     } catch (e) {
       print('❌ Login error: $e');
       print('Error type: ${e.runtimeType}');
@@ -66,7 +59,8 @@ class AuthService {
       // Check for specific error types
       if (e.toString().contains('User cancelled') || 
           e.toString().contains('CANCELED') ||
-          e.toString().contains('cancelled')) {
+          e.toString().contains('cancelled') ||
+          e.toString().contains('a0.session.user_cancelled')) {
         print('🚫 User cancelled the login');
         return false;
       }
@@ -76,22 +70,24 @@ class AuthService {
     }
   }
 
-  // Store tokens securely
-  Future<void> _storeTokens(AuthorizationTokenResponse response) async {
-    print('📝 Storing tokens...');
-    await _secureStorage.write(key: _accessTokenKey, value: response.accessToken);
-    await _secureStorage.write(key: _refreshTokenKey, value: response.refreshToken);
-    await _secureStorage.write(key: _idTokenKey, value: response.idToken);
-
-    // Fix: Use the actual expiration time, not just the seconds
-    if (response.accessTokenExpirationDateTime != null) {
-      final expiresAt = response.accessTokenExpirationDateTime!
-          .millisecondsSinceEpoch
-          .toString();
-      await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
-      print('📅 Token expires at: ${response.accessTokenExpirationDateTime}');
+  // Store credentials securely
+  Future<void> _storeCredentials(Credentials credentials) async {
+    print('📝 Storing credentials...');
+    
+    await _secureStorage.write(key: _accessTokenKey, value: credentials.accessToken);
+    
+    if (credentials.refreshToken != null) {
+      await _secureStorage.write(key: _refreshTokenKey, value: credentials.refreshToken);
     }
-    print('✅ Tokens stored successfully');
+    
+    await _secureStorage.write(key: _idTokenKey, value: credentials.idToken);
+
+    // Store expiration time
+    final expiresAt = credentials.expiresAt.millisecondsSinceEpoch.toString();
+    await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
+    print('📅 Token expires at: ${credentials.expiresAt}');
+    
+    print('✅ Credentials stored successfully');
   }
 
   // Get user profile from Auth0
@@ -162,21 +158,10 @@ class AuthService {
   // Get access token (with auto-refresh if expired)
   Future<String?> getAccessToken() async {
     final expiresAt = await _secureStorage.read(key: _expiresAtKey);
-    final currentTime = DateTime.now().millisecondsSinceEpoch;
+    final currentTime = DateTime.now().millisecondsSinceEpoch.toString();
 
-    // Check if token is expired or about to expire (within 5 minutes)
-    if (expiresAt != null) {
-      final expiryTime = int.parse(expiresAt);
-      final bufferTime = 5 * 60 * 1000; // 5 minutes in milliseconds
-      
-      if (expiryTime < currentTime + bufferTime) {
-        print('⏰ Token expired or expiring soon, refreshing...');
-        final refreshed = await refreshToken();
-        if (!refreshed) {
-          print('❌ Failed to refresh token');
-          return null;
-        }
-      }
+    if (expiresAt != null && int.parse(expiresAt) < int.parse(currentTime)) {
+      await refreshToken();
     }
 
     return await _secureStorage.read(key: _accessTokenKey);
@@ -185,46 +170,23 @@ class AuthService {
   // Refresh the access token
   Future<bool> refreshToken() async {
     try {
-      print('🔄 Refreshing access token...');
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
 
       if (refreshToken == null) {
-        print('❌ No refresh token available');
+        print('❌ No refresh token found');
         return false;
       }
 
-      final TokenResponse? result = await _appAuth.token(
-        TokenRequest(
-          _clientId,
-          _redirectUri,
-          issuer: _issuer,
-          refreshToken: refreshToken,
-          scopes: ['openid', 'profile', 'email', 'offline_access'],
-          additionalParameters: {'audience': _audience},
-        ),
-      );
+      print('🔄 Refreshing access token...');
 
-      if (result != null) {
-        await _secureStorage.write(key: _accessTokenKey, value: result.accessToken);
+      final credentials = await _auth0
+          .api
+          .renewCredentials(refreshToken: refreshToken);
 
-        if (result.refreshToken != null) {
-          await _secureStorage.write(key: _refreshTokenKey, value: result.refreshToken);
-        }
+      print('✅ Token refreshed successfully');
+      await _storeCredentials(credentials);
 
-        // Fix: Use the actual expiration time from the token response
-        if (result.accessTokenExpirationDateTime != null) {
-          final expiresAt = result.accessTokenExpirationDateTime!
-              .millisecondsSinceEpoch
-              .toString();
-          await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
-          print('✅ Token refreshed successfully');
-          print('📅 New token expires at: ${result.accessTokenExpirationDateTime}');
-        }
-
-        return true;
-      }
-      print('❌ Token refresh returned null result');
-      return false;
+      return true;
     } catch (e) {
       print('❌ Error refreshing token: $e');
       return false;
@@ -254,9 +216,28 @@ class AuthService {
 
   // Logout
   Future<void> logout() async {
-    await _secureStorage.delete(key: _accessTokenKey);
-    await _secureStorage.delete(key: _refreshTokenKey);
-    await _secureStorage.delete(key: _idTokenKey);
-    await _secureStorage.delete(key: _expiresAtKey);
+    try {
+      print('🚪 Logging out...');
+      
+      // Logout from Auth0
+      await _auth0
+          .webAuthentication(scheme: 'sievesmob')
+          .logout();
+      
+      // Clear stored tokens
+      await _secureStorage.delete(key: _accessTokenKey);
+      await _secureStorage.delete(key: _refreshTokenKey);
+      await _secureStorage.delete(key: _idTokenKey);
+      await _secureStorage.delete(key: _expiresAtKey);
+      
+      print('✅ Logged out successfully');
+    } catch (e) {
+      print('❌ Logout error: $e');
+      // Still clear local tokens even if Auth0 logout fails
+      await _secureStorage.delete(key: _accessTokenKey);
+      await _secureStorage.delete(key: _refreshTokenKey);
+      await _secureStorage.delete(key: _idTokenKey);
+      await _secureStorage.delete(key: _expiresAtKey);
+    }
   }
 }
