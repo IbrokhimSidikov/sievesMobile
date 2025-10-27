@@ -7,6 +7,7 @@ import 'core/constants/app_colors.dart';
 import 'core/router/app_routes.dart';
 import 'core/services/auth/auth_cubit.dart';
 import 'core/services/auth/auth_manager.dart';
+import 'core/services/auth/auth_state.dart';
 
 void main() {
   runApp(const MyApp());
@@ -39,6 +40,29 @@ class MyApp extends StatelessWidget {
                 )),
             themeMode: ThemeMode.system,
             routerConfig: AppRoutes.router,
+            scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
+            builder: (context, child) {
+              return BlocListener<AuthCubit, AuthState>(
+                // Global listener for auth state changes
+                listener: (context, state) {
+                  if (state is AuthError) {
+                    // Show error message (e.g., session expired)
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(state.message),
+                        backgroundColor: Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  } else if (state is AuthUnauthenticated) {
+                    // Session expired or user logged out - navigate to login
+                    print('🔐 Auth state changed to unauthenticated - navigating to login');
+                    AppRoutes.router.go('/login');
+                  }
+                },
+                child: child ?? const SizedBox.shrink(),
+              );
+            },
           );
         },
       ),
