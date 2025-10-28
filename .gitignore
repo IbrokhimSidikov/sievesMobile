@@ -3,6 +3,9 @@
 *.log
 *.pyc
 *.swp
+.AppleDouble
+.LSOverride
+._*
 .DS_Store
 .atom/
 .build/
@@ -10,6 +13,7 @@
 .history
 .svn/
 .swiftpm/
+._*
 migrate_working_dir/
 
 # IntelliJ related
