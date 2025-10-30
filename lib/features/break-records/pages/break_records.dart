@@ -20,6 +20,8 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   bool _isLoading = true;
   String? _errorMessage;
   List<BreakOrder> _breakOrders = [];
+  double? _breakBalance;
+  bool _isLoadingBalance = true;
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
 
@@ -39,6 +41,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
       curve: Curves.easeInOut,
     ));
     
+    _fetchBreakBalance();
     _fetchBreakOrders();
   }
 
@@ -46,6 +49,40 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   void dispose() {
     _shimmerController.dispose();
     super.dispose();
+  }
+
+  Future<void> _fetchBreakBalance() async {
+    setState(() {
+      _isLoadingBalance = true;
+    });
+
+    try {
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        setState(() {
+          _isLoadingBalance = false;
+        });
+        return;
+      }
+
+      print('💰 Fetching break balance for employee ID: $employeeId');
+      
+      final balance = await _authManager.apiService.getBreakBalance(employeeId);
+      
+      setState(() {
+        _breakBalance = balance;
+        _isLoadingBalance = false;
+      });
+
+      if (balance != null) {
+        print('✅ Successfully loaded break balance: $balance UZS');
+      }
+    } catch (e) {
+      print('❌ Error fetching break balance: $e');
+      setState(() {
+        _isLoadingBalance = false;
+      });
+    }
   }
 
   Future<void> _fetchBreakOrders() async {
@@ -95,7 +132,11 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
             children: [
               // Header
               _buildHeader(),
-              SizedBox(height: 24.h),
+              SizedBox(height: 20.h),
+              
+              // Break Balance Card
+              _buildBreakBalanceCard(),
+              SizedBox(height: 20.h),
               
               // Content based on state
               Expanded(
@@ -108,6 +149,154 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildBreakBalanceCard() {
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            AppColors.cxWarning,
+            AppColors.cxFEDA84,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxWarning.withOpacity(0.3),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+          BoxShadow(
+            color: AppColors.cxWarning.withOpacity(0.2),
+            blurRadius: 30,
+            offset: const Offset(0, 12),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          // Wallet Icon Container
+          Container(
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: AppColors.cxWhite.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(
+                color: AppColors.cxWhite.withOpacity(0.3),
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cxBlack.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Icon(
+              Icons.account_balance_wallet_rounded,
+              color: AppColors.cxWhite,
+              size: 32.sp,
+            ),
+          ),
+          SizedBox(width: 20.w),
+          
+          // Balance Information
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Label
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxWhite.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(8.r),
+                    border: Border.all(
+                      color: AppColors.cxWhite.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    'Available Balance',
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.cxWhite,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                
+                // Amount
+                _isLoadingBalance
+                    ? _buildBalanceShimmer()
+                    : Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _formatBalanceAmount(_breakBalance ?? 0),
+                            style: TextStyle(
+                              fontSize: 32.sp,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.cxWhite,
+                              height: 1.0,
+                              fontFeatures: const [
+                                FontFeature.tabularFigures(),
+                              ],
+                              shadows: [
+                                Shadow(
+                                  color: AppColors.cxBlack.withOpacity(0.15),
+                                  offset: const Offset(0, 2),
+                                  blurRadius: 4,
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Padding(
+                            padding: EdgeInsets.only(bottom: 4.h),
+                            child: Text(
+                              'UZS',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.cxWhite.withOpacity(0.9),
+                                height: 1.0,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+              ],
+            ),
+          ),
+          
+          // Info Icon
+          Container(
+            padding: EdgeInsets.all(10.w),
+            decoration: BoxDecoration(
+              color: AppColors.cxWhite.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: AppColors.cxWhite.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.info_outline_rounded,
+              color: AppColors.cxWhite,
+              size: 20.sp,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -910,5 +1099,35 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     // Format amount with thousand separators (amount is already in the correct currency unit)
     final formatter = NumberFormat('#,###', 'en_US');
     return '${formatter.format(amount)} UZS';
+  }
+
+  String _formatBalanceAmount(double amount) {
+    // Format balance amount with thousand separators
+    final formatter = NumberFormat('#,###', 'en_US');
+    return formatter.format(amount.round());
+  }
+
+  Widget _buildBalanceShimmer() {
+    return AnimatedBuilder(
+      animation: _shimmerAnimation,
+      builder: (context, child) {
+        return Container(
+          width: 150.w,
+          height: 32.h,
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.cxWhite.withOpacity(_shimmerAnimation.value * 0.3),
+                AppColors.cxWhite.withOpacity(_shimmerAnimation.value * 0.5),
+                AppColors.cxWhite.withOpacity(_shimmerAnimation.value * 0.3),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+        );
+      },
+    );
   }
 }

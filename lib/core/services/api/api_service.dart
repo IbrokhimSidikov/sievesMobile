@@ -164,14 +164,28 @@ class ApiService {
     }
   }
 
-  // Get work entries for a given date range
-  Future<List<WorkEntry>?> getWorkEntries(int employeeId, String startDate, String endDate) async {
+  // Get work entries for a given date range with pagination support
+  Future<Map<String, dynamic>?> getWorkEntries(
+    int employeeId, 
+    String startDate, 
+    String endDate, {
+    int? page,
+    int? limit,
+  }) async {
     try {
       final headers = await _getHeaders();
       final queryParams = {
         'employee_id': employeeId.toString(),
         'date_range': '$startDate,$endDate',
       };
+
+      // Add pagination parameters if provided
+      if (page != null) {
+        queryParams['page'] = page.toString();
+      }
+      if (limit != null) {
+        queryParams['limit'] = limit.toString();
+      }
 
       final uri = Uri.parse('$baseUrl/work-entry').replace(
         queryParameters: queryParams,
@@ -191,19 +205,40 @@ class ApiService {
         
         // Handle both array and object responses
         List<dynamic> entriesList;
+        Map<String, dynamic>? metadata;
+        
         if (jsonData is List) {
           entriesList = jsonData;
-        } else if (jsonData is Map && jsonData.containsKey('models')) {
-          entriesList = jsonData['models'] as List;
-        } else if (jsonData is Map && jsonData.containsKey('data')) {
-          entriesList = jsonData['data'] as List;
+        } else if (jsonData is Map) {
+          if (jsonData.containsKey('models')) {
+            entriesList = jsonData['models'] as List;
+            // Extract pagination metadata if available
+            metadata = {
+              'total': jsonData['total'],
+              'page': jsonData['page'],
+              'limit': jsonData['limit'],
+              'hasMore': jsonData['hasMore'] ?? false,
+            };
+          } else if (jsonData.containsKey('data')) {
+            entriesList = jsonData['data'] as List;
+            metadata = jsonData['meta'];
+          } else {
+            print('❌ Unexpected response format: $jsonData');
+            return null;
+          }
         } else {
           print('❌ Unexpected response format: $jsonData');
           return null;
         }
         
-        print('✅ Found ${entriesList.length} work entries');
-        return entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+        final entries = entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+        print('✅ Found ${entries.length} work entries');
+        
+        return {
+          'entries': entries,
+          'metadata': metadata,
+          'total': entries.length,
+        };
       } else {
         print('Error getting work entries: ${response.body}');
         return null;
@@ -241,6 +276,81 @@ class ApiService {
     } catch (e) {
       print('❌ Exception getting work entries: $e');
       return [];
+    }
+  }
+
+  // Get work entries by type (e.g., VACATION, ATTENDANCE)
+  Future<Map<String, dynamic>?> getWorkEntriesByType({
+    required int employeeId,
+    String? type,
+    String? status,
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = <String, String>{
+        'employee_id': employeeId.toString(),
+      };
+
+      if (type != null) {
+        queryParams['type'] = type;
+      }
+      if (status != null) {
+        queryParams['status'] = status;
+      }
+      if (startDate != null && endDate != null) {
+        queryParams['date_range'] = '$startDate,$endDate';
+      }
+
+      final uri = Uri.parse('$baseUrl/work-entry').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📋 Fetching work entries by type: $uri');
+
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        
+        // Handle both array and object responses
+        List<dynamic> entriesList;
+        int totalCount = 0;
+        
+        if (jsonData is List) {
+          entriesList = jsonData;
+          totalCount = entriesList.length;
+        } else if (jsonData is Map) {
+          if (jsonData.containsKey('models')) {
+            entriesList = jsonData['models'] as List;
+            totalCount = jsonData['_meta']?['totalCount'] ?? entriesList.length;
+          } else if (jsonData.containsKey('data')) {
+            entriesList = jsonData['data'] as List;
+            totalCount = jsonData['meta']?['total'] ?? entriesList.length;
+          } else {
+            print('❌ Unexpected response format: $jsonData');
+            return null;
+          }
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return null;
+        }
+        
+        final entries = entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+        print('✅ Fetched ${entries.length} work entries (type: $type, status: $status)');
+        
+        return {
+          'entries': entries,
+          'totalCount': totalCount,
+        };
+      } else {
+        print('❌ Error getting work entries by type: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting work entries by type: $e');
+      return null;
     }
   }
 
@@ -436,6 +546,40 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Exception getting transactions: $e');
+      return null;
+    }
+  }
+
+  // Get break balance for an employee
+  Future<double?> getBreakBalance(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.sievesapp.com/v1/site/test').replace(
+        queryParameters: {
+          'action': 'breakBalanceGetter',
+          'employee_id': employeeId.toString(),
+        },
+      );
+
+      print('💰 Fetching break balance for employee $employeeId: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['plugin_break_balance'] != null) {
+          final balance = (data['plugin_break_balance'] as num).toDouble();
+          print('✅ Fetched break balance: $balance UZS');
+          return balance;
+        } else {
+          print('❌ Invalid break balance response: $data');
+          return null;
+        }
+      } else {
+        print('❌ Error getting break balance: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting break balance: $e');
       return null;
     }
   }
