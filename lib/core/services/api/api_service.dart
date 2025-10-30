@@ -164,14 +164,28 @@ class ApiService {
     }
   }
 
-  // Get work entries for a given date range
-  Future<List<WorkEntry>?> getWorkEntries(int employeeId, String startDate, String endDate) async {
+  // Get work entries for a given date range with pagination support
+  Future<Map<String, dynamic>?> getWorkEntries(
+    int employeeId, 
+    String startDate, 
+    String endDate, {
+    int? page,
+    int? limit,
+  }) async {
     try {
       final headers = await _getHeaders();
       final queryParams = {
         'employee_id': employeeId.toString(),
         'date_range': '$startDate,$endDate',
       };
+
+      // Add pagination parameters if provided
+      if (page != null) {
+        queryParams['page'] = page.toString();
+      }
+      if (limit != null) {
+        queryParams['limit'] = limit.toString();
+      }
 
       final uri = Uri.parse('$baseUrl/work-entry').replace(
         queryParameters: queryParams,
@@ -191,19 +205,40 @@ class ApiService {
         
         // Handle both array and object responses
         List<dynamic> entriesList;
+        Map<String, dynamic>? metadata;
+        
         if (jsonData is List) {
           entriesList = jsonData;
-        } else if (jsonData is Map && jsonData.containsKey('models')) {
-          entriesList = jsonData['models'] as List;
-        } else if (jsonData is Map && jsonData.containsKey('data')) {
-          entriesList = jsonData['data'] as List;
+        } else if (jsonData is Map) {
+          if (jsonData.containsKey('models')) {
+            entriesList = jsonData['models'] as List;
+            // Extract pagination metadata if available
+            metadata = {
+              'total': jsonData['total'],
+              'page': jsonData['page'],
+              'limit': jsonData['limit'],
+              'hasMore': jsonData['hasMore'] ?? false,
+            };
+          } else if (jsonData.containsKey('data')) {
+            entriesList = jsonData['data'] as List;
+            metadata = jsonData['meta'];
+          } else {
+            print('❌ Unexpected response format: $jsonData');
+            return null;
+          }
         } else {
           print('❌ Unexpected response format: $jsonData');
           return null;
         }
         
-        print('✅ Found ${entriesList.length} work entries');
-        return entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+        final entries = entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+        print('✅ Found ${entries.length} work entries');
+        
+        return {
+          'entries': entries,
+          'metadata': metadata,
+          'total': entries.length,
+        };
       } else {
         print('Error getting work entries: ${response.body}');
         return null;

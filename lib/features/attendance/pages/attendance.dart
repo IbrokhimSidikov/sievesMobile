@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/model/work_entry_model.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/cache/work_entry_cache_service.dart';
 
 class Attendance extends StatefulWidget {
   const Attendance({super.key});
@@ -15,13 +16,24 @@ class Attendance extends StatefulWidget {
 
 class _AttendanceState extends State<Attendance> with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
+  final WorkEntryCacheService _cacheService = WorkEntryCacheService();
+  final ScrollController _scrollController = ScrollController();
+  
   List<WorkEntry> workEntries = [];
   bool isLoading = true;
+  bool isLoadingMore = false;
+  bool hasMoreData = true;
   String? errorMessage;
   String currentMonth = '';
   DateTime selectedDate = DateTime.now(); // Track selected month/year
+  
+  // Pagination
+  int currentPage = 1;
+  final int pageSize = 20;
+  
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
+  bool _isFromCache = false;
 
   @override
   void initState() {
@@ -39,13 +51,26 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
       curve: Curves.easeInOut,
     ));
     
+    // Setup scroll listener for pagination
+    _scrollController.addListener(_onScroll);
+    
     _loadWorkEntries();
   }
 
   @override
   void dispose() {
     _shimmerController.dispose();
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  // Handle scroll for pagination
+  void _onScroll() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent * 0.8) {
+      if (!isLoadingMore && hasMoreData && !isLoading) {
+        _loadMoreWorkEntries();
+      }
+    }
   }
 
   // Get current month date range (first day to last day)
@@ -62,12 +87,15 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
     return DateFormat('MMMM yyyy').format(selectedDate);
   }
 
-  // Load work entries from API
-  Future<void> _loadWorkEntries() async {
+  // Load work entries from cache or API
+  Future<void> _loadWorkEntries({bool forceRefresh = false}) async {
     setState(() {
       isLoading = true;
       errorMessage = null;
       currentMonth = _getCurrentMonthName();
+      currentPage = 1;
+      hasMoreData = true;
+      _isFromCache = false;
     });
 
     try {
@@ -89,17 +117,140 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
       final startDate = dates[0];
       final endDate = dates[1];
       
-      final entries = await _authManager.apiService.getWorkEntries(employeeId, startDate, endDate);
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedEntries = await _cacheService.getCachedWorkEntries(
+          employeeId,
+          startDate,
+          endDate,
+        );
+        
+        if (cachedEntries != null && cachedEntries.isNotEmpty) {
+          print('✅ Loaded ${cachedEntries.length} entries from cache');
+          setState(() {
+            workEntries = cachedEntries;
+            isLoading = false;
+            _isFromCache = true;
+            hasMoreData = false; // Cache contains all data
+          });
+          return;
+        }
+      }
       
-      setState(() {
-        workEntries = entries ?? [];
-        isLoading = false;
-      });
+      // Load from API with pagination
+      final response = await _authManager.apiService.getWorkEntries(
+        employeeId,
+        startDate,
+        endDate,
+        page: currentPage,
+        limit: pageSize,
+      );
+      
+      if (response != null) {
+        final entries = response['entries'] as List<WorkEntry>;
+        final metadata = response['metadata'] as Map<String, dynamic>?;
+        
+        // Cache the entries
+        await _cacheService.cacheWorkEntries(
+          employeeId,
+          startDate,
+          endDate,
+          entries,
+        );
+        
+        setState(() {
+          workEntries = entries;
+          isLoading = false;
+          _isFromCache = false;
+          
+          // Check if there's more data
+          if (metadata != null && metadata['hasMore'] != null) {
+            hasMoreData = metadata['hasMore'] as bool;
+          } else {
+            hasMoreData = entries.length >= pageSize;
+          }
+        });
+      } else {
+        setState(() {
+          workEntries = [];
+          isLoading = false;
+        });
+      }
     } catch (e) {
       print('❌ Error loading work entries: $e');
       setState(() {
         errorMessage = 'Failed to load work entries. Please try again.';
         isLoading = false;
+      });
+    }
+  }
+
+  // Load more work entries (pagination)
+  Future<void> _loadMoreWorkEntries() async {
+    if (isLoadingMore || !hasMoreData) return;
+    
+    setState(() {
+      isLoadingMore = true;
+    });
+
+    try {
+      final employeeId = _authManager.currentEmployeeId;
+      
+      if (employeeId == null) {
+        setState(() {
+          isLoadingMore = false;
+        });
+        return;
+      }
+
+      final dateRange = _getCurrentMonthDateRange();
+      final dates = dateRange.split(',');
+      final startDate = dates[0];
+      final endDate = dates[1];
+      
+      currentPage++;
+      
+      final response = await _authManager.apiService.getWorkEntries(
+        employeeId,
+        startDate,
+        endDate,
+        page: currentPage,
+        limit: pageSize,
+      );
+      
+      if (response != null) {
+        final newEntries = response['entries'] as List<WorkEntry>;
+        final metadata = response['metadata'] as Map<String, dynamic>?;
+        
+        setState(() {
+          workEntries.addAll(newEntries);
+          isLoadingMore = false;
+          
+          // Check if there's more data
+          if (metadata != null && metadata['hasMore'] != null) {
+            hasMoreData = metadata['hasMore'] as bool;
+          } else {
+            hasMoreData = newEntries.length >= pageSize;
+          }
+        });
+        
+        // Update cache with all entries
+        await _cacheService.cacheWorkEntries(
+          employeeId,
+          startDate,
+          endDate,
+          workEntries,
+        );
+      } else {
+        setState(() {
+          isLoadingMore = false;
+          hasMoreData = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error loading more work entries: $e');
+      setState(() {
+        isLoadingMore = false;
       });
     }
   }
@@ -118,6 +269,17 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
       selectedDate = DateTime(selectedDate.year, selectedDate.month + 1, 1);
     });
     _loadWorkEntries();
+  }
+
+  // Force refresh (clear cache and reload)
+  Future<void> _forceRefresh() async {
+    final employeeId = _authManager.currentEmployeeId;
+    if (employeeId != null) {
+      final dateRange = _getCurrentMonthDateRange();
+      final dates = dateRange.split(',');
+      await _cacheService.clearCache(employeeId, dates[0], dates[1]);
+    }
+    await _loadWorkEntries(forceRefresh: true);
   }
 
   @override
@@ -247,14 +409,30 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
               ],
             ),
           ),
-          // Refresh button
-          IconButton(
-            onPressed: _loadWorkEntries,
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: AppColors.cx43C19F,
-              size: 24.sp,
-            ),
+          // Cache indicator and refresh button
+          Row(
+            children: [
+              if (_isFromCache)
+                Padding(
+                  padding: EdgeInsets.only(right: 8.w),
+                  child: Tooltip(
+                    message: 'Loaded from cache',
+                    child: Icon(
+                      Icons.offline_bolt_rounded,
+                      color: AppColors.cxWarning,
+                      size: 20.sp,
+                    ),
+                  ),
+                ),
+              IconButton(
+                onPressed: _forceRefresh,
+                icon: Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.cx43C19F,
+                  size: 24.sp,
+                ),
+              ),
+            ],
           ),
         ],
       ),
@@ -287,7 +465,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
             ),
             SizedBox(height: 24.h),
             ElevatedButton.icon(
-              onPressed: _loadWorkEntries,
+              onPressed: () => _loadWorkEntries(forceRefresh: true),
               icon: Icon(Icons.refresh_rounded),
               label: Text('Retry'),
               style: ElevatedButton.styleFrom(
@@ -344,16 +522,39 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
           // Table Header
           _buildTableHeader(),
           
-          // Table Rows
+          // Table Rows with pagination
           Expanded(
             child: ListView.builder(
+              controller: _scrollController,
               padding: EdgeInsets.zero,
-              itemCount: workEntries.length,
+              itemCount: workEntries.length + (isLoadingMore ? 1 : 0),
               itemBuilder: (context, index) {
+                if (index == workEntries.length) {
+                  // Loading indicator at the bottom
+                  return _buildLoadingMoreIndicator();
+                }
                 return _buildTableRow(workEntries[index], index);
               },
             ),
           ),
+          
+          // Show "Load More" button if not auto-loading
+          if (hasMoreData && !isLoadingMore && !_isFromCache)
+            Padding(
+              padding: EdgeInsets.all(16.w),
+              child: ElevatedButton(
+                onPressed: _loadMoreWorkEntries,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.cx43C19F,
+                  foregroundColor: AppColors.cxWhite,
+                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                child: Text('Load More'),
+              ),
+            ),
         ],
       ),
     );
@@ -569,6 +770,22 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLoadingMoreIndicator() {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 16.h),
+      child: Center(
+        child: SizedBox(
+          width: 24.w,
+          height: 24.h,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.cx43C19F),
+          ),
         ),
       ),
     );

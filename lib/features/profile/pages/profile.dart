@@ -141,7 +141,7 @@ class _ProfileState extends State<Profile> {
       final dateRange = _getCurrentMonthDateRange();
       print('📅 Fetching work entries from ${dateRange['startDate']} to ${dateRange['endDate']}');
 
-      final workEntries = await _apiService.getWorkEntries(
+      final workEntriesResponse = await _apiService.getWorkEntries(
         employeeId,
         dateRange['startDate']!,
         dateRange['endDate']!,
@@ -149,7 +149,8 @@ class _ProfileState extends State<Profile> {
 
       if (mounted) {
         setState(() {
-          _workEntries = workEntries ?? [];
+          _workEntries = (workEntriesResponse?['entries'] as List<dynamic>?)
+              ?.cast<WorkEntry>() ?? [];
           _isLoadingWorkEntries = false;
         });
         print('✅ Loaded ${_workEntries.length} work entries for current month');
