@@ -33,8 +33,11 @@ class _ProfileState extends State<Profile> {
   bool _isLoading = true;
   bool _isLoadingWorkEntries = true;
   bool _isLoadingPrePaid = true;
+  bool _isLoadingVacation = true;
   double _prePaidAmount = 0.0;
   List<Map<String, dynamic>> _currentMonthTransactions = [];
+  int _availableVacationDays = 0;
+  int _totalVacationDays = 0;
   String? _error;
 
   @override
@@ -43,6 +46,7 @@ class _ProfileState extends State<Profile> {
     _loadProfileData();
     _loadCurrentMonthWorkEntries();
     _loadPrePaidAmount();
+    _loadVacationDays();
   }
 
   Future<void> _loadProfileData() async {
@@ -426,6 +430,150 @@ class _ProfileState extends State<Profile> {
     return '${months[now.month - 1]} ${now.year}';
   }
 
+  /// Load vacation days based on work entries
+  /// Formula: availableVacation = floor(totalWorkedMilliseconds / (3600000 * 234))
+  /// Max 7 days, 234 hours = 1 vacation day
+  Future<void> _loadVacationDays() async {
+    try {
+      setState(() {
+        _isLoadingVacation = true;
+      });
+
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        print('❌ No employee ID found for vacation calculation');
+        setState(() {
+          _isLoadingVacation = false;
+          _availableVacationDays = 0;
+          _totalVacationDays = 0;
+        });
+        return;
+      }
+
+      print('🏖️ Calculating vacation days for employee $employeeId');
+
+      // Step 1: Fetch vacation-type work entries
+      final vacationResponse = await _apiService.getWorkEntriesByType(
+        employeeId: employeeId,
+        type: 'vacation',
+      );
+
+      final vacationEntries = (vacationResponse?['entries'] as List<WorkEntry>?) ?? [];
+      final totalVacations = vacationResponse?['totalCount'] ?? 0;
+
+      print('📊 Found $totalVacations vacation entries');
+
+      String? startDate;
+      String? endDate = DateTime.now().toIso8601String().split('T')[0];
+
+      if (vacationEntries.isEmpty) {
+        // No vacations exist - calculate from first work day
+        print('📅 No vacations found, calculating from first work day');
+        
+        final allClosedEntriesResponse = await _apiService.getWorkEntriesByType(
+          employeeId: employeeId,
+          status: 'closed',
+        );
+
+        final closedEntries = (allClosedEntriesResponse?['entries'] as List<WorkEntry>?) ?? [];
+        
+        if (closedEntries.isEmpty) {
+          print('⚠️ No closed work entries found');
+          setState(() {
+            _isLoadingVacation = false;
+            _availableVacationDays = 0;
+            _totalVacationDays = totalVacations;
+          });
+          return;
+        }
+
+        // Calculate total worked milliseconds
+        int totalWorkedMilliseconds = 0;
+        for (var entry in closedEntries) {
+          if (entry.checkInTime != null && entry.checkOutTime != null) {
+            final checkIn = DateTime.parse(entry.checkInTime!);
+            final checkOut = DateTime.parse(entry.checkOutTime!);
+            totalWorkedMilliseconds += checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+          }
+        }
+
+        // Calculate available vacation days
+        // Formula: floor(totalWorkedMilliseconds / (3600000 * 234))
+        // 3600000 ms = 1 hour, 234 hours = 1 vacation day
+        final calculatedDays = (totalWorkedMilliseconds / (3600000 * 234)).floor();
+        final availableDays = calculatedDays > 7 ? 7 : calculatedDays;
+
+        print('✅ Calculated vacation days: $availableDays (from ${closedEntries.length} closed entries)');
+
+        setState(() {
+          _availableVacationDays = availableDays;
+          _totalVacationDays = totalVacations;
+          _isLoadingVacation = false;
+        });
+      } else {
+        // Vacations exist - calculate from most recent vacation date
+        print('📅 Vacations found, calculating from most recent vacation');
+        
+        // Sort by check_in_time descending (most recent first)
+        vacationEntries.sort((a, b) {
+          final aTime = DateTime.parse(a.checkInTime ?? '');
+          final bTime = DateTime.parse(b.checkInTime ?? '');
+          return bTime.compareTo(aTime);
+        });
+
+        // Get the most recent vacation date
+        final mostRecentVacation = vacationEntries.first;
+        startDate = DateTime.parse(mostRecentVacation.checkInTime!).toIso8601String().split('T')[0];
+
+        print('📅 Most recent vacation: $startDate');
+
+        // Fetch attendance entries from most recent vacation to now
+        final attendanceResponse = await _apiService.getWorkEntriesByType(
+          employeeId: employeeId,
+          type: 'attendance',
+          status: 'closed',
+          startDate: startDate,
+          endDate: endDate,
+        );
+
+        final attendanceEntries = (attendanceResponse?['entries'] as List<WorkEntry>?) ?? [];
+
+        print('📊 Found ${attendanceEntries.length} attendance entries since last vacation');
+
+        // Calculate total worked milliseconds
+        int totalWorkedMilliseconds = 0;
+        for (var entry in attendanceEntries) {
+          if (entry.checkInTime != null && entry.checkOutTime != null) {
+            final checkIn = DateTime.parse(entry.checkInTime!);
+            final checkOut = DateTime.parse(entry.checkOutTime!);
+            totalWorkedMilliseconds += checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+          }
+        }
+
+        print('⏱️ Total worked milliseconds: $totalWorkedMilliseconds');
+
+        // Calculate available vacation days
+        final calculatedDays = (totalWorkedMilliseconds / (3600000 * 234)).floor();
+        final availableDays = calculatedDays > 7 ? 7 : calculatedDays;
+
+        print('✅ Calculated vacation days: $availableDays (max 7)');
+
+        setState(() {
+          _availableVacationDays = availableDays;
+          _totalVacationDays = totalVacations;
+          _isLoadingVacation = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error calculating vacation days: $e');
+      setState(() {
+        _isLoadingVacation = false;
+        _availableVacationDays = 0;
+        _totalVacationDays = 0;
+      });
+    }
+  }
+
   void _showTransactionDetails() {
     showDialog(
       context: context,
@@ -724,6 +872,8 @@ class _ProfileState extends State<Profile> {
           _buildWorkHoursCard(),
           SizedBox(height: 20.h),
           _buildPrePaidCard(),
+          SizedBox(height: 20.h),
+          _buildVacationDaysCard(),
           SizedBox(height: 20.h),
           _buildJobInfoCard(),
         ],
@@ -1632,6 +1782,415 @@ class _ProfileState extends State<Profile> {
                   decoration: BoxDecoration(
                     color: AppColors.cxF5F7F9,
                     borderRadius: BorderRadius.circular(6.r),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVacationDaysCard() {
+    // Dynamic data from API calculation
+    final int availableVacationDays = _availableVacationDays; // Days available to use
+    final int usedVacationDays = _totalVacationDays; // Days already used (total vacation entries)
+    final int maxVacationDays = 7; // Maximum vacation days that can be earned
+    
+    // Calculate percentage for progress bar (based on max 7 days)
+    final double usagePercentage = availableVacationDays > 0 
+        ? (availableVacationDays / maxVacationDays) * 100 
+        : 0;
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.cxRoyalBlue,
+            AppColors.cxRoyalBlue.withOpacity(0.8),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24.r),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.cxRoyalBlue.withOpacity(0.3),
+            blurRadius: 20,
+            offset: Offset(0, 10),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(24.w),
+        child: _isLoadingVacation
+            ? _buildVacationShimmer()
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header with icon and title
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(16.r),
+                        ),
+                        child: Icon(
+                          Icons.beach_access_rounded,
+                          color: AppColors.cxPureWhite,
+                          size: 28.sp,
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Vacation Days',
+                              style: TextStyle(
+                                fontSize: 22.sp,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.cxPureWhite,
+                              ),
+                            ),
+                            Text(
+                              'Earned Leave Balance',
+                              style: TextStyle(
+                                fontSize: 14.sp,
+                                color: AppColors.cxPureWhite.withOpacity(0.8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24.h),
+                  
+                  // Available days - prominent display
+                  Center(
+                    child: Column(
+                      children: [
+                        Text(
+                          '$availableVacationDays',
+                          style: TextStyle(
+                            fontSize: 56.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.cxPureWhite,
+                            height: 1,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        Text(
+                          'Days Available',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w500,
+                            color: AppColors.cxPureWhite.withOpacity(0.9),
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  
+                  SizedBox(height: 24.h),
+                  
+                  // Progress bar
+                  Container(
+                    height: 8.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.cxPureWhite.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10.r),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: usagePercentage / 100,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              AppColors.cxPureWhite,
+                              AppColors.cxPureWhite.withOpacity(0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(10.r),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.cxPureWhite.withOpacity(0.3),
+                              blurRadius: 8,
+                              offset: Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  
+                  SizedBox(height: 20.h),
+                  
+                  // Usage breakdown
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxPureWhite.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: AppColors.cxPureWhite.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline_rounded,
+                                color: AppColors.cxPureWhite,
+                                size: 24.sp,
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                '$usedVacationDays',
+                                style: TextStyle(
+                                  fontSize: 24.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.cxPureWhite,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                'Days Used',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.cxPureWhite.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Container(
+                          padding: EdgeInsets.all(16.w),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxPureWhite.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: AppColors.cxPureWhite.withOpacity(0.2),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.calendar_today_rounded,
+                                color: AppColors.cxPureWhite,
+                                size: 24.sp,
+                              ),
+                              SizedBox(height: 8.h),
+                              Text(
+                                '$maxVacationDays',
+                                style: TextStyle(
+                                  fontSize: 24.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.cxPureWhite,
+                                  fontFeatures: [FontFeature.tabularFigures()],
+                                ),
+                              ),
+                              SizedBox(height: 4.h),
+                              Text(
+                                'Max Days',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: AppColors.cxPureWhite.withOpacity(0.8),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildVacationShimmer() {
+    return Shimmer.fromColors(
+      baseColor: AppColors.cxPureWhite.withOpacity(0.2),
+      highlightColor: AppColors.cxPureWhite.withOpacity(0.4),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header shimmer
+          Row(
+            children: [
+              Container(
+                width: 52.w,
+                height: 52.h,
+                decoration: BoxDecoration(
+                  color: AppColors.cxPureWhite.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 140.w,
+                      height: 24.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      width: 100.w,
+                      height: 14.h,
+                      decoration: BoxDecoration(
+                        color: AppColors.cxPureWhite.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          
+          // Available days shimmer
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 100.w,
+                  height: 56.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Container(
+                  width: 120.w,
+                  height: 18.h,
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(6.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 24.h),
+          
+          // Progress bar shimmer
+          Container(
+            height: 8.h,
+            decoration: BoxDecoration(
+              color: AppColors.cxPureWhite.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+          ),
+          
+          SizedBox(height: 20.h),
+          
+          // Breakdown shimmer
+          Row(
+            children: [
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 24.w,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        width: 40.w,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Container(
+                        width: 60.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 24.w,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        width: 40.w,
+                        height: 24.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(6.r),
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Container(
+                        width: 60.w,
+                        height: 12.h,
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

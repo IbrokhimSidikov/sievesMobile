@@ -279,6 +279,81 @@ class ApiService {
     }
   }
 
+  // Get work entries by type (e.g., VACATION, ATTENDANCE)
+  Future<Map<String, dynamic>?> getWorkEntriesByType({
+    required int employeeId,
+    String? type,
+    String? status,
+    String? startDate,
+    String? endDate,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = <String, String>{
+        'employee_id': employeeId.toString(),
+      };
+
+      if (type != null) {
+        queryParams['type'] = type;
+      }
+      if (status != null) {
+        queryParams['status'] = status;
+      }
+      if (startDate != null && endDate != null) {
+        queryParams['date_range'] = '$startDate,$endDate';
+      }
+
+      final uri = Uri.parse('$baseUrl/work-entry').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📋 Fetching work entries by type: $uri');
+
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        
+        // Handle both array and object responses
+        List<dynamic> entriesList;
+        int totalCount = 0;
+        
+        if (jsonData is List) {
+          entriesList = jsonData;
+          totalCount = entriesList.length;
+        } else if (jsonData is Map) {
+          if (jsonData.containsKey('models')) {
+            entriesList = jsonData['models'] as List;
+            totalCount = jsonData['_meta']?['totalCount'] ?? entriesList.length;
+          } else if (jsonData.containsKey('data')) {
+            entriesList = jsonData['data'] as List;
+            totalCount = jsonData['meta']?['total'] ?? entriesList.length;
+          } else {
+            print('❌ Unexpected response format: $jsonData');
+            return null;
+          }
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return null;
+        }
+        
+        final entries = entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+        print('✅ Fetched ${entries.length} work entries (type: $type, status: $status)');
+        
+        return {
+          'entries': entries,
+          'totalCount': totalCount,
+        };
+      } else {
+        print('❌ Error getting work entries by type: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting work entries by type: $e');
+      return null;
+    }
+  }
+
   // Helper method to get week start date (Sunday)
   String _getWeekStart(DateTime date) {
     final weekday = date.weekday;
