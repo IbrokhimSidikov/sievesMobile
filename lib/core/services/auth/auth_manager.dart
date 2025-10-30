@@ -57,8 +57,11 @@ class AuthManager {
       
       // Check if we have a valid access token
       final accessToken = await authService.getAccessToken();
+      
+      // If getAccessToken returns null, it means refresh failed (refresh token expired)
       if (accessToken == null) {
-        print('ℹ️ No access token found');
+        print('ℹ️ Access token is null - refresh token likely expired, clearing session');
+        await logout(); // Clear any remaining data
         return false;
       }
 

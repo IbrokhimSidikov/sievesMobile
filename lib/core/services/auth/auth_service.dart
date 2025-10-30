@@ -155,13 +155,31 @@ class AuthService {
     }
   }
 
-  // Get access token (with auto-refresh if expired)
+  // Get access token (with auto-refresh if expired or expiring soon)
   Future<String?> getAccessToken() async {
     final expiresAt = await _secureStorage.read(key: _expiresAtKey);
-    final currentTime = DateTime.now().millisecondsSinceEpoch.toString();
+    final currentTime = DateTime.now().millisecondsSinceEpoch;
 
-    if (expiresAt != null && int.parse(expiresAt) < int.parse(currentTime)) {
-      await refreshToken();
+    if (expiresAt != null) {
+      final expiresAtTime = int.parse(expiresAt);
+      final timeUntilExpiry = expiresAtTime - currentTime;
+      final fiveMinutesInMs = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+      // Refresh if expired or expiring within 5 minutes
+      if (expiresAtTime < currentTime || timeUntilExpiry < fiveMinutesInMs) {
+        print('⏰ Token expired or expiring soon (${timeUntilExpiry ~/ 1000}s remaining), refreshing...');
+        final refreshSuccess = await refreshToken();
+        
+        if (!refreshSuccess) {
+          print('❌ Proactive token refresh failed - refresh token likely expired');
+          // Clear all tokens since refresh failed
+          await _secureStorage.delete(key: _accessTokenKey);
+          await _secureStorage.delete(key: _refreshTokenKey);
+          await _secureStorage.delete(key: _idTokenKey);
+          await _secureStorage.delete(key: _expiresAtKey);
+          return null;
+        }
+      }
     }
 
     return await _secureStorage.read(key: _accessTokenKey);
@@ -173,22 +191,40 @@ class AuthService {
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
 
       if (refreshToken == null) {
-        print('❌ No refresh token found');
+        print('❌ No refresh token found - cannot refresh access token');
         return false;
       }
 
       print('🔄 Refreshing access token...');
+      print('   Refresh token available: ${refreshToken.isNotEmpty}');
 
       final credentials = await _auth0
           .api
           .renewCredentials(refreshToken: refreshToken);
 
       print('✅ Token refreshed successfully');
+      print('   New access token received: ${credentials.accessToken.isNotEmpty}');
+      print('   New refresh token received: ${credentials.refreshToken != null}');
+      
       await _storeCredentials(credentials);
+      
+      final newExpiresAt = credentials.expiresAt;
+      print('📅 New token expires at: $newExpiresAt');
 
       return true;
     } catch (e) {
       print('❌ Error refreshing token: $e');
+      print('   Error type: ${e.runtimeType}');
+      
+      // Check for specific Auth0 errors
+      if (e.toString().contains('invalid_grant')) {
+        print('   → Refresh token is invalid or expired');
+      } else if (e.toString().contains('network')) {
+        print('   → Network error during refresh');
+      } else if (e.toString().contains('timeout')) {
+        print('   → Request timed out');
+      }
+      
       return false;
     }
   }

@@ -13,28 +13,43 @@ class AuthHttpClient extends http.BaseClient {
   @override
   Future<http.StreamedResponse> send(http.BaseRequest request) async {
     // Make the initial request
-    var response = await _inner.send(request);
+    final response = await _inner.send(request);
+    
+    // Log the request for debugging
+    print('🌐 HTTP Request: ${request.method} ${request.url}');
+    print('   Response Status: ${response.statusCode}');
     
     // If unauthorized, try to refresh token and retry once
     if (response.statusCode == 401 || response.statusCode == 403) {
-      print('🔒 Received ${response.statusCode} response, attempting token refresh...');
+      print('🔒 Received ${response.statusCode} response - token may be expired');
+      print('   URL: ${request.url}');
       
-      // Refresh the token
+      // Try to refresh the token
+      print('🔄 Attempting token refresh...');
       final refreshed = await _authService.refreshToken();
       
       if (refreshed) {
-        print('✅ Token refreshed, retrying request...');
+        print('✅ Token refreshed successfully, retrying request...');
         
         // Get the new token
         final newToken = await _authService.getAccessToken();
         
         if (newToken != null) {
+          print('   New token obtained, cloning request...');
           // Clone the request with new token
           final newRequest = _copyRequest(request, newToken);
           
           // Retry the request
-          response = await _inner.send(newRequest);
-          print('📡 Retry response status: ${response.statusCode}');
+          final retryResponse = await _inner.send(newRequest);
+          print('📡 Retry response status: ${retryResponse.statusCode}');
+          
+          if (retryResponse.statusCode == 401 || retryResponse.statusCode == 403) {
+            print('❌ Retry also failed with ${retryResponse.statusCode} - refresh token may be expired');
+          } else if (retryResponse.statusCode >= 200 && retryResponse.statusCode < 300) {
+            print('✅ Retry successful');
+          }
+          
+          return retryResponse;
         } else {
           print('❌ Failed to get new access token after refresh');
           onRefreshFailed?.call();
@@ -44,6 +59,10 @@ class AuthHttpClient extends http.BaseClient {
         // Notify that refresh failed (user should be logged out)
         onRefreshFailed?.call();
       }
+    } else if (response.statusCode >= 200 && response.statusCode < 300) {
+      print('✅ Request successful');
+    } else {
+      print('⚠️ Request failed with status ${response.statusCode}');
     }
     
     return response;

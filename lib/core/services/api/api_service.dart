@@ -30,10 +30,16 @@ class ApiService {
   // Helper method to get headers with auth token
   Future<Map<String, String>> _getHeaders() async {
     final token = await authService.getAccessToken();
-    return {
+    
+    final headers = {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer $token',
     };
+    
+    if (token != null) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    
+    return headers;
   }
 
 
