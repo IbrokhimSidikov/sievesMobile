@@ -549,4 +549,38 @@ class ApiService {
       return null;
     }
   }
+
+  // Get break balance for an employee
+  Future<double?> getBreakBalance(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.sievesapp.com/v1/site/test').replace(
+        queryParameters: {
+          'action': 'breakBalanceGetter',
+          'employee_id': employeeId.toString(),
+        },
+      );
+
+      print('💰 Fetching break balance for employee $employeeId: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['plugin_break_balance'] != null) {
+          final balance = (data['plugin_break_balance'] as num).toDouble();
+          print('✅ Fetched break balance: $balance UZS');
+          return balance;
+        } else {
+          print('❌ Invalid break balance response: $data');
+          return null;
+        }
+      } else {
+        print('❌ Error getting break balance: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting break balance: $e');
+      return null;
+    }
+  }
 }
