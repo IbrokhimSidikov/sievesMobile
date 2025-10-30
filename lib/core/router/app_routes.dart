@@ -4,7 +4,7 @@ import 'package:sieves_mob/features/home/pages/home.dart';
 import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
 import '../../features/history/pages/history.dart';
-import '../../features/login/pages/login.dart';
+// import '../../features/login/pages/login.dart';
 import '../../features/notification/pages/notification.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
@@ -14,7 +14,7 @@ class AppRoutes {
 
   static const String splash = '/';
   static const String onboard = '/onboard';
-  static const String login = '/login';
+  // static const String login = '/login';
   static const String home = '/home';
   static const String profile = '/profile';
   static const String attendance = '/attendance';
@@ -35,11 +35,11 @@ class AppRoutes {
           name: onboard,
           builder: (context, state) => const Onboard()
         ),
-        GoRoute(
-          path: '/login',
-          name: login,
-          builder: (context, state) => const Login()
-        ),
+        // GoRoute(
+        //   path: '/login',
+        //   name: login,
+        //   builder: (context, state) => const Login()
+        // ),
         GoRoute(
             path: '/home',
             name: home,
