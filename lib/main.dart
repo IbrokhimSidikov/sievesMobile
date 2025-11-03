@@ -140,7 +140,7 @@ class _MyAppState extends State<MyApp> {
                 textTheme: GoogleFonts.nunitoTextTheme(
                     Theme.of(context).textTheme,
                 )),
-            themeMode: ThemeMode.system,
+            themeMode: ThemeMode.dark, // Force dark mode
             routerConfig: AppRoutes.router,
             scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
             builder: (builderContext, routerChild) {

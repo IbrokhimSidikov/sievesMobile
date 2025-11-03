@@ -95,8 +95,10 @@ class _HomeState extends State<Home> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Scaffold(
-      backgroundColor: AppColors.cxSoftWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
@@ -105,7 +107,7 @@ class _HomeState extends State<Home> {
           style: TextStyle(
             fontSize: 26.sp,
             fontWeight: FontWeight.w600,
-            color: AppColors.cxBlack,
+            color: theme.colorScheme.onSurface,
           ),
         ),
         actions: [
@@ -114,7 +116,11 @@ class _HomeState extends State<Home> {
             child: IconButton(
               onPressed: () {
                 context.push(AppRoutes.notification);
-              }, icon: Icon(Icons.notifications_none),
+              },
+              icon: Icon(
+                Icons.notifications_none,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ],
@@ -130,7 +136,7 @@ class _HomeState extends State<Home> {
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w400,
-                color: Colors.grey[600],
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 4.sp),
@@ -139,7 +145,7 @@ class _HomeState extends State<Home> {
               style: TextStyle(
                 fontSize: 22.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.cxBlack,
+                color: theme.colorScheme.onSurface,
               ),
             ),
 
