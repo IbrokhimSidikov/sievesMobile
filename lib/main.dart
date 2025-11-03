@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
@@ -13,6 +14,7 @@ import 'core/services/auth/auth_manager.dart';
 import 'core/services/auth/auth_state.dart';
 import 'core/services/version/version_service.dart';
 import 'core/services/theme/theme_cubit.dart';
+import 'core/services/notification/notification_service.dart';
 import 'core/widgets/force_update_dialog.dart';
 
 void main() async {
@@ -22,6 +24,15 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+  
+  // Set up background message handler
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
+  
+  // Initialize notification service
+  await NotificationService().initialize();
+  
+  // Run debug test to verify setup
+  await NotificationService().testNotificationSetup();
   
   runApp(const MyApp());
 }
