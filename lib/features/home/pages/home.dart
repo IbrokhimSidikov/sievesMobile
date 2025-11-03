@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
 import '../../../core/services/api/api_service.dart';
-
+import '../../../core/services/theme/theme_cubit.dart';
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -111,6 +112,64 @@ class _HomeState extends State<Home> {
           ),
         ),
         actions: [
+          // Theme toggle switch
+          Padding(
+            padding: EdgeInsets.only(right: 12.sp),
+            child: GestureDetector(
+              onTap: () {
+                context.read<ThemeCubit>().toggleTheme();
+              },
+              child: Container(
+                width: 56.w,
+                height: 28.h,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14.r),
+                  gradient: LinearGradient(
+                    colors: theme.brightness == Brightness.dark
+                        ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                        : [Colors.grey.shade300, Colors.grey.shade400],
+                  ),
+                ),
+                child: Stack(
+                  children: [
+                    AnimatedAlign(
+                      duration: const Duration(milliseconds: 250),
+                      curve: Curves.easeInOut,
+                      alignment: theme.brightness == Brightness.dark
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                      child: Container(
+                        width: 24.w,
+                        height: 24.h,
+                        margin: EdgeInsets.all(2.w),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.15),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          theme.brightness == Brightness.dark
+                              ? Icons.nightlight_round
+                              : Icons.wb_sunny_rounded,
+                          size: 14.sp,
+                          color: theme.brightness == Brightness.dark
+                              ? const Color(0xFF6366F1)
+                              : Colors.orange.shade700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          // Notification button
           Padding(
             padding: EdgeInsets.only(right: 16.sp),
             child: IconButton(

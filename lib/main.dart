@@ -12,6 +12,7 @@ import 'core/services/auth/auth_cubit.dart';
 import 'core/services/auth/auth_manager.dart';
 import 'core/services/auth/auth_state.dart';
 import 'core/services/version/version_service.dart';
+import 'core/services/theme/theme_cubit.dart';
 import 'core/widgets/force_update_dialog.dart';
 
 void main() async {
@@ -120,57 +121,65 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    return BlocProvider(
-      // Provide AuthCubit to the entire app
-      create: (context) => AuthCubit(AuthManager()),
+    return MultiBlocProvider(
+      providers: [
+        // Provide AuthCubit to the entire app
+        BlocProvider(create: (context) => AuthCubit(AuthManager())),
+        // Provide ThemeCubit for theme switching
+        BlocProvider(create: (context) => ThemeCubit()),
+      ],
       child: ScreenUtilInit(
         designSize: const Size(393, 852),
         minTextAdapt: true,
         splitScreenMode: true,
         builder: (_, child) {
-          return MaterialApp.router(
-            title: 'Sieves Mobile App',
-            debugShowCheckedModeBanner: false,
-            theme: AppTheme.lightTheme.copyWith(
-              textTheme: GoogleFonts.nunitoTextTheme(
-                Theme.of(context).textTheme,
-              ),
-            ),
-            darkTheme: AppTheme.darkTheme.copyWith(
-                textTheme: GoogleFonts.nunitoTextTheme(
+          return BlocBuilder<ThemeCubit, ThemeMode>(
+            builder: (context, themeMode) {
+              return MaterialApp.router(
+                title: 'Sieves Mobile App',
+                debugShowCheckedModeBanner: false,
+                theme: AppTheme.lightTheme.copyWith(
+                  textTheme: GoogleFonts.nunitoTextTheme(
                     Theme.of(context).textTheme,
-                )),
-            themeMode: ThemeMode.dark, // Force dark mode
-            routerConfig: AppRoutes.router,
-            scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
-            builder: (builderContext, routerChild) {
-              return Navigator(
-                key: _navigatorKey,
-                onPopPage: (route, result) => route.didPop(result),
-                pages: [
-                  MaterialPage(
-                    child: BlocListener<AuthCubit, AuthState>(
-                      // Global listener for auth state changes
-                      listener: (context, state) {
-                        if (state is AuthError) {
-                          // Show error message (e.g., session expired)
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(state.message),
-                              backgroundColor: Colors.red,
-                              duration: const Duration(seconds: 3),
-                            ),
-                          );
-                        } else if (state is AuthUnauthenticated) {
-                          // Session expired or user logged out - navigate to login
-                          print('🔐 Auth state changed to unauthenticated - navigating to login');
-                          AppRoutes.router.go('/onboard');
-                        }
-                      },
-                      child: routerChild ?? const SizedBox.shrink(),
-                    ),
                   ),
-                ],
+                ),
+                darkTheme: AppTheme.darkTheme.copyWith(
+                    textTheme: GoogleFonts.nunitoTextTheme(
+                        Theme.of(context).textTheme,
+                    )),
+                themeMode: themeMode,
+                routerConfig: AppRoutes.router,
+                scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
+                builder: (builderContext, routerChild) {
+                  return Navigator(
+                    key: _navigatorKey,
+                    onPopPage: (route, result) => route.didPop(result),
+                    pages: [
+                      MaterialPage(
+                        child: BlocListener<AuthCubit, AuthState>(
+                          // Global listener for auth state changes
+                          listener: (context, state) {
+                            if (state is AuthError) {
+                              // Show error message (e.g., session expired)
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(state.message),
+                                  backgroundColor: Colors.red,
+                                  duration: const Duration(seconds: 3),
+                                ),
+                              );
+                            } else if (state is AuthUnauthenticated) {
+                              // Session expired or user logged out - navigate to login
+                              print('🔐 Auth state changed to unauthenticated - navigating to login');
+                              AppRoutes.router.go('/onboard');
+                            }
+                          },
+                          child: routerChild ?? const SizedBox.shrink(),
+                        ),
+                      ),
+                    ],
+                  );
+                },
               );
             },
           );
