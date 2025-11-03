@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "539125971099",
+    "project_id": "sieves-mob",
+    "storage_bucket": "sieves-mob.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:539125971099:android:2fec09ca38eca51a242e3e",
+        "android_client_info": {
+          "package_name": "com.sieves.v1.sieves_mob"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAyMjt24KR_108fhBBOGQwAtmeZZDfq-zc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
