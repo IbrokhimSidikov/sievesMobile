@@ -122,8 +122,9 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.cxSoftWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.w),
@@ -302,10 +303,13 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+        gradient: isDark ? null : LinearGradient(
           colors: [
             AppColors.cxWhite,
             AppColors.cxF5F7F9,
@@ -316,7 +320,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -350,7 +354,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.cxDarkCharcoal,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 SizedBox(height: 4.h),
@@ -358,7 +362,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                   'Your meal history',
                   style: TextStyle(
                     fontSize: 14.sp,
-                    color: AppColors.cxSilverTint,
+                    color: theme.colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -390,13 +394,15 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildSkeletonLoader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -423,15 +429,19 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildSkeletonRow(int index) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isEvenRow = index % 2 == 0;
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       decoration: BoxDecoration(
-        color: isEvenRow ? AppColors.cxWhite : AppColors.cxF5F7F9.withOpacity(0.5),
+        color: isEvenRow 
+            ? (isDark ? theme.colorScheme.surface : AppColors.cxWhite)
+            : (isDark ? theme.colorScheme.surface.withOpacity(0.5) : AppColors.cxF5F7F9.withOpacity(0.5)),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.cxPlatinumGray.withOpacity(0.2),
+            color: theme.colorScheme.outline.withOpacity(0.2),
             width: 0.5,
           ),
         ),
@@ -528,7 +538,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
             _errorMessage ?? 'An error occurred',
             style: TextStyle(
               fontSize: 16.sp,
-              color: AppColors.cxGraphiteGray,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -558,13 +568,15 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildBreakRecordsList() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -591,10 +603,13 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildTableHeader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        color: isDark ? theme.colorScheme.surface.withOpacity(0.5) : null,
+        gradient: isDark ? null : LinearGradient(
           colors: [
             AppColors.cxF5F7F9,
             AppColors.cxF7F6F9,
@@ -619,6 +634,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildHeaderCell(String title, {int flex = 1}) {
+    final theme = Theme.of(context);
     return Expanded(
       flex: flex,
       child: Text(
@@ -626,7 +642,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,
-          color: AppColors.cxGraphiteGray,
+          color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 0.5,
         ),
         textAlign: TextAlign.center,
@@ -635,6 +651,8 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   }
 
   Widget _buildRecordCard(BreakOrder record, int index) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isEvenRow = index % 2 == 0;
     
     return InkWell(
@@ -643,10 +661,12 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
       child: Container(
         padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
         decoration: BoxDecoration(
-          color: isEvenRow ? AppColors.cxWhite : AppColors.cxF5F7F9.withOpacity(0.3),
+          color: isEvenRow 
+              ? (isDark ? theme.colorScheme.surface : AppColors.cxWhite)
+              : (isDark ? theme.colorScheme.surface.withOpacity(0.5) : AppColors.cxF5F7F9.withOpacity(0.3)),
           border: Border(
             bottom: BorderSide(
-              color: AppColors.cxPlatinumGray.withOpacity(0.2),
+              color: theme.colorScheme.outline.withOpacity(0.2),
               width: 0.5,
             ),
           ),
@@ -695,7 +715,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                     style: TextStyle(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.cxGraphiteGray,
+                      color: theme.colorScheme.onSurface,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -704,7 +724,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                     _formatTime(record.createdAt),
                     style: TextStyle(
                       fontSize: 10.sp,
-                      color: AppColors.cxSilverTint,
+                      color: theme.colorScheme.onSurfaceVariant,
                       fontWeight: FontWeight.w500,
                     ),
                     textAlign: TextAlign.center,

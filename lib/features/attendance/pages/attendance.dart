@@ -284,8 +284,9 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.cxSoftWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.w),
@@ -308,10 +309,13 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+        gradient: isDark ? null : LinearGradient(
           colors: [
             AppColors.cxWhite,
             AppColors.cxF5F7F9,
@@ -322,7 +326,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -356,7 +360,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.cxDarkCharcoal,
+                    color: theme.colorScheme.onSurface,
                   ),
                 ),
                 SizedBox(height: 4.h),
@@ -383,7 +387,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
                       currentMonth,
                       style: TextStyle(
                         fontSize: 14.sp,
-                        color: AppColors.cxSilverTint,
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -460,7 +464,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 16.sp,
-                color: AppColors.cxGraphiteGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 24.h),
@@ -497,7 +501,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
               'No work entries found for this month',
               style: TextStyle(
                 fontSize: 16.sp,
-                color: AppColors.cxGraphiteGray,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
           ],
@@ -505,13 +509,15 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
       );
     }
 
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -561,13 +567,15 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
   }
 
   Widget _buildSkeletonLoader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -594,10 +602,13 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
   }
 
   Widget _buildTableHeader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 16.h),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        color: isDark ? theme.colorScheme.surface.withOpacity(0.5) : null,
+        gradient: isDark ? null : LinearGradient(
           colors: [
             AppColors.cxF5F7F9,
             AppColors.cxF7F6F9,
@@ -623,6 +634,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
   }
 
   Widget _buildHeaderCell(String title, {int flex = 1}) {
+    final theme = Theme.of(context);
     return Expanded(
       flex: flex,
       child: Text(
@@ -630,7 +642,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w600,
-          color: AppColors.cxGraphiteGray,
+          color: theme.colorScheme.onSurfaceVariant,
           letterSpacing: 0.5,
         ),
         textAlign: TextAlign.center,
@@ -639,16 +651,20 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
   }
 
   Widget _buildTableRow(WorkEntry entry, int index) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isEvenRow = index % 2 == 0;
     final isOpenStatus = entry.isOpen;
     
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
       decoration: BoxDecoration(
-        color: isEvenRow ? AppColors.cxWhite : AppColors.cxF5F7F9.withOpacity(0.3),
+        color: isEvenRow 
+            ? (isDark ? theme.colorScheme.surface : AppColors.cxWhite)
+            : (isDark ? theme.colorScheme.surface.withOpacity(0.5) : AppColors.cxF5F7F9.withOpacity(0.3)),
         border: Border(
           bottom: BorderSide(
-            color: AppColors.cxPlatinumGray.withOpacity(0.3),
+            color: theme.colorScheme.outline.withOpacity(0.3),
             width: 0.5,
           ),
         ),
@@ -666,6 +682,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
   }
 
   Widget _buildDataCell(String text, {int flex = 1, bool isEmpty = false}) {
+    final theme = Theme.of(context);
     return Expanded(
       flex: flex,
       child: Text(
@@ -673,7 +690,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
         style: TextStyle(
           fontSize: 12.sp,
           fontWeight: FontWeight.w500,
-          color: isEmpty ? AppColors.cxSilverTint : AppColors.cxGraphiteGray,
+          color: isEmpty ? theme.colorScheme.onSurfaceVariant.withOpacity(0.5) : theme.colorScheme.onSurface,
         ),
         textAlign: TextAlign.center,
       ),

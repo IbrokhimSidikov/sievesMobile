@@ -123,8 +123,9 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: AppColors.cxSoftWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
         child: Padding(
           padding: EdgeInsets.all(20.w),
@@ -161,13 +162,15 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildSkeletonLoader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -184,13 +187,15 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildErrorState() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -213,7 +218,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.w700,
-                  color: AppColors.cxDarkCharcoal,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               SizedBox(height: 8.h),
@@ -222,7 +227,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.sp,
-                  color: AppColors.cxGraphiteGray,
+                  color: theme.colorScheme.onSurfaceVariant,
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -258,13 +263,15 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildEmptyState() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -285,7 +292,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.cxDarkCharcoal,
+                color: theme.colorScheme.onSurface,
               ),
             ),
             SizedBox(height: 8.h),
@@ -471,15 +478,17 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildHistoryTimeline() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final filteredRecords = _getFilteredRecords();
     
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
             blurRadius: 15,
             offset: const Offset(0, 4),
           ),
@@ -496,6 +505,8 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildTimelineItem(HistoryRecord record, int index, int totalItems) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isLast = index == totalItems - 1;
     final color = _getColorForType(record.displayType);
     
@@ -512,7 +523,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                 color: color,
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.cxWhite,
+                  color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
                   width: 2,
                 ),
                 boxShadow: [
@@ -528,7 +539,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
               Container(
                 width: 2.w,
                 height: 60.h,
-                color: AppColors.cxPlatinumGray.withOpacity(0.3),
+                color: theme.colorScheme.outline.withOpacity(0.3),
               ),
           ],
         ),
@@ -581,7 +592,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                       record.formattedDateTime,
                       style: TextStyle(
                         fontSize: 10.sp,
-                        color: AppColors.cxSilverTint,
+                        color: theme.colorScheme.onSurfaceVariant,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -595,7 +606,7 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                   record.displayDescription,
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: AppColors.cxGraphiteGray,
+                    color: theme.colorScheme.onSurface,
                     fontWeight: FontWeight.w500,
                     height: 1.4,
                   ),

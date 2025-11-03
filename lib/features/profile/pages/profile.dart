@@ -753,11 +753,14 @@ class _ProfileState extends State<Profile> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
-      backgroundColor: AppColors.cxSoftWhite,
+      backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(
+          gradient: isDark ? null : LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
             colors: [
@@ -779,12 +782,13 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildLoadingState() {
+    final theme = Theme.of(context);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           CircularProgressIndicator(
-            color: AppColors.cxRoyalBlue,
+            color: theme.colorScheme.primary,
             strokeWidth: 3,
           ),
           SizedBox(height: 16.h),
@@ -792,7 +796,7 @@ class _ProfileState extends State<Profile> {
             'Loading profile...',
             style: TextStyle(
               fontSize: 16.sp,
-              color: AppColors.cxBlack.withOpacity(0.7),
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -818,7 +822,7 @@ class _ProfileState extends State<Profile> {
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.cxBlack,
+                color: Theme.of(context).colorScheme.onSurface,
               ),
             ),
             SizedBox(height: 8.h),
@@ -827,7 +831,7 @@ class _ProfileState extends State<Profile> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 14.sp,
-                color: AppColors.cxBlack.withOpacity(0.7),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
             SizedBox(height: 24.h),
@@ -882,13 +886,14 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     return Row(
       children: [
         IconButton(
           onPressed: () => Navigator.pop(context),
           icon: Icon(
             Icons.arrow_back_ios,
-            color: AppColors.cxBlack,
+            color: theme.colorScheme.onSurface,
             size: 24.sp,
           ),
         ),
@@ -899,7 +904,7 @@ class _ProfileState extends State<Profile> {
             style: TextStyle(
               fontSize: 28.sp,
               fontWeight: FontWeight.w700,
-              color: AppColors.cxBlack,
+              color: theme.colorScheme.onSurface,
               letterSpacing: 0.5,
             ),
           ),
