@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -8,6 +9,7 @@ import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
 import '../../../core/services/api/api_service.dart';
 import '../../../core/services/theme/theme_cubit.dart';
+import '../../../core/services/notification/notification_storage_service.dart';
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -15,10 +17,12 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with WidgetsBindingObserver {
   final AuthManager _authManager = AuthManager(); // Use singleton instance
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
+  int _unreadNotificationCount = 0;
+  Timer? _refreshTimer;
   
   final List<_ModuleItem> modules = [
     _ModuleItem("Profile", Icons.person_outline, AppColors.cxPrimary, '/profile'),
@@ -81,15 +85,50 @@ class _HomeState extends State<Home> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      setState(() {
-        _scrollOffset = _scrollController.offset;
-      });
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addObserver(this);
+    _loadUnreadCount();
+    
+    // Refresh badge every 5 seconds when on home page
+    _startPeriodicRefresh();
+  }
+  
+  void _startPeriodicRefresh() {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
+      if (mounted) {
+        _loadUnreadCount();
+      }
     });
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // Refresh when app comes to foreground
+    if (state == AppLifecycleState.resumed) {
+      _loadUnreadCount();
+    }
+  }
+
+  void _onScroll() {
+    setState(() {
+      _scrollOffset = _scrollController.offset;
+    });
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final count = await NotificationStorageService().getUnreadCount();
+    if (mounted) {
+      setState(() {
+        _unreadNotificationCount = count;
+      });
+    }
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     _scrollController.dispose();
     super.dispose();
   }
@@ -169,17 +208,59 @@ class _HomeState extends State<Home> {
               ),
             ),
           ),
-          // Notification button
+          // Notification button with badge
           Padding(
             padding: EdgeInsets.only(right: 16.sp),
-            child: IconButton(
-              onPressed: () {
-                context.push(AppRoutes.notification);
-              },
-              icon: Icon(
-                Icons.notifications_none,
-                color: theme.colorScheme.onSurface,
-              ),
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                IconButton(
+                  onPressed: () async {
+                    await context.push(AppRoutes.notificationNew);
+                    // Reload unread count when returning from notifications page
+                    _loadUnreadCount();
+                  },
+                  icon: Icon(
+                    Icons.notifications_none,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                if (_unreadNotificationCount > 0)
+                  Positioned(
+                    right: 8.w,
+                    top: 8.h,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: _unreadNotificationCount > 9 ? 5.w : 6.w,
+                        vertical: 2.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFEF4444),
+                        borderRadius: BorderRadius.circular(10.r),
+                        border: Border.all(
+                          color: theme.scaffoldBackgroundColor,
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFEF4444).withOpacity(0.3),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Text(
+                        _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 9.sp,
+                          fontWeight: FontWeight.w700,
+                          height: 1.2,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
           ),
         ],

@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import '../../model/notification_model.dart';
+import 'notification_storage_service.dart';
 
 /// Background message handler - must be top-level function
 @pragma('vm:entry-point')
@@ -8,6 +10,29 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   print('Title: ${message.notification?.title}');
   print('Body: ${message.notification?.body}');
   print('Data: ${message.data}');
+  
+  // Save notification to storage
+  await _saveNotificationToStorage(message);
+  print('✅ Background notification saved to storage');
+}
+
+/// Helper function to save notification
+Future<void> _saveNotificationToStorage(RemoteMessage message) async {
+  try {
+    final notification = NotificationModel(
+      id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
+      title: message.notification?.title ?? 'New Notification',
+      body: message.notification?.body ?? '',
+      type: message.data['type'] as String? ?? 'general',
+      timestamp: DateTime.now(),
+      isRead: false,
+      data: message.data,
+    );
+    
+    await NotificationStorageService().saveNotification(notification);
+  } catch (e) {
+    print('❌ Error saving notification: $e');
+  }
 }
 
 class NotificationService {
@@ -139,7 +164,10 @@ class NotificationService {
   }
 
   /// Handle notification when app is in foreground
-  void _handleForegroundNotification(RemoteMessage message) {
+  Future<void> _handleForegroundNotification(RemoteMessage message) async {
+    // Save notification to storage
+    await _saveNotificationToStorage(message);
+    
     // You can show a custom dialog, snackbar, or banner here
     // Example: Show a snackbar with notification content
     
@@ -151,13 +179,28 @@ class NotificationService {
   void _handleNotificationTap(RemoteMessage message) {
     final data = message.data;
     
-    // Example: Navigate based on notification data
+    print('📍 Notification tapped, navigating to notifications page');
+    
+    // Navigate to notifications page by default
+    // Use a delay to ensure app is fully loaded
+    Future.delayed(const Duration(milliseconds: 500), () {
+      try {
+        // Import will be added at the top
+        // AppRoutes.router.go('/notificationNew');
+        
+        // For now, just log - navigation will be handled by router
+        print('📱 Opening notifications page');
+      } catch (e) {
+        print('❌ Error navigating: $e');
+      }
+    });
+    
+    // Optional: Navigate to specific screen based on data
     if (data.containsKey('screen')) {
       final screen = data['screen'];
-      print('📍 Navigating to screen: $screen');
+      print('📍 Custom screen requested: $screen');
       
-      // TODO: Implement navigation logic
-      // Example:
+      // You can add custom navigation logic here
       // if (screen == 'attendance') {
       //   AppRoutes.router.go('/attendance');
       // } else if (screen == 'history') {
