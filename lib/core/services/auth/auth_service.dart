@@ -29,40 +29,85 @@ class AuthService {
   // Login with Auth0
   Future<bool> login() async {
     try {
+      print('');
+      print('═══════════════════════════════════════════════════════');
       print('🚀 Starting Auth0 login with auth0_flutter...');
-      print('Domain: $_domain');
-      print('Client ID: $_clientId');
-      print('Audience: $_audience');
+      print('═══════════════════════════════════════════════════════');
+      print('📋 Configuration:');
+      print('   Domain: $_domain');
+      print('   Client ID: $_clientId');
+      print('   Audience: $_audience');
+      print('   URL Scheme: sievesmob');
+      print('   Callback URL: sievesmob://callback');
+      print('');
+      print('⏳ Opening Auth0 login page...');
       
       final credentials = await _auth0
           .webAuthentication(scheme: 'sievesmob')
           .login(
             audience: _audience,
             scopes: {'openid', 'profile', 'email', 'offline_access'},
+            redirectUrl: 'sievesmob://callback',
           );
 
-      print('✅ Credentials received!');
-      print('Access Token: ${credentials.accessToken.substring(0, 20)}...');
-      print('Has Refresh Token: ${credentials.refreshToken != null}');
+      print('');
+      print('✅ Credentials received from Auth0!');
+      print('   Access Token: ${credentials.accessToken.substring(0, 20)}...');
+      print('   ID Token: ${credentials.idToken.substring(0, 20)}...');
+      print('   Has Refresh Token: ${credentials.refreshToken != null}');
+      print('   Expires At: ${credentials.expiresAt}');
+      print('');
       
       await _storeCredentials(credentials);
       
       // Get user profile
+      print('📞 Fetching user profile from Auth0...');
       await _getUserProfile(credentials.accessToken);
       
+      print('');
       print('✅ Login completed successfully');
+      print('═══════════════════════════════════════════════════════');
+      print('');
       return true;
-    } catch (e) {
-      print('❌ Login error: $e');
+    } catch (e, stackTrace) {
+      print('');
+      print('═══════════════════════════════════════════════════════');
+      print('❌ LOGIN ERROR OCCURRED');
+      print('═══════════════════════════════════════════════════════');
+      print('Error: $e');
       print('Error type: ${e.runtimeType}');
+      print('Stack trace:');
+      print(stackTrace);
+      print('═══════════════════════════════════════════════════════');
+      print('');
       
       // Check for specific error types
       if (e.toString().contains('User cancelled') || 
           e.toString().contains('CANCELED') ||
           e.toString().contains('cancelled') ||
           e.toString().contains('a0.session.user_cancelled')) {
-        print('🚫 User cancelled the login');
+        print('🚫 User cancelled the login - this is normal behavior');
         return false;
+      }
+      
+      // Check for callback URL mismatch
+      if (e.toString().contains('callback') || 
+          e.toString().contains('redirect') ||
+          e.toString().contains('URL')) {
+        print('');
+        print('⚠️  POSSIBLE CALLBACK URL ISSUE');
+        print('   Check Auth0 Dashboard > Application Settings > Allowed Callback URLs');
+        print('   Must include: sievesmob://callback');
+        print('');
+      }
+      
+      // Check for audience issues
+      if (e.toString().contains('audience')) {
+        print('');
+        print('⚠️  POSSIBLE AUDIENCE ISSUE');
+        print('   Current audience: $_audience');
+        print('   Verify this matches your Auth0 API identifier');
+        print('');
       }
       
       // Re-throw other errors so they can be handled by the UI
@@ -117,22 +162,34 @@ class AuthService {
   // Get backend identity (same flow as Angular app)
   Future<void> _getBackendIdentity(String authId, String accessToken) async {
     try {
+      print('');
+      print('📡 Calling backend identity API...');
+      final url = 'https://app.sievesapp.com/v1/identity/0?auth_id=$authId&expand[]=employee.branch&expand[]=employee.individual&expand[]=employee.reward';
+      print('   URL: $url');
+      print('   Auth ID: $authId');
+      
       // Call your backend identity service (same as Angular)
       final response = await http.get(
-        Uri.parse('https://app.sievesapp.com/v1/identity/0?auth_id=$authId&expand[]=employee.branch&expand[]=employee.individual&expand[]=employee.reward'),
+        Uri.parse(url),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
         },
       );
 
+      print('   Response Status: ${response.statusCode}');
+      
       if (response.statusCode == 200) {
         final identityData = json.decode(response.body);
-        print('✅ Backend identity: $identityData');
+        print('✅ Backend identity retrieved successfully');
+        print('   Identity ID: ${identityData['id']}');
+        print('   Email: ${identityData['email']}');
         
         // Update identity with token (same as Angular)
         identityData['token'] = accessToken;
         
+        print('');
+        print('📡 Updating identity with token...');
         final updateResponse = await http.put(
           Uri.parse('https://app.sievesapp.com/v1/identity/${identityData['id']}'),
           headers: {
@@ -142,16 +199,32 @@ class AuthService {
           body: json.encode(identityData),
         );
 
+        print('   Update Response Status: ${updateResponse.statusCode}');
+        
         if (updateResponse.statusCode == 200) {
           print('✅ Identity updated successfully');
         } else {
           print('❌ Identity update failed: ${updateResponse.statusCode}');
+          print('   Response: ${updateResponse.body}');
         }
       } else {
         print('❌ Backend identity failed: ${response.statusCode}');
+        print('   Response: ${response.body}');
+        print('');
+        print('⚠️  BACKEND API ERROR');
+        print('   This might mean:');
+        print('   1. The auth_id does not exist in your backend database');
+        print('   2. The access token is not valid for your backend API');
+        print('   3. The backend API is not accessible');
+        print('');
       }
-    } catch (e) {
+    } catch (e, stackTrace) {
       print('❌ Backend identity error: $e');
+      print('   Stack trace: $stackTrace');
+      print('');
+      print('⚠️  NETWORK OR API ERROR');
+      print('   Check your internet connection and backend API status');
+      print('');
     }
   }
 
@@ -258,7 +331,9 @@ class AuthService {
       // Logout from Auth0
       await _auth0
           .webAuthentication(scheme: 'sievesmob')
-          .logout();
+          .logout(
+            returnTo: 'sievesmob://logout-callback',
+          );
       
       // Clear stored tokens
       await _secureStorage.delete(key: _accessTokenKey);
