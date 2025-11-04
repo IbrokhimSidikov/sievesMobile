@@ -1,17 +1,15 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
+import '../../../core/services/auth/auth_cubit.dart';
+import '../../../core/services/auth/auth_state.dart';
 import '../../../core/services/api/api_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/work_time_calculator.dart';
@@ -43,10 +41,17 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
+    print('🎬 [Profile] initState called');
     _loadProfileData();
     _loadCurrentMonthWorkEntries();
     _loadPrePaidAmount();
     _loadVacationDays();
+  }
+
+  @override
+  void dispose() {
+    print('🗑️  [Profile] dispose called');
+    super.dispose();
   }
 
   Future<void> _loadProfileData() async {
@@ -283,8 +288,13 @@ class _ProfileState extends State<Profile> {
   }
 
   Future<void> _handleLogout() async {
-    _loadPrePaidAmount();
+    print('');
+    print('═══════════════════════════════════════════════════════');
+    print('🔴 [Profile] Logout button pressed');
+    print('═══════════════════════════════════════════════════════');
+    
     // Show confirmation dialog
+    print('📋 [Profile] Showing confirmation dialog...');
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -354,69 +364,26 @@ class _ProfileState extends State<Profile> {
     );
 
     if (shouldLogout == true) {
-      try {
-        // Show loading indicator
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (BuildContext context) {
-            return Center(
-              child: Container(
-                padding: EdgeInsets.all(24.w),
-                decoration: BoxDecoration(
-                  color: AppColors.cxPureWhite,
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CircularProgressIndicator(
-                      color: Colors.red.shade600,
-                      strokeWidth: 3,
-                    ),
-                    SizedBox(height: 16.h),
-                    Text(
-                      'Logging out...',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        color: AppColors.cxBlack.withOpacity(0.7),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-
-        // Perform logout
-        await _authManager.logout();
-
-        // Navigate to onboard page and clear navigation stack
-        if (mounted) {
-          context.go(AppRoutes.onboard);
-        }
-      } catch (e) {
-        // Hide loading dialog
-        if (mounted) {
-          Navigator.of(context).pop();
-          
-          // Show error message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Failed to logout. Please try again.',
-                style: TextStyle(color: AppColors.cxPureWhite),
-              ),
-              backgroundColor: Colors.red.shade600,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-            ),
-          );
-        }
-      }
+      print('✅ [Profile] User confirmed logout');
+      
+      // Perform logout via AuthCubit
+      // NOTE: Don't show loading dialog here - the global BlocListener in main.dart
+      // will handle navigation immediately, which would dispose this widget
+      // before we can close the dialog
+      print('🔄 [Profile] Calling AuthCubit.logout()...');
+      await context.read<AuthCubit>().logout();
+      print('✅ [Profile] AuthCubit.logout() completed');
+      
+      // The global BlocListener in main.dart will handle navigation to /onboard
+      // when AuthUnauthenticated state is emitted
+      
+      print('═══════════════════════════════════════════════════════');
+      print('✅ [Profile] Logout handler completed - waiting for global navigation');
+      print('═══════════════════════════════════════════════════════');
+      print('');
+    } else {
+      print('❌ [Profile] User cancelled logout');
+      print('');
     }
   }
 
@@ -755,6 +722,10 @@ class _ProfileState extends State<Profile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    
+    // NOTE: Removed BlocListener here because main.dart has a global listener
+    // that handles navigation when AuthUnauthenticated is emitted
+    // Having two listeners caused navigation conflicts and the loading dialog to get stuck
     
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,

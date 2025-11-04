@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../model/notification_model.dart';
 import 'notification_storage_service.dart';
@@ -102,6 +103,25 @@ class NotificationService {
   /// Get FCM token
   Future<void> _getToken() async {
     try {
+      // On iOS, wait for APNs token first (but with shorter delay)
+      if (Platform.isIOS) {
+        print('🍎 iOS: Checking for APNs token...');
+        
+        // Reduced delay from 2s to 500ms
+        await Future.delayed(const Duration(milliseconds: 500));
+        
+        // Check if APNs token is available
+        final apnsToken = await _messaging.getAPNSToken();
+        if (apnsToken != null) {
+          print('🍎 iOS: APNs token available');
+        } else {
+          print('⚠️ iOS: APNs token not available yet, will retry in background...');
+          // Don't wait here - retry in background
+          _retryGetTokenInBackground();
+          return;
+        }
+      }
+      
       _fcmToken = await _messaging.getToken();
       print('🔑 FCM Token: $_fcmToken');
       
@@ -109,7 +129,23 @@ class NotificationService {
       // await _sendTokenToBackend(_fcmToken);
     } catch (e) {
       print('❌ Error getting FCM token: $e');
+      // Retry in background instead of blocking
+      _retryGetTokenInBackground();
     }
+  }
+
+  /// Retry getting FCM token in background without blocking
+  void _retryGetTokenInBackground() {
+    print('🔄 Retrying FCM token fetch in background...');
+    Future.delayed(const Duration(seconds: 2), () async {
+      try {
+        _fcmToken = await _messaging.getToken();
+        print('🔑 FCM Token (background retry): $_fcmToken');
+        // TODO: Send this token to your backend server
+      } catch (e) {
+        print('❌ Background retry failed: $e');
+      }
+    });
   }
 
   /// Configure how notifications appear in foreground

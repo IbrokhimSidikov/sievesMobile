@@ -251,8 +251,20 @@ class AuthManager {
 
   // Logout
   Future<void> logout() async {
+    print('📋 [AuthManager] Starting logout...');
+    
+    print('   → Calling AuthService.logout()...');
     await authService.logout();
+    print('   ✅ AuthService.logout() completed');
+    
+    print('   → Deleting identity from secure storage...');
     await authService.secureStorage.delete(key: _identityKey);
+    print('   ✅ Identity deleted from secure storage');
+    
+    print('   → Clearing current identity in memory...');
     _currentIdentity = null;
+    print('   ✅ Current identity cleared');
+    
+    print('✅ [AuthManager] Logout completed');
   }
 }

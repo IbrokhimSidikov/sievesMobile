@@ -31,8 +31,13 @@ flutter_ios_podfile_setup
 
 target 'Runner' do
   use_frameworks!
+  use_modular_headers!
 
   flutter_install_all_ios_pods File.dirname(File.realpath(__FILE__))
+  
+  # Firebase pods (if not already included by FlutterFire)
+  # These will be automatically included via flutter_install_all_ios_pods
+  
   target 'RunnerTests' do
     inherit! :search_paths
   end

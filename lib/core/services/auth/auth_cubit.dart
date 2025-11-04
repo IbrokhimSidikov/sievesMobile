@@ -75,12 +75,32 @@ class AuthCubit extends Cubit<AuthState> {
   /// Perform logout
   Future<void> logout() async {
     try {
-      print('🚪 Logging out...');
+      print('');
+      print('═══════════════════════════════════════════════════════');
+      print('🚪 [AuthCubit] Starting logout process...');
+      print('═══════════════════════════════════════════════════════');
+      
+      print('1️⃣ [AuthCubit] Calling AuthManager.logout()...');
       await _authManager.logout();
-      print('✅ Logout successful');
+      print('✅ [AuthCubit] AuthManager.logout() completed');
+      
+      print('2️⃣ [AuthCubit] Emitting AuthUnauthenticated state...');
       emit(const AuthUnauthenticated());
-    } catch (e) {
-      print('❌ Logout error: $e');
+      print('✅ [AuthCubit] AuthUnauthenticated state emitted');
+      
+      print('═══════════════════════════════════════════════════════');
+      print('✅ [AuthCubit] Logout process completed successfully');
+      print('═══════════════════════════════════════════════════════');
+      print('');
+    } catch (e, stackTrace) {
+      print('');
+      print('═══════════════════════════════════════════════════════');
+      print('❌ [AuthCubit] Logout error occurred');
+      print('═══════════════════════════════════════════════════════');
+      print('Error: $e');
+      print('Stack trace: $stackTrace');
+      print('═══════════════════════════════════════════════════════');
+      print('');
       emit(AuthError('Logout error: ${e.toString()}'));
     }
   }

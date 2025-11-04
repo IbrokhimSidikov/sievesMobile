@@ -28,11 +28,16 @@ void main() async {
   // Set up background message handler
   FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
   
-  // Initialize notification service
-  await NotificationService().initialize();
-  
-  // Run debug test to verify setup
-  await NotificationService().testNotificationSetup();
+  // Initialize notification service in background (don't await)
+  // This prevents blocking the app startup with FCM token delays
+  print('🚀 Starting app - notification service will initialize in background');
+  NotificationService().initialize().then((_) {
+    print('✅ Notification service initialized');
+    // Run debug test after initialization (also in background)
+    NotificationService().testNotificationSetup();
+  }).catchError((e) {
+    print('⚠️ Notification service initialization failed: $e');
+  });
   
   runApp(const MyApp());
 }
@@ -170,7 +175,11 @@ class _MyAppState extends State<MyApp> {
                         child: BlocListener<AuthCubit, AuthState>(
                           // Global listener for auth state changes
                           listener: (context, state) {
+                            print('');
+                            print('🌍 [GLOBAL BlocListener] Auth state changed: ${state.runtimeType}');
+                            
                             if (state is AuthError) {
+                              print('❌ [GLOBAL BlocListener] Showing error message: ${state.message}');
                               // Show error message (e.g., session expired)
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
@@ -181,9 +190,12 @@ class _MyAppState extends State<MyApp> {
                               );
                             } else if (state is AuthUnauthenticated) {
                               // Session expired or user logged out - navigate to login
-                              print('🔐 Auth state changed to unauthenticated - navigating to login');
+                              print('🔐 [GLOBAL BlocListener] AuthUnauthenticated detected');
+                              print('🚀 [GLOBAL BlocListener] Navigating to /onboard...');
                               AppRoutes.router.go('/onboard');
+                              print('✅ [GLOBAL BlocListener] Navigation initiated');
                             }
+                            print('');
                           },
                           child: routerChild ?? const SizedBox.shrink(),
                         ),
