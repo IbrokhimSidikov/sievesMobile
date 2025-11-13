@@ -297,68 +297,223 @@ class _ProfileState extends State<Profile> {
     print('📋 [Profile] Showing confirmation dialog...');
     final shouldLogout = await showDialog<bool>(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.r),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.logout_rounded,
-                color: Colors.red.shade600,
-                size: 28.sp,
+        final theme = Theme.of(context);
+        final isDark = theme.brightness == Brightness.dark;
+        
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: isDark 
+                  ? [
+                      const Color(0xFF1F1F2E),
+                      const Color(0xFF1A1A24),
+                    ]
+                  : [
+                      Colors.white,
+                      Colors.grey.shade50,
+                    ],
               ),
-              SizedBox(width: 12.w),
-              Text(
-                'Logout',
-                style: TextStyle(
-                  fontSize: 22.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.cxBlack,
+              borderRadius: BorderRadius.circular(24.r),
+              border: Border.all(
+                color: isDark 
+                  ? Colors.white.withOpacity(0.1)
+                  : Colors.grey.withOpacity(0.2),
+                width: 1,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.3),
+                  blurRadius: 40,
+                  offset: const Offset(0, 20),
                 ),
-              ),
-            ],
-          ),
-          content: Text(
-            'Are you sure you want to logout from your account?',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: AppColors.cxBlack.withOpacity(0.7),
+                BoxShadow(
+                  color: const Color(0xFFEF4444).withOpacity(0.2),
+                  blurRadius: 60,
+                  offset: const Offset(0, 10),
+                ),
+              ],
             ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  color: AppColors.cxBlack.withOpacity(0.6),
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            Container(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.red.shade600, Colors.red.shade700],
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: TextButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(
-                  'Logout',
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    color: AppColors.cxPureWhite,
-                    fontWeight: FontWeight.w600,
+            child: Padding(
+              padding: EdgeInsets.all(28.w),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Icon container with gradient background
+                  Container(
+                    width: 80.w,
+                    height: 80.h,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          const Color(0xFFEF4444).withOpacity(0.2),
+                          const Color(0xFFDC2626).withOpacity(0.1),
+                        ],
+                      ),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFEF4444).withOpacity(0.3),
+                        width: 2,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFEF4444).withOpacity(0.3),
+                          blurRadius: 20,
+                          spreadRadius: 2,
+                        ),
+                      ],
+                    ),
+                    child: Icon(
+                      Icons.logout_rounded,
+                      color: const Color(0xFFEF4444),
+                      size: 40.sp,
+                    ),
                   ),
-                ),
+                  
+                  SizedBox(height: 24.h),
+                  
+                  // Title
+                  Text(
+                    'Logout Confirmation',
+                    style: TextStyle(
+                      fontSize: 24.sp,
+                      fontWeight: FontWeight.w700,
+                      color: isDark 
+                        ? const Color(0xFFE8E8F0)
+                        : AppColors.cxBlack,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  
+                  SizedBox(height: 12.h),
+                  
+                  // Description
+                  Text(
+                    'Are you sure you want to logout from your account?',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      color: isDark 
+                        ? const Color(0xFF9CA3AF)
+                        : AppColors.cxBlack.withOpacity(0.6),
+                      height: 1.5,
+                      letterSpacing: 0.2,
+                    ),
+                  ),
+                  
+                  SizedBox(height: 32.h),
+                  
+                  // Action buttons
+                  Row(
+                    children: [
+                      // Cancel button
+                      Expanded(
+                        child: Container(
+                          height: 52.h,
+                          decoration: BoxDecoration(
+                            color: isDark
+                              ? const Color(0xFF252532)
+                              : Colors.grey.shade100,
+                            borderRadius: BorderRadius.circular(16.r),
+                            border: Border.all(
+                              color: isDark
+                                ? Colors.white.withOpacity(0.1)
+                                : Colors.grey.withOpacity(0.3),
+                              width: 1,
+                            ),
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => Navigator.of(context).pop(false),
+                              borderRadius: BorderRadius.circular(16.r),
+                              child: Center(
+                                child: Text(
+                                  'Cancel',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: isDark
+                                      ? const Color(0xFF9CA3AF)
+                                      : AppColors.cxBlack.withOpacity(0.7),
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                      
+                      SizedBox(width: 12.w),
+                      
+                      // Logout button
+                      Expanded(
+                        child: Container(
+                          height: 52.h,
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFFEF4444),
+                                Color(0xFFDC2626),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(16.r),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(0xFFEF4444).withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: Material(
+                            color: Colors.transparent,
+                            child: InkWell(
+                              onTap: () => Navigator.of(context).pop(true),
+                              borderRadius: BorderRadius.circular(16.r),
+                              child: Center(
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.logout_rounded,
+                                      color: Colors.white,
+                                      size: 20.sp,
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      'Logout',
+                                      style: TextStyle(
+                                        fontSize: 16.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         );
       },
     );

@@ -48,6 +48,9 @@ class AuthService {
             audience: _audience,
             scopes: {'openid', 'profile', 'email', 'offline_access'},
             redirectUrl: 'sievesmob://callback',
+            parameters: {
+              'max_age': '0', // Force re-authentication every time
+            },
           );
 
       print('');
@@ -328,23 +331,18 @@ class AuthService {
     try {
       print('🚪 Logging out...');
       
-      // Logout from Auth0
-      await _auth0
-          .webAuthentication(scheme: 'sievesmob')
-          .logout(
-            returnTo: 'sievesmob://logout-callback',
-          );
-      
-      // Clear stored tokens
+      // Clear local tokens from secure storage
+      // We use max_age=0 in login to force re-authentication, so we don't need
+      // to call Auth0's web logout which causes the browser popup
       await _secureStorage.delete(key: _accessTokenKey);
       await _secureStorage.delete(key: _refreshTokenKey);
       await _secureStorage.delete(key: _idTokenKey);
       await _secureStorage.delete(key: _expiresAtKey);
       
-      print('✅ Logged out successfully');
+      print('✅ Logout completed successfully (tokens cleared)');
     } catch (e) {
       print('❌ Logout error: $e');
-      // Still clear local tokens even if Auth0 logout fails
+      // Ensure tokens are cleared even if there's an error
       await _secureStorage.delete(key: _accessTokenKey);
       await _secureStorage.delete(key: _refreshTokenKey);
       await _secureStorage.delete(key: _idTokenKey);
