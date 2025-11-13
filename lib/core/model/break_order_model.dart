@@ -58,6 +58,22 @@ class BreakOrder {
           : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'branch_id': branchId,
+      'employee_id': employeeId,
+      'break_employee_id': breakEmployeeId,
+      'break_photo_id': breakPhotoId,
+      'value': value,
+      'paid': paid,
+      'start_time': startTime,
+      'created_at': createdAt,
+      'orderItems': orderItems.map((item) => item.toJson()).toList(),
+      'breakPhoto': breakPhoto?.toJson(),
+    };
+  }
 }
 
 class OrderItem {
@@ -92,6 +108,18 @@ class OrderItem {
           : null,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'order_id': orderId,
+      'product_id': productId,
+      'quantity': quantity,
+      'price': price,
+      'total_price': totalPrice,
+      'product': product?.toJson(),
+    };
+  }
 }
 
 class Product {
@@ -114,6 +142,15 @@ class Product {
       photoId: json['photo_id'],
       type: json['type'] ?? 'storable',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'photo_id': photoId,
+      'type': type,
+    };
   }
 }
 
@@ -146,6 +183,18 @@ class BreakPhoto {
       format: json['format'] ?? '',
       createdAt: json['created_at'] ?? '',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'belongs_to': belongsTo,
+      'path': path,
+      'thumbnail': thumbnail,
+      'name': name,
+      'format': format,
+      'created_at': createdAt,
+    };
   }
 
   String get fullUrl => 'https://app.sievesapp.com/$path/$name.$format';

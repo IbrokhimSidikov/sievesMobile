@@ -5,8 +5,8 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/model/break_order_model.dart';
 import '../../../core/services/auth/auth_manager.dart';
-
 import '../../../core/services/api/api_service.dart';
+import '../../../core/services/cache/break_records_cache_service.dart';
 
 class BreakRecords extends StatefulWidget {
   const BreakRecords({super.key});
@@ -17,11 +17,14 @@ class BreakRecords extends StatefulWidget {
 
 class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
+  final BreakRecordsCacheService _cacheService = BreakRecordsCacheService();
   bool _isLoading = true;
   String? _errorMessage;
   List<BreakOrder> _breakOrders = [];
   double? _breakBalance;
   bool _isLoadingBalance = true;
+  bool _isOrdersFromCache = false;
+  bool _isBalanceFromCache = false;
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
 
@@ -51,9 +54,25 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     super.dispose();
   }
 
-  Future<void> _fetchBreakBalance() async {
+  /// Force refresh all break records data (clear cache and reload)
+  Future<void> _forceRefresh() async {
+    final employeeId = _authManager.currentEmployeeId;
+    
+    if (employeeId != null) {
+      await _cacheService.clearAllCachesForEmployee(employeeId);
+    }
+    
+    // Reload all data
+    await Future.wait([
+      _fetchBreakBalance(forceRefresh: true),
+      _fetchBreakOrders(forceRefresh: true),
+    ]);
+  }
+
+  Future<void> _fetchBreakBalance({bool forceRefresh = false}) async {
     setState(() {
       _isLoadingBalance = true;
+      _isBalanceFromCache = false;
     });
 
     try {
@@ -65,13 +84,33 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
         return;
       }
 
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedBalance = await _cacheService.getCachedBreakBalance(employeeId);
+        if (cachedBalance != null) {
+          print('✅ Loaded break balance from cache');
+          setState(() {
+            _breakBalance = cachedBalance;
+            _isLoadingBalance = false;
+            _isBalanceFromCache = true;
+          });
+          return;
+        }
+      }
+
       print('💰 Fetching break balance for employee ID: $employeeId');
       
       final balance = await _authManager.apiService.getBreakBalance(employeeId);
       
+      // Cache the balance
+      if (balance != null) {
+        await _cacheService.cacheBreakBalance(employeeId, balance);
+      }
+      
       setState(() {
         _breakBalance = balance;
         _isLoadingBalance = false;
+        _isBalanceFromCache = false;
       });
 
       if (balance != null) {
@@ -85,10 +124,11 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     }
   }
 
-  Future<void> _fetchBreakOrders() async {
+  Future<void> _fetchBreakOrders({bool forceRefresh = false}) async {
     setState(() {
       _isLoading = true;
       _errorMessage = null;
+      _isOrdersFromCache = false;
     });
 
     try {
@@ -101,13 +141,31 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
         return;
       }
 
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedOrders = await _cacheService.getCachedBreakOrders(employeeId);
+        if (cachedOrders != null) {
+          print('✅ Loaded break orders from cache');
+          setState(() {
+            _breakOrders = cachedOrders;
+            _isLoading = false;
+            _isOrdersFromCache = true;
+          });
+          return;
+        }
+      }
+
       print('🔍 Fetching break orders for employee ID: $employeeId');
       
       final orders = await _authManager.apiService.getBreakOrders(employeeId);
       
+      // Cache the orders
+      await _cacheService.cacheBreakOrders(employeeId, orders);
+      
       setState(() {
         _breakOrders = orders;
         _isLoading = false;
+        _isOrdersFromCache = false;
       });
 
       print('✅ Successfully loaded ${orders.length} break orders');
@@ -305,6 +363,8 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   Widget _buildHeader() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final isAnyCached = _isOrdersFromCache || _isBalanceFromCache;
+    
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
       decoration: BoxDecoration(
@@ -369,6 +429,32 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
               ],
             ),
           ),
+          // Cache indicator
+          if (isAnyCached)
+            Padding(
+              padding: EdgeInsets.only(right: 8.w),
+              child: Tooltip(
+                message: 'Loaded from cache',
+                child: Icon(
+                  Icons.offline_bolt_rounded,
+                  color: AppColors.cxWarning,
+                  size: 20.sp,
+                ),
+              ),
+            ),
+          // Refresh button
+          IconButton(
+            onPressed: _forceRefresh,
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: AppColors.cxWarning,
+              size: 24.sp,
+            ),
+            tooltip: 'Refresh',
+            padding: EdgeInsets.all(8.w),
+            constraints: BoxConstraints(),
+          ),
+          SizedBox(width: 8.w),
           Container(
             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
             decoration: BoxDecoration(

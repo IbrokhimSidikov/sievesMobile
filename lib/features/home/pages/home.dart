@@ -29,7 +29,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     _ModuleItem("Attendance", Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
     _ModuleItem("Break Records", Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
     _ModuleItem("History", Icons.history_outlined, AppColors.cxBlue, '/history'),
-    _ModuleItem("Achievements", Icons.emoji_events_outlined, AppColors.cxPurple, null),
+    _ModuleItem("L-WALLET", Icons.wallet_outlined, AppColors.cxPurple, null),
   ];
 
   // Helper method to get user's display name
@@ -539,8 +539,8 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
         return "Meal history";
       case "History":
         return "Activity log";
-      case "Achievements":
-        return "Your rewards";
+      case "L-WALLET":
+        return "Investment for your dreams";
       default:
         return "Tap to explore";
     }

@@ -11,6 +11,7 @@ import '../../../core/services/auth/auth_service.dart';
 import '../../../core/services/auth/auth_cubit.dart';
 import '../../../core/services/auth/auth_state.dart';
 import '../../../core/services/api/api_service.dart';
+import '../../../core/services/cache/profile_cache_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/work_time_calculator.dart';
 import '../../../core/model/work_entry_model.dart';
@@ -26,6 +27,7 @@ class _ProfileState extends State<Profile> {
   final AuthManager _authManager = AuthManager();
   final AuthService _authService = AuthService();
   late final ApiService _apiService = ApiService(_authService);
+  final ProfileCacheService _cacheService = ProfileCacheService();
   Map<String, dynamic>? _profileData;
   List<WorkEntry> _workEntries = [];
   bool _isLoading = true;
@@ -37,6 +39,9 @@ class _ProfileState extends State<Profile> {
   int _availableVacationDays = 0;
   int _totalVacationDays = 0;
   String? _error;
+  bool _isFromCache = false;
+  bool _isPrePaidFromCache = false;
+  bool _isVacationFromCache = false;
 
   @override
   void initState() {
@@ -54,11 +59,12 @@ class _ProfileState extends State<Profile> {
     super.dispose();
   }
 
-  Future<void> _loadProfileData() async {
+  Future<void> _loadProfileData({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoading = true;
         _error = null;
+        _isFromCache = false;
       });
 
       // Get current identity from AuthManager
@@ -66,6 +72,27 @@ class _ProfileState extends State<Profile> {
       
       if (identity == null) {
         throw Exception('No user identity found. Please login again.');
+      }
+
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        throw Exception('No employee ID found. Please login again.');
+      }
+
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedData = await _cacheService.getCachedProfileData(employeeId);
+        if (cachedData != null) {
+          print('✅ Loaded profile data from cache');
+          if (mounted) {
+            setState(() {
+              _profileData = cachedData;
+              _isLoading = false;
+              _isFromCache = true;
+            });
+          }
+          return;
+        }
       }
 
       // Convert Identity model to Map for UI consumption
@@ -102,11 +129,15 @@ class _ProfileState extends State<Profile> {
           } : null,
         } : null,
       };
+
+      // Cache the profile data
+      await _cacheService.cacheProfileData(employeeId, identityData);
       
       if (mounted) {
         setState(() {
           _profileData = identityData;
           _isLoading = false;
+          _isFromCache = false;
         });
       }
     } catch (e) {
@@ -176,10 +207,11 @@ class _ProfileState extends State<Profile> {
   }
 
   /// Fetch and calculate pre-paid amount for current month from transactions
-  Future<void> _loadPrePaidAmount() async {
+  Future<void> _loadPrePaidAmount({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoadingPrePaid = true;
+        _isPrePaidFromCache = false;
       });
 
       // Get individual_id from employee
@@ -194,6 +226,23 @@ class _ProfileState extends State<Profile> {
           _currentMonthTransactions = [];
         });
         return;
+      }
+
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedData = await _cacheService.getCachedPrePaidData(individualId);
+        if (cachedData != null) {
+          print('✅ Loaded pre-paid data from cache');
+          if (mounted) {
+            setState(() {
+              _prePaidAmount = (cachedData['amount'] as num?)?.toDouble() ?? 0.0;
+              _currentMonthTransactions = (cachedData['transactions'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+              _isLoadingPrePaid = false;
+              _isPrePaidFromCache = true;
+            });
+          }
+          return;
+        }
       }
 
       print('📊 Fetching transactions for individual ID: $individualId');
@@ -257,11 +306,15 @@ class _ProfileState extends State<Profile> {
           }
         }
 
+        // Cache the pre-paid data
+        await _cacheService.cachePrePaidData(individualId, totalAmount, currentMonthTxns);
+
         if (mounted) {
           setState(() {
             _prePaidAmount = totalAmount;
             _currentMonthTransactions = currentMonthTxns;
             _isLoadingPrePaid = false;
+            _isPrePaidFromCache = false;
           });
           print('💰 Total pre-paid amount: $totalAmount UZS from $transactionCount transactions');
         }
@@ -552,13 +605,32 @@ class _ProfileState extends State<Profile> {
     return '${months[now.month - 1]} ${now.year}';
   }
 
+  /// Force refresh all profile data (clear cache and reload)
+  Future<void> _forceRefresh() async {
+    final employeeId = _authManager.currentEmployeeId;
+    final individualId = _authManager.currentIdentity?.employee?.individualId;
+    
+    if (employeeId != null) {
+      await _cacheService.clearAllCachesForUser(employeeId, individualId);
+    }
+    
+    // Reload all data
+    await Future.wait([
+      _loadProfileData(forceRefresh: true),
+      _loadCurrentMonthWorkEntries(),
+      _loadPrePaidAmount(forceRefresh: true),
+      _loadVacationDays(forceRefresh: true),
+    ]);
+  }
+
   /// Load vacation days based on work entries
   /// Formula: availableVacation = floor(totalWorkedMilliseconds / (3600000 * 234))
   /// Max 7 days, 234 hours = 1 vacation day
-  Future<void> _loadVacationDays() async {
+  Future<void> _loadVacationDays({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoadingVacation = true;
+        _isVacationFromCache = false;
       });
 
       final employeeId = _authManager.currentEmployeeId;
@@ -570,6 +642,23 @@ class _ProfileState extends State<Profile> {
           _totalVacationDays = 0;
         });
         return;
+      }
+
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedData = await _cacheService.getCachedVacationData(employeeId);
+        if (cachedData != null) {
+          print('✅ Loaded vacation data from cache');
+          if (mounted) {
+            setState(() {
+              _availableVacationDays = cachedData['availableDays'] as int? ?? 0;
+              _totalVacationDays = cachedData['totalDays'] as int? ?? 0;
+              _isLoadingVacation = false;
+              _isVacationFromCache = true;
+            });
+          }
+          return;
+        }
       }
 
       print('🏖️ Calculating vacation days for employee $employeeId');
@@ -627,10 +716,14 @@ class _ProfileState extends State<Profile> {
 
         print('✅ Calculated vacation days: $availableDays (from ${closedEntries.length} closed entries)');
 
+        // Cache the vacation data
+        await _cacheService.cacheVacationData(employeeId, availableDays, totalVacations);
+
         setState(() {
           _availableVacationDays = availableDays;
           _totalVacationDays = totalVacations;
           _isLoadingVacation = false;
+          _isVacationFromCache = false;
         });
       } else {
         // Vacations exist - calculate from most recent vacation date
@@ -680,10 +773,14 @@ class _ProfileState extends State<Profile> {
 
         print('✅ Calculated vacation days: $availableDays (max 7)');
 
+        // Cache the vacation data
+        await _cacheService.cacheVacationData(employeeId, availableDays, totalVacations);
+
         setState(() {
           _availableVacationDays = availableDays;
           _totalVacationDays = totalVacations;
           _isLoadingVacation = false;
+          _isVacationFromCache = false;
         });
       }
     } catch (e) {
@@ -1013,6 +1110,9 @@ class _ProfileState extends State<Profile> {
 
   Widget _buildHeader() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isAnyCached = _isFromCache || _isPrePaidFromCache || _isVacationFromCache;
+    
     return Row(
       children: [
         IconButton(
@@ -1035,6 +1135,45 @@ class _ProfileState extends State<Profile> {
             ),
           ),
         ),
+        // Cache indicator
+        if (isAnyCached)
+          Padding(
+            padding: EdgeInsets.only(right: 8.w),
+            child: Tooltip(
+              message: 'Loaded from cache',
+              child: Icon(
+                Icons.offline_bolt_rounded,
+                color: AppColors.cxWarning,
+                size: 20.sp,
+              ),
+            ),
+          ),
+        // Refresh button
+        Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                AppColors.cx43C19F.withOpacity(0.1),
+                AppColors.cx4AC1A7.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: AppColors.cx43C19F.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            onPressed: _forceRefresh,
+            icon: Icon(
+              Icons.refresh_rounded,
+              color: AppColors.cx43C19F,
+              size: 24.sp,
+            ),
+            tooltip: 'Refresh',
+          ),
+        ),
+        SizedBox(width: 8.w),
         Container(
           decoration: BoxDecoration(
             gradient: LinearGradient(
