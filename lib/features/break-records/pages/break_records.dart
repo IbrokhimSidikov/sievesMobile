@@ -800,24 +800,38 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final dialogBg = isDarkMode ? const Color(0xFF1A1A24) : AppColors.cxWhite;
+        final dialogBgSecondary = isDarkMode ? const Color(0xFF252532) : AppColors.cxF5F7F9;
+        final primaryText = isDarkMode ? const Color(0xFFE8E8F0) : AppColors.cxDarkCharcoal;
+        final secondaryText = isDarkMode ? const Color(0xFF9CA3AF) : AppColors.cxSilverTint;
+        final borderColor = isDarkMode ? const Color(0xFF374151) : AppColors.cxPlatinumGray;
+        final itemBg = isDarkMode ? const Color(0xFF1F2937) : AppColors.cxF7F6F9;
+        
         return Dialog(
           backgroundColor: Colors.transparent,
           child: Container(
-            margin: EdgeInsets.symmetric(horizontal: 20.w),
-            padding: EdgeInsets.all(20.w),
+            margin: EdgeInsets.symmetric(horizontal: 12.w),
+            padding: EdgeInsets.all(24.w),
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(context).size.height * 0.8,
+            ),
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  AppColors.cxWhite,
-                  AppColors.cxF5F7F9,
+                  dialogBg,
+                  dialogBgSecondary,
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
               borderRadius: BorderRadius.circular(20.r),
+              border: isDarkMode 
+                  ? Border.all(color: const Color(0xFF374151), width: 1)
+                  : null,
               boxShadow: [
                 BoxShadow(
-                  color: AppColors.cxBlack.withOpacity(0.15),
+                  color: AppColors.cxBlack.withOpacity(isDarkMode ? 0.4 : 0.15),
                   blurRadius: 20,
                   offset: const Offset(0, 8),
                 ),
@@ -826,7 +840,13 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                // Header with photo and basic info
+                // Scrollable content
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        // Header with photo and basic info
                 Row(
                   children: [
                     Container(
@@ -836,7 +856,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                         borderRadius: BorderRadius.circular(12.r),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.cxBlack.withOpacity(0.1),
+                            color: AppColors.cxBlack.withOpacity(isDarkMode ? 0.3 : 0.1),
                             blurRadius: 8,
                             offset: const Offset(0, 2),
                           ),
@@ -893,7 +913,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w700,
-                              color: AppColors.cxDarkCharcoal,
+                              color: primaryText,
                             ),
                           ),
                           SizedBox(height: 4.h),
@@ -901,7 +921,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                             '${_formatDate(record.createdAt)} at ${_formatTime(record.createdAt)}',
                             style: TextStyle(
                               fontSize: 14.sp,
-                              color: AppColors.cxSilverTint,
+                              color: secondaryText,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
@@ -910,16 +930,23 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                             padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [
-                                  AppColors.cxRoyalBlue.withOpacity(0.15),
-                                  AppColors.cxBlue.withOpacity(0.15),
-                                ],
+                                colors: isDarkMode
+                                    ? [
+                                        const Color(0xFF6366F1).withOpacity(0.2),
+                                        const Color(0xFF4F46E5).withOpacity(0.2),
+                                      ]
+                                    : [
+                                        AppColors.cxRoyalBlue.withOpacity(0.15),
+                                        AppColors.cxBlue.withOpacity(0.15),
+                                      ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
                               borderRadius: BorderRadius.circular(8.r),
                               border: Border.all(
-                                color: AppColors.cxRoyalBlue.withOpacity(0.3),
+                                color: isDarkMode
+                                    ? const Color(0xFF6366F1).withOpacity(0.4)
+                                    : AppColors.cxRoyalBlue.withOpacity(0.3),
                                 width: 1,
                               ),
                             ),
@@ -928,7 +955,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.cxRoyalBlue,
+                                color: isDarkMode ? const Color(0xFF818CF8) : AppColors.cxRoyalBlue,
                               ),
                             ),
                           ),
@@ -948,7 +975,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w700,
-                      color: AppColors.cxDarkCharcoal,
+                      color: primaryText,
                     ),
                   ),
                 ),
@@ -960,10 +987,10 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                   width: double.infinity,
                   padding: EdgeInsets.all(16.w),
                   decoration: BoxDecoration(
-                    color: AppColors.cxF7F6F9.withOpacity(0.5),
+                    color: itemBg.withOpacity(isDarkMode ? 0.8 : 0.5),
                     borderRadius: BorderRadius.circular(12.r),
                     border: Border.all(
-                      color: AppColors.cxPlatinumGray.withOpacity(0.3),
+                      color: borderColor.withOpacity(0.3),
                       width: 1,
                     ),
                   ),
@@ -972,7 +999,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                           'No items found',
                           style: TextStyle(
                             fontSize: 14.sp,
-                            color: AppColors.cxSilverTint,
+                            color: secondaryText,
                           ),
                         )
                       : Column(
@@ -980,15 +1007,16 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                             final productName = item.product?.name ?? 'Unknown Product';
                             final quantity = item.quantity;
                             final price = _formatAmount(item.totalPrice);
+                            final greenColor = isDarkMode ? const Color(0xFF34D399) : AppColors.cxEmeraldGreen;
                             
                             return Container(
                               margin: EdgeInsets.only(bottom: 8.h),
                               padding: EdgeInsets.all(12.w),
                               decoration: BoxDecoration(
-                                color: AppColors.cxEmeraldGreen.withOpacity(0.1),
+                                color: greenColor.withOpacity(isDarkMode ? 0.15 : 0.1),
                                 borderRadius: BorderRadius.circular(8.r),
                                 border: Border.all(
-                                  color: AppColors.cxEmeraldGreen.withOpacity(0.3),
+                                  color: greenColor.withOpacity(isDarkMode ? 0.4 : 0.3),
                                   width: 1,
                                 ),
                               ),
@@ -997,7 +1025,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                                   Container(
                                     padding: EdgeInsets.all(6.w),
                                     decoration: BoxDecoration(
-                                      color: AppColors.cxEmeraldGreen,
+                                      color: greenColor,
                                       borderRadius: BorderRadius.circular(6.r),
                                     ),
                                     child: Icon(
@@ -1016,7 +1044,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                                           style: TextStyle(
                                             fontSize: 14.sp,
                                             fontWeight: FontWeight.w600,
-                                            color: AppColors.cxEmeraldGreen,
+                                            color: isDarkMode ? const Color(0xFF6EE7B7) : greenColor,
                                           ),
                                         ),
                                         SizedBox(height: 2.h),
@@ -1025,7 +1053,9 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                                           style: TextStyle(
                                             fontSize: 12.sp,
                                             fontWeight: FontWeight.w500,
-                                            color: AppColors.cxEmeraldGreen.withOpacity(0.8),
+                                            color: isDarkMode 
+                                                ? const Color(0xFF6EE7B7).withOpacity(0.7)
+                                                : greenColor.withOpacity(0.8),
                                           ),
                                         ),
                                       ],
@@ -1036,6 +1066,10 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                             );
                           }).toList(),
                         ),
+                ),
+                      ],
+                    ),
+                  ),
                 ),
                 
                 SizedBox(height: 20.h),
@@ -1056,11 +1090,21 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                     child: Container(
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [AppColors.cxWarning, AppColors.cxFEDA84],
+                          colors: isDarkMode
+                              ? [const Color(0xFF6366F1), const Color(0xFF4F46E5)]
+                              : [AppColors.cxWarning, AppColors.cxFEDA84],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDarkMode ? const Color(0xFF6366F1) : AppColors.cxWarning)
+                                .withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                       ),
                       padding: EdgeInsets.symmetric(vertical: 12.h),
                       child: Row(
