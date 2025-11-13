@@ -797,15 +797,34 @@ class _ProfileState extends State<Profile> {
     showDialog(
       context: context,
       builder: (BuildContext context) {
+        final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+        final dialogBg = isDarkMode ? const Color(0xFF1A1A24) : AppColors.cxPureWhite;
+        final itemBg = isDarkMode ? const Color(0xFF252532) : AppColors.cxF5F7F9;
+        final primaryText = isDarkMode ? const Color(0xFFE8E8F0) : AppColors.cxBlack;
+        final secondaryText = isDarkMode ? const Color(0xFF9CA3AF) : AppColors.cxBlack;
+        final borderColor = isDarkMode ? const Color(0xFF374151) : AppColors.cxEmeraldGreen;
+        final greenColor = isDarkMode ? const Color(0xFF34D399) : AppColors.cxEmeraldGreen;
+        
         return Dialog(
+          backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(20.r),
           ),
           child: Container(
             constraints: BoxConstraints(maxHeight: 500.h),
             decoration: BoxDecoration(
-              color: AppColors.cxPureWhite,
+              color: dialogBg,
               borderRadius: BorderRadius.circular(20.r),
+              border: isDarkMode 
+                  ? Border.all(color: const Color(0xFF374151), width: 1)
+                  : null,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cxBlack.withOpacity(isDarkMode ? 0.4 : 0.15),
+                  blurRadius: 20,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -815,10 +834,9 @@ class _ProfileState extends State<Profile> {
                   padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [
-                        AppColors.cxEmeraldGreen,
-                        Color(0xFF4AC1A7),
-                      ],
+                      colors: isDarkMode
+                          ? [const Color(0xFF34D399), const Color(0xFF10B981)]
+                          : [AppColors.cxEmeraldGreen, Color(0xFF4AC1A7)],
                     ),
                     borderRadius: BorderRadius.only(
                       topLeft: Radius.circular(20.r),
@@ -883,10 +901,10 @@ class _ProfileState extends State<Profile> {
                       return Container(
                         padding: EdgeInsets.all(12.w),
                         decoration: BoxDecoration(
-                          color: AppColors.cxF5F7F9,
+                          color: itemBg,
                           borderRadius: BorderRadius.circular(12.r),
                           border: Border.all(
-                            color: AppColors.cxEmeraldGreen.withOpacity(0.1),
+                            color: borderColor.withOpacity(isDarkMode ? 0.3 : 0.1),
                             width: 1,
                           ),
                         ),
@@ -899,15 +917,15 @@ class _ProfileState extends State<Profile> {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    AppColors.cxEmeraldGreen.withOpacity(0.1),
-                                    Color(0xFF4AC1A7).withOpacity(0.1),
+                                    greenColor.withOpacity(isDarkMode ? 0.2 : 0.1),
+                                    greenColor.withOpacity(isDarkMode ? 0.15 : 0.1),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(8.r),
                               ),
                               child: Icon(
                                 Icons.account_balance_wallet_outlined,
-                                color: AppColors.cxEmeraldGreen,
+                                color: greenColor,
                                 size: 18.sp,
                               ),
                             ),
@@ -923,7 +941,7 @@ class _ProfileState extends State<Profile> {
                                     style: TextStyle(
                                       fontSize: 14.sp,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.cxBlack,
+                                      color: primaryText,
                                       height: 1.3,
                                     ),
                                     maxLines: 2,
@@ -934,7 +952,7 @@ class _ProfileState extends State<Profile> {
                                     formattedDate,
                                     style: TextStyle(
                                       fontSize: 12.sp,
-                                      color: AppColors.cxBlack.withOpacity(0.5),
+                                      color: secondaryText.withOpacity(0.5),
                                     ),
                                   ),
                                 ],
@@ -952,7 +970,7 @@ class _ProfileState extends State<Profile> {
                               style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.cxEmeraldGreen,
+                                color: greenColor,
                                 fontFeatures: [FontFeature.tabularFigures()],
                               ),
                             ),
@@ -1740,26 +1758,59 @@ class _ProfileState extends State<Profile> {
     // Use actual data from API
     final double prePaidAmount = _prePaidAmount;
     final String month = _getCurrentMonthString();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Dark mode colors - more luxurious palette
+    final cardBgStart = isDarkMode ? const Color(0xFF1E1E2E) : AppColors.cxPureWhite;
+    final cardBgMid = isDarkMode ? const Color(0xFF252538) : AppColors.cxF7F6F9;
+    final cardBgEnd = isDarkMode ? const Color(0xFF2A2A3E) : AppColors.cxF5F7F9;
+    final borderColor = isDarkMode ? const Color(0xFF3D3D5C) : AppColors.cxEmeraldGreen;
+    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
+    final secondaryText = isDarkMode ? const Color(0xFFA8A8B8) : AppColors.cxBlack;
+    final greenColor = isDarkMode ? const Color(0xFF3DDBA4) : AppColors.cxEmeraldGreen;
+    final greenColorLight = isDarkMode ? const Color(0xFF2BC990) : Color(0xFF4AC1A7);
+    final accentGlow = isDarkMode ? const Color(0xFF3DDBA4) : AppColors.cxEmeraldGreen;
     
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
           colors: [
-            AppColors.cxPureWhite,
-            AppColors.cxF5F7F9,
+            cardBgStart,
+            cardBgMid,
+            cardBgEnd,
           ],
+          stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(24.r),
         border: Border.all(
-          color: AppColors.cxEmeraldGreen.withOpacity(0.2),
-          width: 1.5,
+          color: borderColor.withOpacity(isDarkMode ? 0.4 : 0.2),
+          width: isDarkMode ? 1.5 : 1.5,
         ),
         boxShadow: [
+          // Primary shadow
           BoxShadow(
-            color: AppColors.cxEmeraldGreen.withOpacity(0.1),
-            blurRadius: 20,
-            offset: Offset(0, 8),
+            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(isDarkMode ? 0.5 : 0.1),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+            spreadRadius: isDarkMode ? -2 : 0,
+          ),
+          // Accent glow for dark mode
+          if (isDarkMode)
+            BoxShadow(
+              color: accentGlow.withOpacity(0.15),
+              blurRadius: 32,
+              offset: Offset(0, 0),
+              spreadRadius: -8,
+            ),
+          // Secondary shadow for depth
+          BoxShadow(
+            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(isDarkMode ? 0.3 : 0.05),
+            blurRadius: 40,
+            offset: Offset(0, 20),
+            spreadRadius: isDarkMode ? -10 : -5,
           ),
         ],
       ),
@@ -1780,15 +1831,15 @@ class _ProfileState extends State<Profile> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  AppColors.cxEmeraldGreen.withOpacity(0.15),
-                                  Color(0xFF4AC1A7).withOpacity(0.15),
+                                  greenColor.withOpacity(isDarkMode ? 0.2 : 0.15),
+                                  greenColorLight.withOpacity(isDarkMode ? 0.15 : 0.15),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(16.r),
                             ),
                             child: Icon(
                               Icons.account_balance_wallet_rounded,
-                              color: AppColors.cxEmeraldGreen,
+                              color: greenColor,
                               size: 28.sp,
                             ),
                           ),
@@ -1798,11 +1849,11 @@ class _ProfileState extends State<Profile> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Pre-Paid Amount',
+                                  'Avans',
                                   style: TextStyle(
                                     fontSize: 20.sp,
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.cxBlack,
+                                    color: primaryText,
                                     letterSpacing: 0.3,
                                   ),
                                 ),
@@ -1811,7 +1862,7 @@ class _ProfileState extends State<Profile> {
                                   style: TextStyle(
                                     fontSize: 13.sp,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.cxBlack.withOpacity(0.5),
+                                    color: secondaryText.withOpacity(0.5),
                                   ),
                                 ),
                               ],
@@ -1827,14 +1878,14 @@ class _ProfileState extends State<Profile> {
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              AppColors.cxEmeraldGreen,
-                              Color(0xFF4AC1A7),
+                              greenColor,
+                              greenColorLight,
                             ],
                           ),
                           borderRadius: BorderRadius.circular(20.r),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.cxEmeraldGreen.withOpacity(0.3),
+                              color: greenColor.withOpacity(0.3),
                               blurRadius: 12,
                               offset: Offset(0, 4),
                             ),
@@ -1900,7 +1951,7 @@ class _ProfileState extends State<Profile> {
                         children: [
                           Icon(
                             Icons.info_outline_rounded,
-                            color: AppColors.cxEmeraldGreen,
+                            color: greenColor,
                             size: 18.sp,
                           ),
                           SizedBox(width: 8.w),
@@ -1910,7 +1961,7 @@ class _ProfileState extends State<Profile> {
                               style: TextStyle(
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w500,
-                                color: AppColors.cxBlack.withOpacity(0.6),
+                                color: secondaryText.withOpacity(0.6),
                               ),
                             ),
                           ),
@@ -1932,19 +1983,19 @@ class _ProfileState extends State<Profile> {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        AppColors.cxEmeraldGreen.withOpacity(0.15),
-                        Color(0xFF4AC1A7).withOpacity(0.15),
+                        greenColor.withOpacity(isDarkMode ? 0.2 : 0.15),
+                        greenColorLight.withOpacity(isDarkMode ? 0.15 : 0.15),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(12.r),
                     border: Border.all(
-                      color: AppColors.cxEmeraldGreen.withOpacity(0.3),
+                      color: greenColor.withOpacity(isDarkMode ? 0.4 : 0.3),
                       width: 1,
                     ),
                   ),
                   child: Icon(
                     Icons.receipt_long_rounded,
-                    color: AppColors.cxEmeraldGreen,
+                    color: greenColor,
                     size: 20.sp,
                   ),
                 ),
@@ -2479,10 +2530,8 @@ class _ProfileState extends State<Profile> {
       title: 'Job Information',
       icon: Icons.work_outline,
       children: [
-        _buildInfoRow('Position', jobPosition?['name'] ?? 'Not specified'),
         _buildInfoRow('Branch', branch?['name'] ?? 'Not specified'),
         _buildInfoRow('Department', _profileData?['employee']?['department']?['name'] ?? 'Not specified'),
-        _buildInfoRow('Employee ID', _profileData?['employee']?['id']?.toString() ?? 'N/A'),
       ],
     );
   }
@@ -2492,17 +2541,44 @@ class _ProfileState extends State<Profile> {
     required IconData icon,
     required List<Widget> children,
   }) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Dark mode colors
+    final cardBgStart = isDarkMode ? const Color(0xFF1E1E2E) : AppColors.cxPureWhite;
+    final cardBgEnd = isDarkMode ? const Color(0xFF252538) : AppColors.cxPureWhite;
+    final borderColor = isDarkMode ? const Color(0xFF3D3D5C) : Colors.transparent;
+    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
+    final blueColor = isDarkMode ? const Color(0xFF818CF8) : AppColors.cxRoyalBlue;
+    
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: AppColors.cxPureWhite,
+        gradient: isDarkMode
+            ? LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [cardBgStart, cardBgEnd],
+              )
+            : null,
+        color: isDarkMode ? null : AppColors.cxPureWhite,
         borderRadius: BorderRadius.circular(20.r),
+        border: isDarkMode
+            ? Border.all(color: borderColor.withOpacity(0.4), width: 1.5)
+            : null,
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.1),
-            blurRadius: 15,
-            offset: Offset(0, 5),
+            color: AppColors.cxBlack.withOpacity(isDarkMode ? 0.4 : 0.1),
+            blurRadius: isDarkMode ? 20 : 15,
+            offset: Offset(0, isDarkMode ? 8 : 5),
+            spreadRadius: isDarkMode ? -2 : 0,
           ),
+          if (isDarkMode)
+            BoxShadow(
+              color: blueColor.withOpacity(0.1),
+              blurRadius: 24,
+              offset: Offset(0, 0),
+              spreadRadius: -6,
+            ),
         ],
       ),
       child: Padding(
@@ -2515,12 +2591,17 @@ class _ProfileState extends State<Profile> {
                 Container(
                   padding: EdgeInsets.all(8.w),
                   decoration: BoxDecoration(
-                    color: AppColors.cxRoyalBlue.withOpacity(0.1),
+                    gradient: LinearGradient(
+                      colors: [
+                        blueColor.withOpacity(isDarkMode ? 0.2 : 0.1),
+                        blueColor.withOpacity(isDarkMode ? 0.15 : 0.1),
+                      ],
+                    ),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
                   child: Icon(
                     icon,
-                    color: AppColors.cxRoyalBlue,
+                    color: blueColor,
                     size: 24.sp,
                   ),
                 ),
@@ -2534,7 +2615,7 @@ class _ProfileState extends State<Profile> {
                         style: TextStyle(
                           fontSize: 20.sp,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.cxBlack,
+                          color: primaryText,
                         ),
                       ),
                     ],
@@ -2551,6 +2632,10 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildInfoRow(String label, String value) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
+    final secondaryText = isDarkMode ? const Color(0xFFA8A8B8) : AppColors.cxBlack;
+    
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
@@ -2562,7 +2647,7 @@ class _ProfileState extends State<Profile> {
               label,
               style: TextStyle(
                 fontSize: 14.sp,
-                color: AppColors.cxBlack.withOpacity(0.6),
+                color: secondaryText.withOpacity(0.6),
                 fontWeight: FontWeight.w500,
               ),
             ),
@@ -2573,7 +2658,7 @@ class _ProfileState extends State<Profile> {
               value,
               style: TextStyle(
                 fontSize: 14.sp,
-                color: AppColors.cxBlack,
+                color: primaryText,
                 fontWeight: FontWeight.w600,
               ),
             ),
