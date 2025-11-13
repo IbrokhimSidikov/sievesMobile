@@ -75,25 +75,34 @@ class WorkTimeCalculator {
         final checkIn = DateTime.parse(entry.checkInTime!);
         final checkOut = DateTime.parse(entry.checkOutTime!);
         
-        // Check if work was during day hours (6:00 - 23:00)
-        if (checkOut.hour < 23 && 
-            checkOut.hour > 3 && 
-            checkIn.hour >= 6) {
+        // Scenario 1: Both check-in and check-out are during day hours (6:00 - 23:00)
+        if (checkIn.hour >= 6 && checkIn.hour < 23 && 
+            checkOut.hour >= 6 && checkOut.hour < 23 &&
+            checkOut.isAfter(checkIn) && checkOut.difference(checkIn).inHours < 24) {
+          // Full shift is during day hours
           final diff = checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
           totalTime += diff;
-        } else if ((checkOut.hour >= 23 || checkOut.hour <= 3) && 
-                  checkIn.hour < 23) {
-          // Handle case where shift starts during day and ends at night
-          final d1 = checkIn;
-          final d2 = DateTime(
-            checkOut.year,
-            checkOut.month,
-            checkOut.day,
-            23, 0, 0
-          );
+        } 
+        // Scenario 2: Check-in during day, check-out at night (23:00-06:00)
+        else if (checkIn.hour >= 6 && checkIn.hour < 23) {
+          // Check if checkout is after 23:00 same day OR early morning next day (00:00-06:00)
+          final isCheckoutNight = checkOut.hour >= 23 || checkOut.hour < 6;
           
-          final diff = d2.millisecondsSinceEpoch - d1.millisecondsSinceEpoch;
-          totalTime += diff;
+          if (isCheckoutNight) {
+            // Calculate day hours from check-in until 23:00
+            final endOfDayShift = DateTime(
+              checkIn.year,
+              checkIn.month,
+              checkIn.day,
+              23, 0, 0
+            );
+            
+            // Only count if check-in is before 23:00
+            if (checkIn.isBefore(endOfDayShift)) {
+              final diff = endOfDayShift.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+              totalTime += diff;
+            }
+          }
         }
       }
     }
@@ -114,25 +123,34 @@ class WorkTimeCalculator {
         final checkIn = DateTime.parse(entry.checkInTime!);
         final checkOut = DateTime.parse(entry.checkOutTime!);
         
-        // Check if work was during day hours (6:00 - 23:00)
-        if (checkOut.hour < 23 && 
-            checkOut.hour > 3 && 
-            checkIn.hour >= 6) {
+        // Scenario 1: Both check-in and check-out are during day hours (6:00 - 23:00)
+        if (checkIn.hour >= 6 && checkIn.hour < 23 && 
+            checkOut.hour >= 6 && checkOut.hour < 23 &&
+            checkOut.isAfter(checkIn) && checkOut.difference(checkIn).inHours < 24) {
+          // Full shift is during day hours
           final diff = checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
           totalTime += diff;
-        } else if ((checkOut.hour >= 23 || checkOut.hour <= 3) && 
-                  checkIn.hour < 23) {
-          // Handle case where shift starts during day and ends at night
-          final d1 = checkIn;
-          final d2 = DateTime(
-            checkOut.year,
-            checkOut.month,
-            checkOut.day,
-            23, 0, 0
-          );
+        } 
+        // Scenario 2: Check-in during day, check-out at night (23:00-06:00)
+        else if (checkIn.hour >= 6 && checkIn.hour < 23) {
+          // Check if checkout is after 23:00 same day OR early morning next day (00:00-06:00)
+          final isCheckoutNight = checkOut.hour >= 23 || checkOut.hour < 6;
           
-          final diff = d2.millisecondsSinceEpoch - d1.millisecondsSinceEpoch;
-          totalTime += diff;
+          if (isCheckoutNight) {
+            // Calculate day hours from check-in until 23:00
+            final endOfDayShift = DateTime(
+              checkIn.year,
+              checkIn.month,
+              checkIn.day,
+              23, 0, 0
+            );
+            
+            // Only count if check-in is before 23:00
+            if (checkIn.isBefore(endOfDayShift)) {
+              final diff = endOfDayShift.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+              totalTime += diff;
+            }
+          }
         }
       }
     }
