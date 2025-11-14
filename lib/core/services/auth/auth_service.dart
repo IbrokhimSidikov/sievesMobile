@@ -47,9 +47,10 @@ class AuthService {
           .login(
             audience: _audience,
             scopes: {'openid', 'profile', 'email', 'offline_access'},
-            redirectUrl: 'sievesmob://callback',
+            // redirectUrl: 'sievesmob://callback',
+            redirectUrl: 'sievesmob://exodelicainc.eu.auth0.com/android/com.sieves.v1.sieves_mob/callback',
             parameters: {
-              'max_age': '0', // Force re-authentication every time
+              'max_age': '0',
             },
           );
 
