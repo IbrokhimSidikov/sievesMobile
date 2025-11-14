@@ -11,17 +11,16 @@ class VersionService {
     await _remoteConfig.setConfigSettings(
       RemoteConfigSettings(
         fetchTimeout: const Duration(seconds: 10),
-        minimumFetchInterval: const Duration(seconds: 0), // For testing, set to 0
+        minimumFetchInterval: const Duration(seconds: 0),
       ),
     );
 
-    // Set default values (used if fetch fails or no remote values set)
     await _remoteConfig.setDefaults({
-      'minimum_required_version': '2.0.0', // FOR TESTING - Change back to 1.0.0 for production
+      'minimum_required_version': '2.0.0',
       'latest_version': '2.0.0',
       'force_update_enabled': true,
       'update_message': 'A new version is available. Please update to continue.',
-      'android_store_url': 'https://play.google.com/apps/testing/com.sieves.v1.sieves_mob',
+      'android_store_url': 'https://play.google.com/store/apps/details?id=com.sieves.v1.sieves_mob',
       'ios_store_url': 'https://apps.apple.com/app/sieves/id6753124737',
     });
 
@@ -68,8 +67,6 @@ class VersionService {
     }
   }
 
-  /// Compare two version strings (e.g., "1.2.3" vs "1.3.0")
-  /// Returns true if version1 < version2
   bool _isVersionLower(String version1, String version2) {
     final v1Parts = version1.split('.').map(int.parse).toList();
     final v2Parts = version2.split('.').map(int.parse).toList();
@@ -82,7 +79,7 @@ class VersionService {
       if (v1Part > v2Part) return false;
     }
 
-    return false; // Versions are equal
+    return false;
   }
 }
 
