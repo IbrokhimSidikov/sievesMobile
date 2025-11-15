@@ -15,6 +15,9 @@ class AuthService {
   Timer? _refreshTimer;
   bool _isRefreshing = false;
   
+  // Callback for when refresh token fails and user needs to be logged out
+  Function? onRefreshTokenExpired;
+  
   // TEST MODE: Set to true to test proactive refresh quickly
   // When true: checks every 30 seconds, refreshes if < 1500 minutes remaining
   // When false: checks every 4 minutes, refreshes if < 5 minutes remaining
@@ -456,9 +459,25 @@ class AuthService {
         if (success) {
           print('✅ Proactive token refresh successful');
         } else {
-          print('❌ Proactive token refresh failed');
+          print('❌ Proactive token refresh failed - refresh token expired');
+          print('🚪 Triggering automatic logout due to expired refresh token');
+          
           // Stop timer if refresh fails (likely refresh token expired)
           _stopProactiveRefreshTimer();
+          
+          // Clear all tokens
+          await _secureStorage.delete(key: _accessTokenKey);
+          await _secureStorage.delete(key: _refreshTokenKey);
+          await _secureStorage.delete(key: _idTokenKey);
+          await _secureStorage.delete(key: _expiresAtKey);
+          
+          // Notify the app to logout the user
+          if (onRefreshTokenExpired != null) {
+            print('📢 Calling onRefreshTokenExpired callback');
+            onRefreshTokenExpired!();
+          } else {
+            print('⚠️  No onRefreshTokenExpired callback set');
+          }
         }
       } else {
         print('✅ Token still valid for $minutesRemaining minutes');

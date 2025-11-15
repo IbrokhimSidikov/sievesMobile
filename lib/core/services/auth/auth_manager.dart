@@ -17,9 +17,15 @@ class AuthManager {
     this.authService = authService;
     this.apiService = apiService;
     
-    // Set up callback for when token refresh fails
+    // Set up callback for when token refresh fails in API calls
     apiService.onTokenRefreshFailed = () {
-      print('🚨 Token refresh failed - logging out user');
+      print('🚨 Token refresh failed in API call - logging out user');
+      _handleTokenExpired();
+    };
+    
+    // Set up callback for when refresh token expires in background refresh
+    authService.onRefreshTokenExpired = () {
+      print('🚨 Refresh token expired in background - logging out user');
       _handleTokenExpired();
     };
   }
