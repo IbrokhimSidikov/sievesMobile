@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -9,6 +10,10 @@ class AuthService {
   
   // Expose secure storage for use by AuthManager
   FlutterSecureStorage get secureStorage => _secureStorage;
+  
+  // Background timer for proactive token refresh
+  Timer? _refreshTimer;
+  bool _isRefreshing = false;
 
   // Auth0 configuration
   static const String _domain = 'exodelicainc.eu.auth0.com';
@@ -137,6 +142,9 @@ class AuthService {
     print('📅 Token expires at: ${credentials.expiresAt}');
     
     print('✅ Credentials stored successfully');
+    
+    // Start proactive refresh timer after storing credentials
+    _startProactiveRefreshTimer();
   }
 
   // Get user profile from Auth0
@@ -264,6 +272,14 @@ class AuthService {
 
   // Refresh the access token
   Future<bool> refreshToken() async {
+    // Prevent concurrent refresh attempts
+    if (_isRefreshing) {
+      print('⏳ Token refresh already in progress, skipping...');
+      return false;
+    }
+    
+    _isRefreshing = true;
+    
     try {
       final refreshToken = await _secureStorage.read(key: _refreshTokenKey);
 
@@ -283,7 +299,17 @@ class AuthService {
       print('   New access token received: ${credentials.accessToken.isNotEmpty}');
       print('   New refresh token received: ${credentials.refreshToken != null}');
       
-      await _storeCredentials(credentials);
+      // Store credentials without restarting timer (to avoid recursion)
+      await _secureStorage.write(key: _accessTokenKey, value: credentials.accessToken);
+      
+      if (credentials.refreshToken != null) {
+        await _secureStorage.write(key: _refreshTokenKey, value: credentials.refreshToken);
+      }
+      
+      await _secureStorage.write(key: _idTokenKey, value: credentials.idToken);
+      
+      final expiresAt = credentials.expiresAt.millisecondsSinceEpoch.toString();
+      await _secureStorage.write(key: _expiresAtKey, value: expiresAt);
       
       final newExpiresAt = credentials.expiresAt;
       print('📅 New token expires at: $newExpiresAt');
@@ -303,6 +329,8 @@ class AuthService {
       }
       
       return false;
+    } finally {
+      _isRefreshing = false;
     }
   }
 
@@ -332,6 +360,9 @@ class AuthService {
     try {
       print('🚪 Logging out...');
       
+      // Stop proactive refresh timer
+      _stopProactiveRefreshTimer();
+      
       // Clear local tokens from secure storage
       // We use max_age=0 in login to force re-authentication, so we don't need
       // to call Auth0's web logout which causes the browser popup
@@ -349,5 +380,76 @@ class AuthService {
       await _secureStorage.delete(key: _idTokenKey);
       await _secureStorage.delete(key: _expiresAtKey);
     }
+  }
+  
+  /// Start background timer for proactive token refresh
+  /// Checks every 4 minutes if token is expiring within 5 minutes
+  void _startProactiveRefreshTimer() {
+    // Cancel existing timer if any
+    _stopProactiveRefreshTimer();
+    
+    print('⏰ Starting proactive token refresh timer (checks every 4 minutes)');
+    
+    // Check immediately
+    _checkAndRefreshToken();
+    
+    // Then check every 4 minutes
+    _refreshTimer = Timer.periodic(const Duration(minutes: 4), (timer) {
+      _checkAndRefreshToken();
+    });
+  }
+  
+  /// Stop the proactive refresh timer
+  void _stopProactiveRefreshTimer() {
+    if (_refreshTimer != null) {
+      print('⏰ Stopping proactive token refresh timer');
+      _refreshTimer?.cancel();
+      _refreshTimer = null;
+    }
+  }
+  
+  /// Check if token is expiring soon and refresh if needed
+  Future<void> _checkAndRefreshToken() async {
+    try {
+      final expiresAt = await _secureStorage.read(key: _expiresAtKey);
+      
+      if (expiresAt == null) {
+        print('⏰ No expiration time found, skipping proactive refresh');
+        return;
+      }
+      
+      final expiresAtTime = int.parse(expiresAt);
+      final currentTime = DateTime.now().millisecondsSinceEpoch;
+      final timeUntilExpiry = expiresAtTime - currentTime;
+      final fiveMinutesInMs = 5 * 60 * 1000;
+      
+      // Calculate time remaining in minutes
+      final minutesRemaining = (timeUntilExpiry / 1000 / 60).round();
+      
+      print('⏰ Proactive refresh check: Token expires in $minutesRemaining minutes');
+      
+      // Refresh if expired or expiring within 5 minutes
+      if (timeUntilExpiry < fiveMinutesInMs) {
+        print('🔄 Token expiring soon ($minutesRemaining min), proactively refreshing...');
+        final success = await refreshToken();
+        
+        if (success) {
+          print('✅ Proactive token refresh successful');
+        } else {
+          print('❌ Proactive token refresh failed');
+          // Stop timer if refresh fails (likely refresh token expired)
+          _stopProactiveRefreshTimer();
+        }
+      } else {
+        print('✅ Token still valid for $minutesRemaining minutes');
+      }
+    } catch (e) {
+      print('❌ Error during proactive token check: $e');
+    }
+  }
+  
+  /// Manually start the proactive refresh timer (for session restoration)
+  void startProactiveRefresh() {
+    _startProactiveRefreshTimer();
   }
 }

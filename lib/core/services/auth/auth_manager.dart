@@ -80,6 +80,9 @@ class AuthManager {
       print('   User: ${_currentIdentity!.email}');
       print('   Employee ID: ${currentEmployeeId}');
       
+      // Start proactive token refresh timer
+      authService.startProactiveRefresh();
+      
       return true;
     } catch (e) {
       print('❌ Error restoring session: $e');

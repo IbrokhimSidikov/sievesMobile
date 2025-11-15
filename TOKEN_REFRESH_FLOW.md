@@ -26,20 +26,27 @@ User continues working (NO LOGOUT)
 
 ---
 
-### Scenario 2: Proactive Refresh (Before Expiration)
+### Scenario 2: Proactive Refresh (Before Expiration) ✅ IMPLEMENTED
 ```
-User makes API request
+Background timer runs every 4 minutes
     ↓
 System checks: Token expires in < 5 minutes?
     ↓
-YES → Automatically refresh token
+YES → Automatically refresh token in background
     ↓
-Make API request with fresh token
+New token stored, timer continues
     ↓
-✅ User continues working (NO LOGOUT)
+✅ User continues working (NO LOGOUT, NO INTERRUPTION)
 ```
 
-**User Experience:** Seamless, prevents 401 errors
+**User Experience:** Completely seamless, prevents 401 errors before they happen
+
+**Implementation Details:**
+- Timer starts automatically after login
+- Checks every 4 minutes if token expires within 5 minutes
+- Refreshes token proactively in background
+- No user interaction needed
+- Timer stops on logout
 
 ---
 
@@ -112,7 +119,21 @@ The app automatically handles access token expiration. Users only need to log in
 
 Look for these console messages:
 
-### Normal Refresh
+### Proactive Refresh (Background Timer)
+```
+⏰ Starting proactive token refresh timer (checks every 4 minutes)
+⏰ Proactive refresh check: Token expires in 45 minutes
+✅ Token still valid for 45 minutes
+...
+⏰ Proactive refresh check: Token expires in 4 minutes
+🔄 Token expiring soon (4 min), proactively refreshing...
+🔄 Refreshing access token...
+✅ Token refreshed successfully
+📅 New token expires at: 2025-10-06 15:30:00
+✅ Proactive token refresh successful
+```
+
+### Normal Refresh (On-Demand)
 ```
 ⏰ Token expired or expiring soon, refreshing...
 🔄 Refreshing access token...
