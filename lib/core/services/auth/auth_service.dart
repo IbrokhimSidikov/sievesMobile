@@ -14,6 +14,11 @@ class AuthService {
   // Background timer for proactive token refresh
   Timer? _refreshTimer;
   bool _isRefreshing = false;
+  
+  // TEST MODE: Set to true to test proactive refresh quickly
+  // When true: checks every 30 seconds, refreshes if < 1500 minutes remaining
+  // When false: checks every 4 minutes, refreshes if < 5 minutes remaining
+  static const bool _testMode = false;
 
   // Auth0 configuration
   static const String _domain = 'exodelicainc.eu.auth0.com';
@@ -44,6 +49,7 @@ class AuthService {
       print('   Audience: $_audience');
       print('   URL Scheme: sievesmob');
       print('   Callback URL: sievesmob://callback');
+      print('   Use Refresh Tokens: true ✅');
       print('');
       print('⏳ Opening Auth0 login page...');
       
@@ -52,8 +58,9 @@ class AuthService {
           .login(
             audience: _audience,
             scopes: {'openid', 'profile', 'email', 'offline_access'},
-            // redirectUrl: 'sievesmob://callback',
-            redirectUrl: 'sievesmob://exodelicainc.eu.auth0.com/android/com.sieves.v1.sieves_mob/callback',
+            // useRefreshTokens: true, // CRITICAL: Enable refresh tokens (same as web app)
+            redirectUrl: 'sievesmob://callback',
+            // redirectUrl: 'sievesmob://exodelicainc.eu.auth0.com/android/com.sieves.v1.sieves_mob/callback',
             parameters: {
               'max_age': '0',
             },
@@ -132,6 +139,12 @@ class AuthService {
     
     if (credentials.refreshToken != null) {
       await _secureStorage.write(key: _refreshTokenKey, value: credentials.refreshToken);
+      print('✅ Refresh token stored successfully');
+    } else {
+      print('⚠️  WARNING: No refresh token received from Auth0!');
+      print('   This means token refresh will NOT work.');
+      print('   Check Auth0 Dashboard > Application > Settings > Advanced Settings > Grant Types');
+      print('   Ensure "Refresh Token" grant type is enabled.');
     }
     
     await _secureStorage.write(key: _idTokenKey, value: credentials.idToken);
@@ -388,13 +401,16 @@ class AuthService {
     // Cancel existing timer if any
     _stopProactiveRefreshTimer();
     
-    print('⏰ Starting proactive token refresh timer (checks every 4 minutes)');
+    final checkInterval = _testMode ? const Duration(seconds: 30) : const Duration(minutes: 4);
+    final intervalText = _testMode ? '30 seconds [TEST MODE]' : '4 minutes';
+    
+    print('⏰ Starting proactive token refresh timer (checks every $intervalText)');
     
     // Check immediately
     _checkAndRefreshToken();
     
-    // Then check every 4 minutes
-    _refreshTimer = Timer.periodic(const Duration(minutes: 4), (timer) {
+    // Then check periodically
+    _refreshTimer = Timer.periodic(checkInterval, (timer) {
       _checkAndRefreshToken();
     });
   }
@@ -421,15 +437,19 @@ class AuthService {
       final expiresAtTime = int.parse(expiresAt);
       final currentTime = DateTime.now().millisecondsSinceEpoch;
       final timeUntilExpiry = expiresAtTime - currentTime;
-      final fiveMinutesInMs = 5 * 60 * 1000;
+      
+      // TEST MODE: Refresh if < 1500 minutes (to trigger with your current token)
+      // PRODUCTION: Refresh if < 5 minutes
+      final thresholdInMs = _testMode ? (1500 * 60 * 1000) : (5 * 60 * 1000);
       
       // Calculate time remaining in minutes
       final minutesRemaining = (timeUntilExpiry / 1000 / 60).round();
       
-      print('⏰ Proactive refresh check: Token expires in $minutesRemaining minutes');
+      final modeText = _testMode ? ' [TEST MODE: threshold=${1500}min]' : '';
+      print('⏰ Proactive refresh check: Token expires in $minutesRemaining minutes$modeText');
       
-      // Refresh if expired or expiring within 5 minutes
-      if (timeUntilExpiry < fiveMinutesInMs) {
+      // Refresh if expired or expiring within threshold
+      if (timeUntilExpiry < thresholdInMs) {
         print('🔄 Token expiring soon ($minutesRemaining min), proactively refreshing...');
         final success = await refreshToken();
         
