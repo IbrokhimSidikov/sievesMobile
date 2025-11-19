@@ -589,4 +589,42 @@ class ApiService {
       return null;
     }
   }
+
+  // Get employee bonus for previous month
+  Future<Map<String, dynamic>?> getEmployeeBonus(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      
+      // Calculate previous month
+      final now = DateTime.now();
+      final previousMonth = DateTime(now.year, now.month - 1, 1);
+      final year = previousMonth.year;
+      final month = previousMonth.month;
+      
+      final queryParams = {
+        'employee_id': employeeId.toString(),
+        'year': year.toString(),
+        'month': month.toString(),
+      };
+
+      final uri = Uri.parse('$baseUrl/employee-bonus/employee').replace(
+        queryParameters: queryParams,
+      );
+
+      print('🎁 Fetching employee bonus for $year-$month: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Fetched employee bonus successfully: $data');
+        return data;
+      } else {
+        print('❌ Error getting employee bonus: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting employee bonus: $e');
+      return null;
+    }
+  }
 }

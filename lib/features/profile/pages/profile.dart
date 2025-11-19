@@ -34,10 +34,13 @@ class _ProfileState extends State<Profile> {
   bool _isLoadingWorkEntries = true;
   bool _isLoadingPrePaid = true;
   bool _isLoadingVacation = true;
+  bool _isLoadingBonus = true;
   double _prePaidAmount = 0.0;
   List<Map<String, dynamic>> _currentMonthTransactions = [];
   int _availableVacationDays = 0;
   int _totalVacationDays = 0;
+  double _bonusAmount = 0.0;
+  String _bonusMonth = '';
   String? _error;
   bool _isFromCache = false;
   bool _isPrePaidFromCache = false;
@@ -51,6 +54,7 @@ class _ProfileState extends State<Profile> {
     _loadCurrentMonthWorkEntries();
     _loadPrePaidAmount();
     _loadVacationDays();
+    _loadBonusData();
   }
 
   @override
@@ -793,6 +797,103 @@ class _ProfileState extends State<Profile> {
     }
   }
 
+  /// Load bonus data for previous month from API
+  Future<void> _loadBonusData() async {
+    try {
+      setState(() {
+        _isLoadingBonus = true;
+      });
+
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        print('❌ No employee ID found for bonus');
+        setState(() {
+          _isLoadingBonus = false;
+          _bonusAmount = 0.0;
+        });
+        return;
+      }
+
+      print('🎁 Fetching bonus data for employee $employeeId');
+
+      // Fetch bonus from API (automatically fetches previous month)
+      final response = await _apiService.getEmployeeBonus(employeeId);
+
+      if (response != null) {
+        // Calculate previous month for display
+        final now = DateTime.now();
+        final previousMonth = DateTime(now.year, now.month - 1, 1);
+        const months = [
+          'January', 'February', 'March', 'April', 'May', 'June',
+          'July', 'August', 'September', 'October', 'November', 'December'
+        ];
+        final monthName = '${months[previousMonth.month - 1]} ${previousMonth.year}';
+
+        // Extract bonus amount from response
+        // Handle different response structures
+        double bonusAmount = 0.0;
+        
+        if (response is Map<String, dynamic>) {
+          // Helper function to safely parse amount (handles both String and num)
+          double parseAmount(dynamic value) {
+            if (value == null) return 0.0;
+            if (value is num) return value.toDouble();
+            if (value is String) {
+              return double.tryParse(value) ?? 0.0;
+            }
+            return 0.0;
+          }
+          
+          // Try different possible field names
+          if (response.containsKey('amount')) {
+            bonusAmount = parseAmount(response['amount']);
+          } else if (response.containsKey('bonus_amount')) {
+            bonusAmount = parseAmount(response['bonus_amount']);
+          } else if (response.containsKey('total_bonus')) {
+            bonusAmount = parseAmount(response['total_bonus']);
+          } else if (response.containsKey('bonus')) {
+            final bonus = response['bonus'];
+            if (bonus is num) {
+              bonusAmount = bonus.toDouble();
+            } else if (bonus is String) {
+              bonusAmount = double.tryParse(bonus) ?? 0.0;
+            } else if (bonus is Map && bonus.containsKey('amount')) {
+              bonusAmount = parseAmount(bonus['amount']);
+            }
+          }
+          
+          print('📊 Bonus response: $response');
+          print('💰 Extracted bonus amount: $bonusAmount UZS');
+        }
+
+        if (mounted) {
+          setState(() {
+            _bonusAmount = bonusAmount;
+            _bonusMonth = monthName;
+            _isLoadingBonus = false;
+          });
+          print('✅ Loaded bonus: $bonusAmount UZS for $monthName');
+        }
+      } else {
+        print('⚠️ No bonus data received');
+        if (mounted) {
+          setState(() {
+            _bonusAmount = 0.0;
+            _isLoadingBonus = false;
+          });
+        }
+      }
+    } catch (e) {
+      print('❌ Error loading bonus data: $e');
+      if (mounted) {
+        setState(() {
+          _bonusAmount = 0.0;
+          _isLoadingBonus = false;
+        });
+      }
+    }
+  }
+
   void _showTransactionDetails() {
     showDialog(
       context: context,
@@ -1115,6 +1216,8 @@ class _ProfileState extends State<Profile> {
           _buildProfileCard(),
           SizedBox(height: 20.h),
           _buildWorkHoursCard(),
+          SizedBox(height: 20.h),
+          _buildBonusCard(),
           SizedBox(height: 20.h),
           _buildPrePaidCard(),
           SizedBox(height: 20.h),
@@ -1748,6 +1851,461 @@ class _ProfileState extends State<Profile> {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBonusCard() {
+    // Use real bonus data from API
+    final bonusAmount = _bonusAmount;
+    final bonusMonth = _bonusMonth.isNotEmpty ? _bonusMonth : 'Previous Month';
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    
+    // Color scheme for light and dark modes
+    final cardBgStart = isDarkMode ? const Color(0xFF2D1B4E) : const Color(0xFFFFF5F7);
+    final cardBgMid = isDarkMode ? const Color(0xFF3D2563) : const Color(0xFFFFE8EC);
+    final cardBgEnd = isDarkMode ? const Color(0xFF4A2F7A) : const Color(0xFFFFD6DD);
+    final borderColor = isDarkMode ? const Color(0xFF7C4DFF) : const Color(0xFFFF6B9D);
+    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
+    final secondaryText = isDarkMode ? const Color(0xFFB8B8C8) : AppColors.cxBlack;
+    final purpleColor = isDarkMode ? const Color(0xFFB388FF) : const Color(0xFFAF52DE);
+    final purpleColorLight = isDarkMode ? const Color(0xFF9C7AFF) : const Color(0xFFC77DFF);
+    final accentGlow = isDarkMode ? const Color(0xFFB388FF) : const Color(0xFFFF6B9D);
+    
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            cardBgStart,
+            cardBgMid,
+            cardBgEnd,
+          ],
+          stops: [0.0, 0.5, 1.0],
+        ),
+        borderRadius: BorderRadius.circular(24.r),
+        border: Border.all(
+          color: borderColor.withOpacity(isDarkMode ? 0.5 : 0.3),
+          width: 1.5,
+        ),
+        boxShadow: [
+          // Primary shadow
+          BoxShadow(
+            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(isDarkMode ? 0.6 : 0.15),
+            blurRadius: 24,
+            offset: Offset(0, 10),
+            spreadRadius: isDarkMode ? -2 : 0,
+          ),
+          // Accent glow
+          BoxShadow(
+            color: accentGlow.withOpacity(isDarkMode ? 0.2 : 0.1),
+            blurRadius: 32,
+            offset: Offset(0, 0),
+            spreadRadius: isDarkMode ? -8 : -4,
+          ),
+          // Secondary shadow for depth
+          BoxShadow(
+            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(isDarkMode ? 0.4 : 0.08),
+            blurRadius: 40,
+            offset: Offset(0, 20),
+            spreadRadius: isDarkMode ? -10 : -5,
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Decorative circles in background
+          Positioned(
+            top: -30,
+            right: -30,
+            child: Container(
+              width: 120.w,
+              height: 120.h,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    purpleColor.withOpacity(isDarkMode ? 0.15 : 0.1),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -20,
+            left: -20,
+            child: Container(
+              width: 80.w,
+              height: 80.h,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: RadialGradient(
+                  colors: [
+                    purpleColorLight.withOpacity(isDarkMode ? 0.12 : 0.08),
+                    Colors.transparent,
+                  ],
+                ),
+              ),
+            ),
+          ),
+          
+          Padding(
+            padding: EdgeInsets.all(24.w),
+            child: _isLoadingBonus
+                ? _buildBonusShimmer(isDarkMode, purpleColor, purpleColorLight)
+                : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Header with icon and title
+                Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            purpleColor.withOpacity(isDarkMode ? 0.25 : 0.2),
+                            purpleColorLight.withOpacity(isDarkMode ? 0.2 : 0.15),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16.r),
+                        boxShadow: [
+                          BoxShadow(
+                            color: purpleColor.withOpacity(0.3),
+                            blurRadius: 12,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.card_giftcard_rounded,
+                        color: isDarkMode ? purpleColor : purpleColor,
+                        size: 28.sp,
+                      ),
+                    ),
+                    SizedBox(width: 16.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Bonus',
+                            style: TextStyle(
+                              fontSize: 22.sp,
+                              fontWeight: FontWeight.w700,
+                              color: primaryText,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          Text(
+                            bonusMonth,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              color: secondaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Bonus badge
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            purpleColor.withOpacity(isDarkMode ? 0.3 : 0.2),
+                            purpleColorLight.withOpacity(isDarkMode ? 0.25 : 0.15),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: purpleColor.withOpacity(0.4),
+                          width: 1,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.star_rounded,
+                            color: isDarkMode ? purpleColor : purpleColor,
+                            size: 16.sp,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            'Active',
+                            style: TextStyle(
+                              fontSize: 11.sp,
+                              fontWeight: FontWeight.w700,
+                              color: primaryText,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 24.h),
+                
+                // Bonus amount - prominent display
+                Center(
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            bonusAmount.toStringAsFixed(0),
+                            style: TextStyle(
+                              fontSize: 52.sp,
+                              fontWeight: FontWeight.w800,
+                              color: primaryText,
+                              height: 1.0,
+                              fontFeatures: [FontFeature.tabularFigures()],
+                              shadows: [
+                                Shadow(
+                                  color: purpleColor.withOpacity(0.3),
+                                  blurRadius: 20,
+                                  offset: Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                          ),
+                          SizedBox(width: 8.w),
+                          Padding(
+                            padding: EdgeInsets.only(top: 8.h),
+                            child: Text(
+                              'UZS',
+                              style: TextStyle(
+                                fontSize: 18.sp,
+                                fontWeight: FontWeight.w600,
+                                color: secondaryText,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              purpleColor.withOpacity(isDarkMode ? 0.2 : 0.15),
+                              purpleColorLight.withOpacity(isDarkMode ? 0.15 : 0.1),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(20.r),
+                          border: Border.all(
+                            color: purpleColor.withOpacity(0.3),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.trending_up_rounded,
+                              color: purpleColor,
+                              size: 16.sp,
+                            ),
+                            SizedBox(width: 6.w),
+                            Text(
+                              'Current Bonus Amount',
+                              style: TextStyle(
+                                fontSize: 13.sp,
+                                fontWeight: FontWeight.w600,
+                                color: primaryText,
+                                letterSpacing: 0.3,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                SizedBox(height: 20.h),
+                
+                // Info message
+                Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: (isDarkMode ? Colors.white : Colors.black).withOpacity(isDarkMode ? 0.05 : 0.03),
+                    borderRadius: BorderRadius.circular(16.r),
+                    border: Border.all(
+                      color: (isDarkMode ? Colors.white : Colors.black).withOpacity(isDarkMode ? 0.1 : 0.05),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: secondaryText,
+                        size: 20.sp,
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Text(
+                          bonusAmount > 0
+                              ? 'This bonus will be given after 10th of the month'
+                              : 'No bonus available at the moment',
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: secondaryText,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBonusShimmer(bool isDarkMode, Color purpleColor, Color purpleColorLight) {
+    final shimmerBase = (isDarkMode ? Colors.white : purpleColor).withOpacity(isDarkMode ? 0.05 : 0.2);
+    final shimmerHighlight = (isDarkMode ? Colors.white : purpleColor).withOpacity(isDarkMode ? 0.1 : 0.4);
+    
+    return Shimmer.fromColors(
+      baseColor: shimmerBase,
+      highlightColor: shimmerHighlight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header shimmer
+          Row(
+            children: [
+              Container(
+                width: 52.w,
+                height: 52.h,
+                decoration: BoxDecoration(
+                  color: shimmerBase,
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 100.w,
+                      height: 24.h,
+                      decoration: BoxDecoration(
+                        color: shimmerBase,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Container(
+                      width: 140.w,
+                      height: 14.h,
+                      decoration: BoxDecoration(
+                        color: shimmerBase,
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                width: 70.w,
+                height: 28.h,
+                decoration: BoxDecoration(
+                  color: shimmerBase,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 24.h),
+          
+          // Amount shimmer - prominent display
+          Center(
+            child: Column(
+              children: [
+                Container(
+                  width: 200.w,
+                  height: 60.h,
+                  decoration: BoxDecoration(
+                    color: shimmerBase,
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                Container(
+                  width: 160.w,
+                  height: 32.h,
+                  decoration: BoxDecoration(
+                    color: shimmerBase,
+                    borderRadius: BorderRadius.circular(20.r),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          SizedBox(height: 20.h),
+          
+          // Info message shimmer
+          Container(
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: shimmerBase.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(16.r),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 20.w,
+                  height: 20.h,
+                  decoration: BoxDecoration(
+                    color: shimmerBase,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        height: 14.h,
+                        decoration: BoxDecoration(
+                          color: shimmerBase,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                      SizedBox(height: 6.h),
+                      Container(
+                        width: 180.w,
+                        height: 14.h,
+                        decoration: BoxDecoration(
+                          color: shimmerBase,
+                          borderRadius: BorderRadius.circular(4.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),
