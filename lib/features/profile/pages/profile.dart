@@ -2085,7 +2085,10 @@ class _ProfileState extends State<Profile> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            bonusAmount.toStringAsFixed(0),
+                              bonusAmount.toStringAsFixed(0).replaceAllMapped(
+                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                    (Match m) => '${m[1]} ',
+                              ),
                             style: TextStyle(
                               fontSize: 52.sp,
                               fontWeight: FontWeight.w800,
