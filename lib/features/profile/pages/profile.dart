@@ -45,6 +45,7 @@ class _ProfileState extends State<Profile> {
   bool _isFromCache = false;
   bool _isPrePaidFromCache = false;
   bool _isVacationFromCache = false;
+  bool _isBonusFromCache = false;
 
   @override
   void initState() {
@@ -624,6 +625,7 @@ class _ProfileState extends State<Profile> {
       _loadCurrentMonthWorkEntries(),
       _loadPrePaidAmount(forceRefresh: true),
       _loadVacationDays(forceRefresh: true),
+      _loadBonusData(forceRefresh: true),
     ]);
   }
 
@@ -798,10 +800,11 @@ class _ProfileState extends State<Profile> {
   }
 
   /// Load bonus data for previous month from API
-  Future<void> _loadBonusData() async {
+  Future<void> _loadBonusData({bool forceRefresh = false}) async {
     try {
       setState(() {
         _isLoadingBonus = true;
+        _isBonusFromCache = false;
       });
 
       final employeeId = _authManager.currentEmployeeId;
@@ -812,6 +815,23 @@ class _ProfileState extends State<Profile> {
           _bonusAmount = 0.0;
         });
         return;
+      }
+
+      // Try to load from cache first (if not forcing refresh)
+      if (!forceRefresh) {
+        final cachedData = await _cacheService.getCachedBonusData(employeeId);
+        if (cachedData != null) {
+          print('✅ Loaded bonus data from cache');
+          if (mounted) {
+            setState(() {
+              _bonusAmount = (cachedData['amount'] as num?)?.toDouble() ?? 0.0;
+              _bonusMonth = cachedData['month'] as String? ?? '';
+              _isLoadingBonus = false;
+              _isBonusFromCache = true;
+            });
+          }
+          return;
+        }
       }
 
       print('🎁 Fetching bonus data for employee $employeeId');
@@ -866,11 +886,15 @@ class _ProfileState extends State<Profile> {
           print('💰 Extracted bonus amount: $bonusAmount UZS');
         }
 
+        // Cache the bonus data
+        await _cacheService.cacheBonusData(employeeId, bonusAmount, monthName);
+
         if (mounted) {
           setState(() {
             _bonusAmount = bonusAmount;
             _bonusMonth = monthName;
             _isLoadingBonus = false;
+            _isBonusFromCache = false;
           });
           print('✅ Loaded bonus: $bonusAmount UZS for $monthName');
         }
@@ -1232,7 +1256,7 @@ class _ProfileState extends State<Profile> {
   Widget _buildHeader() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isAnyCached = _isFromCache || _isPrePaidFromCache || _isVacationFromCache;
+    final isAnyCached = _isFromCache || _isPrePaidFromCache || _isVacationFromCache || _isBonusFromCache;
     
     return Row(
       children: [

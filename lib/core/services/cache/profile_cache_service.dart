@@ -9,6 +9,8 @@ class ProfileCacheService {
   static const String _prePaidTimestampKey = 'prepaid_timestamp_';
   static const String _vacationCacheKey = 'vacation_data_';
   static const String _vacationTimestampKey = 'vacation_timestamp_';
+  static const String _bonusCacheKey = 'bonus_data_';
+  static const String _bonusTimestampKey = 'bonus_timestamp_';
   static const Duration _cacheExpiration = Duration(hours: 1); // Cache expires after 1 hour
 
   /// Generate cache key for profile data
@@ -39,6 +41,16 @@ class ProfileCacheService {
   /// Generate timestamp key for vacation cache
   String _getVacationTimestampKey(int employeeId) {
     return '$_vacationTimestampKey$employeeId';
+  }
+
+  /// Generate cache key for bonus data
+  String _getBonusCacheKey(int employeeId) {
+    return '$_bonusCacheKey$employeeId';
+  }
+
+  /// Generate timestamp key for bonus cache
+  String _getBonusTimestampKey(int employeeId) {
+    return '$_bonusTimestampKey$employeeId';
   }
 
   /// Check if cached data exists and is still valid
@@ -285,12 +297,90 @@ class ProfileCacheService {
     }
   }
 
+  // ============ Bonus Data Caching ============
+
+  /// Save bonus data to cache
+  Future<void> cacheBonusData(
+    int employeeId,
+    double amount,
+    String month,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getBonusCacheKey(employeeId);
+      final timestampKey = _getBonusTimestampKey(employeeId);
+
+      final data = {
+        'amount': amount,
+        'month': month,
+      };
+
+      final jsonString = jsonEncode(data);
+
+      await prefs.setString(cacheKey, jsonString);
+      await prefs.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
+
+      print('✅ Cached bonus data for employee $employeeId');
+    } catch (e) {
+      print('❌ Error caching bonus data: $e');
+    }
+  }
+
+  /// Retrieve bonus data from cache
+  Future<Map<String, dynamic>?> getCachedBonusData(int employeeId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getBonusCacheKey(employeeId);
+      final timestampKey = _getBonusTimestampKey(employeeId);
+
+      // Check if cache is valid
+      final isValid = await _isCacheValid(timestampKey);
+      if (!isValid) {
+        print('⚠️ Bonus cache expired or invalid for employee $employeeId');
+        return null;
+      }
+
+      // Retrieve from cache
+      final jsonString = prefs.getString(cacheKey);
+      if (jsonString == null) {
+        print('⚠️ No cached bonus data found for employee $employeeId');
+        return null;
+      }
+
+      // Parse JSON
+      final data = jsonDecode(jsonString) as Map<String, dynamic>;
+
+      print('✅ Retrieved bonus data from cache');
+      return data;
+    } catch (e) {
+      print('❌ Error retrieving cached bonus data: $e');
+      return null;
+    }
+  }
+
+  /// Clear bonus cache for a specific employee
+  Future<void> clearBonusCache(int employeeId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getBonusCacheKey(employeeId);
+      final timestampKey = _getBonusTimestampKey(employeeId);
+
+      await prefs.remove(cacheKey);
+      await prefs.remove(timestampKey);
+
+      print('✅ Cleared bonus cache for employee $employeeId');
+    } catch (e) {
+      print('❌ Error clearing bonus cache: $e');
+    }
+  }
+
   // ============ Clear All Caches ============
 
   /// Clear all profile-related caches for a specific user
   Future<void> clearAllCachesForUser(int employeeId, int? individualId) async {
     await clearProfileCache(employeeId);
     await clearVacationCache(employeeId);
+    await clearBonusCache(employeeId);
     if (individualId != null) {
       await clearPrePaidCache(individualId);
     }
@@ -310,7 +400,9 @@ class ProfileCacheService {
             key.startsWith(_prePaidCacheKey) ||
             key.startsWith(_prePaidTimestampKey) ||
             key.startsWith(_vacationCacheKey) ||
-            key.startsWith(_vacationTimestampKey)) {
+            key.startsWith(_vacationTimestampKey) ||
+            key.startsWith(_bonusCacheKey) ||
+            key.startsWith(_bonusTimestampKey)) {
           await prefs.remove(key);
         }
       }
@@ -330,17 +422,20 @@ class ProfileCacheService {
       int profileCacheCount = 0;
       int prePaidCacheCount = 0;
       int vacationCacheCount = 0;
+      int bonusCacheCount = 0;
 
       for (final key in keys) {
         if (key.startsWith(_profileCacheKey)) profileCacheCount++;
         if (key.startsWith(_prePaidCacheKey)) prePaidCacheCount++;
         if (key.startsWith(_vacationCacheKey)) vacationCacheCount++;
+        if (key.startsWith(_bonusCacheKey)) bonusCacheCount++;
       }
 
       return {
         'profile_caches': profileCacheCount,
         'prepaid_caches': prePaidCacheCount,
         'vacation_caches': vacationCacheCount,
+        'bonus_caches': bonusCacheCount,
         'cache_expiration_hours': _cacheExpiration.inHours,
       };
     } catch (e) {
