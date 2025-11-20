@@ -1,15 +1,15 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/services/auth/auth_manager.dart';
-import '../../../core/services/auth/auth_service.dart';
-import '../../../core/services/api/api_service.dart';
 import '../../../core/services/theme/theme_cubit.dart';
 import '../../../core/services/notification/notification_storage_service.dart';
+import '../../../core/providers/locale_provider.dart';
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -23,19 +23,23 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   double _scrollOffset = 0;
   int _unreadNotificationCount = 0;
   Timer? _refreshTimer;
-  
-  final List<_ModuleItem> modules = [
-    _ModuleItem("Profile", Icons.person_outline, AppColors.cxPrimary, '/profile'),
-    _ModuleItem("Attendance", Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
-    _ModuleItem("Break Records", Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
-    _ModuleItem("History", Icons.history_outlined, AppColors.cxBlue, '/history'),
-    _ModuleItem("L-WALLET", Icons.wallet_outlined, AppColors.cxPurple, null),
-  ];
+
+  // Getter to access modules with localization
+  List<_ModuleItem> get modules {
+    final localizations = AppLocalizations.of(context);
+    return [
+      _ModuleItem(localizations.profile, Icons.person_outline, AppColors.cxPrimary, '/profile'),
+      _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
+      _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
+      _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
+      _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, null),
+    ];
+  }
 
   // Helper method to get user's display name
   String _getUserDisplayName() {
     final identity = _authManager.currentIdentity;
-    
+
     if (identity != null) {
       // Try to get full name from employee individual data
       if (identity.employee?.individual != null) {
@@ -143,7 +147,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         elevation: 0,
         backgroundColor: Colors.transparent,
         title: Text(
-          'Dashboard',
+          AppLocalizations.of(context).dashboard,
           style: TextStyle(
             fontSize: 26.sp,
             fontWeight: FontWeight.w600,
@@ -151,6 +155,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           ),
         ),
         actions: [
+          // Language dropdown
+          Padding(
+            padding: EdgeInsets.only(right: 8.sp),
+            child: _buildLanguageDropdown(theme),
+          ),
           // Theme toggle switch
           Padding(
             padding: EdgeInsets.only(right: 12.sp),
@@ -272,7 +281,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           children: [
             // Greeting Section
             Text(
-              "Dear,",
+              AppLocalizations.of(context).dear,
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w400,
@@ -318,6 +327,103 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildLanguageDropdown(ThemeData theme) {
+    final localeProvider = Provider.of<LocaleProvider>(context);
+    final currentLocale = localeProvider.locale.languageCode;
+
+    // Language map with flags
+    final languages = {
+      'en': {'name': 'EN', 'flag': '🇬🇧'},
+      'uz': {'name': 'UZ', 'flag': '🇺🇿'},
+      'ru': {'name': 'RU', 'flag': '🇷🇺'},
+    };
+
+    return Container(
+      height: 28.h,
+      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14.r),
+        gradient: LinearGradient(
+          colors: theme.brightness == Brightness.dark
+              ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+              : [Colors.grey.shade300, Colors.grey.shade400],
+        ),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<String>(
+          value: currentLocale,
+          isDense: true,
+          icon: Icon(
+            Icons.arrow_drop_down,
+            color: theme.brightness == Brightness.dark
+                ? const Color(0xFF6366F1)
+                : Colors.grey.shade700,
+            size: 18.sp,
+          ),
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+          dropdownColor: theme.cardColor,
+          borderRadius: BorderRadius.circular(12.r),
+          items: languages.entries.map((entry) {
+            return DropdownMenuItem<String>(
+              value: entry.key,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    entry.value['flag']!,
+                    style: TextStyle(fontSize: 14.sp),
+                  ),
+                  SizedBox(width: 6.w),
+                  Text(
+                    entry.value['name']!,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }).toList(),
+          onChanged: (String? newValue) {
+            if (newValue != null) {
+              localeProvider.setLocale(Locale(newValue));
+            }
+          },
+          selectedItemBuilder: (BuildContext context) {
+            return languages.entries.map((entry) {
+              return Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    entry.value['flag']!,
+                    style: TextStyle(fontSize: 14.sp),
+                  ),
+                  SizedBox(width: 4.w),
+                  Text(
+                    entry.value['name']!,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: theme.brightness == Brightness.dark
+                          ? Colors.white
+                          : Colors.grey.shade800,
+                    ),
+                  ),
+                ],
+              );
+            }).toList();
+          },
         ),
       ),
     );
@@ -530,19 +636,21 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
   }
 
   String _getSubtitle(String title) {
-    switch (title) {
-      case "Profile":
-        return "Personal information";
-      case "Attendance":
-        return "Work hours & tracking";
-      case "Break Records":
-        return "Meal history";
-      case "History":
-        return "Activity log";
-      case "L-WALLET":
-        return "Investment for your dreams";
-      default:
-        return "Tap to explore";
+    final localizations = AppLocalizations.of(context);
+    
+    // Match against translated titles
+    if (title == localizations.profile) {
+      return localizations.profileSubtitle;
+    } else if (title == localizations.attendance) {
+      return localizations.attendanceSubtitle;
+    } else if (title == localizations.breakRecords) {
+      return localizations.breakRecordsSubtitle;
+    } else if (title == localizations.history) {
+      return localizations.historySubtitle;
+    } else if (title == localizations.lWallet) {
+      return localizations.lWalletSubtitle;
+    } else {
+      return "Tap to explore";
     }
   }
 }

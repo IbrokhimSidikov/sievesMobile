@@ -5,7 +5,11 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:provider/provider.dart';
 
+import 'core/providers/locale_provider.dart';
+import 'core/l10n/app_localizations_delegate.dart';
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
 import 'core/router/app_routes.dart';
@@ -53,11 +57,19 @@ class _MyAppState extends State<MyApp> {
   late final VersionService _versionService;
   bool _isInitialized = false;
   final _navigatorKey = GlobalKey<NavigatorState>();
+  final localeProvider = LocaleProvider();
 
   @override
   void initState() {
     super.initState();
-    _initializeVersionService();
+    _initializeApp();
+  }
+
+  Future<void> _initializeApp() async {
+    // Initialize locale provider first
+    await localeProvider.initialize();
+    // Then initialize version service
+    await _initializeVersionService();
   }
 
   Future<void> _initializeVersionService() async {
@@ -137,8 +149,10 @@ class _MyAppState extends State<MyApp> {
       );
     }
 
-    return MultiBlocProvider(
+    return MultiProvider(
       providers: [
+        // Provide LocaleProvider for language switching
+        ChangeNotifierProvider.value(value: localeProvider),
         // Provide AuthCubit to the entire app
         BlocProvider(create: (context) => AuthCubit(AuthManager())),
         // Provide ThemeCubit for theme switching
@@ -149,23 +163,38 @@ class _MyAppState extends State<MyApp> {
         minTextAdapt: true,
         splitScreenMode: true,
         builder: (_, child) {
-          return BlocBuilder<ThemeCubit, ThemeMode>(
-            builder: (context, themeMode) {
-              return MaterialApp.router(
-                title: 'Sieves Mobile App',
-                debugShowCheckedModeBanner: false,
-                theme: AppTheme.lightTheme.copyWith(
-                  textTheme: GoogleFonts.nunitoTextTheme(
-                    Theme.of(context).textTheme,
-                  ),
-                ),
-                darkTheme: AppTheme.darkTheme.copyWith(
-                    textTheme: GoogleFonts.nunitoTextTheme(
+          return Consumer<LocaleProvider>(
+            builder: (context, localeProvider, _) {
+              return BlocBuilder<ThemeCubit, ThemeMode>(
+                builder: (context, themeMode) {
+                  return MaterialApp.router(
+                    title: 'Sieves Mobile App',
+                    debugShowCheckedModeBanner: false,
+                    // Localization configuration
+                    locale: localeProvider.locale,
+                    supportedLocales: const [
+                      Locale('en', ''),
+                      Locale('uz', ''),
+                      Locale('ru', ''),
+                    ],
+                    localizationsDelegates: const [
+                      AppLocalizationsDelegate(),
+                      GlobalMaterialLocalizations.delegate,
+                      GlobalWidgetsLocalizations.delegate,
+                      GlobalCupertinoLocalizations.delegate,
+                    ],
+                    theme: AppTheme.lightTheme.copyWith(
+                      textTheme: GoogleFonts.nunitoTextTheme(
                         Theme.of(context).textTheme,
-                    )),
-                themeMode: themeMode,
-                routerConfig: AppRoutes.router,
-                scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
+                      ),
+                    ),
+                    darkTheme: AppTheme.darkTheme.copyWith(
+                        textTheme: GoogleFonts.nunitoTextTheme(
+                            Theme.of(context).textTheme,
+                        )),
+                    themeMode: themeMode,
+                    routerConfig: AppRoutes.router,
+                    scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
                 builder: (builderContext, routerChild) {
                   return Navigator(
                     key: _navigatorKey,
@@ -201,6 +230,8 @@ class _MyAppState extends State<MyApp> {
                         ),
                       ),
                     ],
+                  );
+                },
                   );
                 },
               );

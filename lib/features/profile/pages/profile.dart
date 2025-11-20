@@ -15,6 +15,7 @@ import '../../../core/services/cache/profile_cache_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/work_time_calculator.dart';
 import '../../../core/model/work_entry_model.dart';
+import '../../../core/widgets/language_switcher.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -1246,6 +1247,8 @@ class _ProfileState extends State<Profile> {
           _buildPrePaidCard(),
           SizedBox(height: 20.h),
           _buildVacationDaysCard(),
+          SizedBox(height: 20.h),
+          const LanguageSwitcher(),
           SizedBox(height: 20.h),
           _buildJobInfoCard(),
         ],
