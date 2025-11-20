@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:sieves_mob/core/l10n/app_localizations.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/model/break_order_model.dart';
@@ -283,9 +284,9 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                     ),
                   ),
                   child: Text(
-                    'Available Balance',
+                    AppLocalizations.of(context).availableBreakBalance,
                     style: TextStyle(
-                      fontSize: 11.sp,
+                      fontSize: 15.sp,
                       fontWeight: FontWeight.w600,
                       color: AppColors.cxWhite,
                       letterSpacing: 0.5,
@@ -410,7 +411,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Break Records',
+                  AppLocalizations.of(context).breakRecords,
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
@@ -419,7 +420,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'Your meal history',
+                  AppLocalizations.of(context).breakRecordsSubtitle,
                   style: TextStyle(
                     fontSize: 14.sp,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -711,9 +712,9 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
       child: Row(
         children: [
           _buildHeaderCell('#', flex: 1),
-          _buildHeaderCell('Date', flex: 3),
-          _buildHeaderCell('Amount', flex: 2),
-          _buildHeaderCell('Details', flex: 1),
+          _buildHeaderCell(AppLocalizations.of(context).date, flex: 3),
+          _buildHeaderCell(AppLocalizations.of(context).amount, flex: 2),
+          _buildHeaderCell(AppLocalizations.of(context).details, flex: 1),
         ],
       ),
     );
@@ -995,7 +996,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Break Record #${record.id}',
+                            '${AppLocalizations.of(context).breakRecord} #${record.id}',
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w700,
@@ -1037,7 +1038,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                               ),
                             ),
                             child: Text(
-                              'Total: ${_formatAmount(record.value)}',
+                              '${AppLocalizations.of(context).total}: ${_formatAmount(record.value)}',
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 fontWeight: FontWeight.w700,
@@ -1057,7 +1058,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                 Align(
                   alignment: Alignment.centerLeft,
                   child: Text(
-                    'Order Details',
+                    AppLocalizations.of(context).orderDetails,
                     style: TextStyle(
                       fontSize: 16.sp,
                       fontWeight: FontWeight.w700,
@@ -1203,7 +1204,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                           ),
                           SizedBox(width: 8.w),
                           Text(
-                            'Close',
+                            AppLocalizations.of(context).close,
                             style: TextStyle(
                               fontSize: 14.sp,
                               fontWeight: FontWeight.w600,

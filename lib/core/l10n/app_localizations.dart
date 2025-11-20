@@ -59,7 +59,29 @@ class AppLocalizations {
       'logoutTitle':'Logout Confirmation',
       'logoutDesc':'Are you sure you want to logout?',
       'logoutButton':'Logout',
-      'cancelButton':'Cancel'
+      'cancelButton':'Cancel',
+
+      //Attendance page
+      'workEntries':'Work Entries',
+      'date':'Date',
+      'checkIn':'Check-in',
+      'checkOut':'Check-out',
+      'status':'Status',
+      'mood':'Mood',
+      'open':'Open',
+      'closed':'Closed',
+      'noEntries':'No work entries found for this month',
+
+      //Break Records
+      'availableBreakBalance':'Available Balance',
+      'amount':'Amount',
+      'details':'Details',
+      'breakRecord':'Break Record',
+      'orderDetails':'Order Details',
+      'total':'Total',
+      'close':'Close',
+
+
     },
     'uz': {
       'title': 'Sieves',
@@ -110,7 +132,28 @@ class AppLocalizations {
       'logoutTitle':'Chiqishni tasdiqlash',
       'logoutDesc':'Haqiqatan ham chiqmoqchimisiz?',
       'logoutButton':'Chiqish',
-      'cancelButton':'Bekor qilish'
+      'cancelButton':'Bekor qilish',
+
+      //Attendance
+      'workEntries':'Keldi-Ketdi',
+      'date':'Sana',
+      'checkIn':'Kirish',
+      'checkOut':'Chiqish',
+      'status':'Holat',
+      'mood':'Kayfiyat',
+      'open':'Ochiq',
+      'closed':'Yopiq',
+      'noEntries':'Bu oy uchun ish yozuvlari topilmadi',
+
+      //Break Records
+      'availableBreakBalance':'Mavjud balans',
+      'amount':'Miqdor',
+      'details':'Tafsilotlar',
+      'breakRecord':'Break qaydlari',
+      'orderDetails':'Buyurtma tafsilotlari',
+      'total':'Jami',
+      'close':'Yopish',
+
 
 
 },
@@ -164,6 +207,26 @@ class AppLocalizations {
       'logoutDesc':'Вы уверены, что хотите выйти?',
       'logoutButton':'Выйти',
       'cancelButton':'Отмена',
+
+      //Attendance
+      'workEntries':'Рабочие записи',
+      'date':'Дата',
+      'checkIn':'Вход',
+      'checkOut':'Выход',
+      'status':'Статус',
+      'mood':'Настроение',
+      'open':'Открыт',
+      'closed':'Закрыт',
+      'noEntries':'За этот месяц рабочие записи не найдены',
+
+      //Break Records
+      'availableBreakBalance':'Доступный баланс',
+      'amount':'Сумма',
+      'details':'Детали',
+      'breakRecord':'Запись перерыва',
+      'orderDetails':'Детали заказа',
+      'total':'Итого',
+      'close':'Закрыть',
 
 
     },
@@ -221,5 +284,24 @@ class AppLocalizations {
   String get logoutDesc => translate('logoutDesc');
   String get logoutButton => translate('logoutButton');
   String get cancelButton => translate('cancelButton');
+  //Attendance
+  String get workEntries => translate('workEntries');
+  String get date => translate('date');
+  String get checkIn => translate('checkIn');
+  String get checkOut => translate('checkOut');
+  String get status => translate('status');
+  String get mood => translate('mood');
+  String get open => translate('open');
+  String get closed => translate('closed');
+  String get noEntries => translate('noEntries');
+
+  //Break Records
+  String get availableBreakBalance => translate('availableBreakBalance');
+  String get amount => translate('amount');
+  String get details => translate('details');
+  String get breakRecord => translate('breakRecord');
+  String get orderDetails => translate('orderDetails');
+  String get total => translate('total');
+  String get close => translate('close');
 
 }

@@ -442,7 +442,7 @@ class _ProfileState extends State<Profile> {
                   
                   // Title
                   Text(
-                    'Logout Confirmation',
+                    AppLocalizations.of(context).logoutTitle,
                     style: TextStyle(
                       fontSize: 24.sp,
                       fontWeight: FontWeight.w700,
@@ -457,7 +457,7 @@ class _ProfileState extends State<Profile> {
                   
                   // Description
                   Text(
-                    'Are you sure you want to logout from your account?',
+                    AppLocalizations.of(context).logoutDesc,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15.sp,
@@ -497,7 +497,7 @@ class _ProfileState extends State<Profile> {
                               borderRadius: BorderRadius.circular(16.r),
                               child: Center(
                                 child: Text(
-                                  'Cancel',
+                                  AppLocalizations.of(context).cancelButton,
                                   style: TextStyle(
                                     fontSize: 16.sp,
                                     fontWeight: FontWeight.w600,
@@ -553,7 +553,7 @@ class _ProfileState extends State<Profile> {
                                     ),
                                     SizedBox(width: 8.w),
                                     Text(
-                                      'Logout',
+                                      AppLocalizations.of(context).logoutButton,
                                       style: TextStyle(
                                         fontSize: 16.sp,
                                         fontWeight: FontWeight.w700,

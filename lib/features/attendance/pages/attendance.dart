@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
+import 'package:sieves_mob/core/l10n/app_localizations.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/model/work_entry_model.dart';
@@ -356,7 +357,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Work Entries',
+                  AppLocalizations.of(context).workEntries,
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
@@ -498,7 +499,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
             ),
             SizedBox(height: 16.h),
             Text(
-              'No work entries found for this month',
+              AppLocalizations.of(context).noEntries,
               style: TextStyle(
                 fontSize: 16.sp,
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -623,11 +624,11 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
       ),
       child: Row(
         children: [
-          _buildHeaderCell('Date', flex: 2),
-          _buildHeaderCell('Check-in', flex: 2),
-          _buildHeaderCell('Check-out', flex: 2),
-          _buildHeaderCell('Status', flex: 2),
-          _buildHeaderCell('Mood', flex: 1),
+          _buildHeaderCell(AppLocalizations.of(context).date, flex: 2),
+          _buildHeaderCell(AppLocalizations.of(context).checkIn, flex: 2),
+          _buildHeaderCell(AppLocalizations.of(context).checkOut, flex: 2),
+          _buildHeaderCell(AppLocalizations.of(context).status, flex: 2),
+          _buildHeaderCell(AppLocalizations.of(context).mood, flex: 2),
         ],
       ),
     );
