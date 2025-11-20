@@ -5,6 +5,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
+import 'package:sieves_mob/core/l10n/app_localizations.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
@@ -979,7 +980,7 @@ class _ProfileState extends State<Profile> {
                       SizedBox(width: 12.w),
                       Expanded(
                         child: Text(
-                          'Transactions (${_currentMonthTransactions.length})',
+                          '${AppLocalizations.of(context).transactions} (${_currentMonthTransactions.length})',
                           style: TextStyle(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.w600,
@@ -1248,8 +1249,6 @@ class _ProfileState extends State<Profile> {
           SizedBox(height: 20.h),
           _buildVacationDaysCard(),
           SizedBox(height: 20.h),
-          const LanguageSwitcher(),
-          SizedBox(height: 20.h),
           _buildJobInfoCard(),
         ],
       ),
@@ -1274,7 +1273,7 @@ class _ProfileState extends State<Profile> {
         SizedBox(width: 8.w),
         Expanded(
           child: Text(
-            'Profile',
+            AppLocalizations.of(context).profile,
             style: TextStyle(
               fontSize: 28.sp,
               fontWeight: FontWeight.w700,
@@ -1519,7 +1518,7 @@ class _ProfileState extends State<Profile> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Work Hours',
+                              AppLocalizations.of(context).workHours,
                               style: TextStyle(
                                 fontSize: 22.sp,
                                 fontWeight: FontWeight.w700,
@@ -1556,7 +1555,6 @@ class _ProfileState extends State<Profile> {
                     ],
                   ),
                   SizedBox(height: 24.h),
-                  
                   // Total hours - prominent display with formatted time
                   Center(
                     child: Column(
@@ -1573,7 +1571,7 @@ class _ProfileState extends State<Profile> {
                         ),
                         SizedBox(height: 4.h),
                         Text(
-                          'Total Hours (${totalHours.toStringAsFixed(1)}h)',
+                          '${AppLocalizations.of(context).totalHours} (${totalHours.toStringAsFixed(1)}h)',
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w500,
@@ -1584,9 +1582,7 @@ class _ProfileState extends State<Profile> {
                       ],
                     ),
                   ),
-                  
                   SizedBox(height: 24.h),
-                  
                   // Day and Night hours breakdown
                   Row(
                     children: [
@@ -1628,7 +1624,7 @@ class _ProfileState extends State<Profile> {
                                 ),
                               ),
                               Text(
-                                'Day Hours',
+                                AppLocalizations.of(context).dayHours,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: AppColors.cxPureWhite.withOpacity(0.8),
@@ -1677,7 +1673,7 @@ class _ProfileState extends State<Profile> {
                                 ),
                               ),
                               Text(
-                                'Night Hours',
+                                AppLocalizations.of(context).nightHours,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: AppColors.cxPureWhite.withOpacity(0.8),
@@ -2021,7 +2017,7 @@ class _ProfileState extends State<Profile> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Bonus',
+                            AppLocalizations.of(context).bonus,
                             style: TextStyle(
                               fontSize: 22.sp,
                               fontWeight: FontWeight.w700,
@@ -2148,7 +2144,7 @@ class _ProfileState extends State<Profile> {
                             ),
                             SizedBox(width: 6.w),
                             Text(
-                              'Current Bonus Amount',
+                              AppLocalizations.of(context).currentBonusAmount,
                               style: TextStyle(
                                 fontSize: 13.sp,
                                 fontWeight: FontWeight.w600,
@@ -2187,8 +2183,8 @@ class _ProfileState extends State<Profile> {
                       Expanded(
                         child: Text(
                           bonusAmount > 0
-                              ? 'This bonus will be given after 10th of the month'
-                              : 'No bonus available at the moment',
+                              ? AppLocalizations.of(context).bonusDesc
+                              : AppLocalizations.of(context).noBonus,
                           style: TextStyle(
                             fontSize: 13.sp,
                             color: secondaryText,
@@ -2437,7 +2433,7 @@ class _ProfileState extends State<Profile> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Avans',
+                                  AppLocalizations.of(context).prePaid,
                                   style: TextStyle(
                                     fontSize: 20.sp,
                                     fontWeight: FontWeight.w700,
@@ -2520,7 +2516,7 @@ class _ProfileState extends State<Profile> {
                                 borderRadius: BorderRadius.circular(20.r),
                               ),
                               child: Text(
-                                'Current Month Balance',
+                                AppLocalizations.of(context).currentMonthBalance,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.w600,
@@ -2545,7 +2541,7 @@ class _ProfileState extends State<Profile> {
                           SizedBox(width: 8.w),
                           Expanded(
                             child: Text(
-                              'Pre-payment received for current month',
+                              AppLocalizations.of(context).prePaidDesc,
                               style: TextStyle(
                                 fontSize: 12.sp,
                                 fontWeight: FontWeight.w500,
@@ -2760,7 +2756,7 @@ class _ProfileState extends State<Profile> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Vacation Days',
+                              AppLocalizations.of(context).vacationDays,
                               style: TextStyle(
                                 fontSize: 22.sp,
                                 fontWeight: FontWeight.w700,
@@ -2768,7 +2764,7 @@ class _ProfileState extends State<Profile> {
                               ),
                             ),
                             Text(
-                              'Earned Leave Balance',
+                              AppLocalizations.of(context).earnedLeaveBalance,
                               style: TextStyle(
                                 fontSize: 14.sp,
                                 color: AppColors.cxPureWhite.withOpacity(0.8),
@@ -2797,7 +2793,7 @@ class _ProfileState extends State<Profile> {
                         ),
                         SizedBox(height: 8.h),
                         Text(
-                          'Days Available',
+                          AppLocalizations.of(context).daysAvailable,
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w500,
@@ -2877,7 +2873,7 @@ class _ProfileState extends State<Profile> {
                               ),
                               SizedBox(height: 4.h),
                               Text(
-                                'Days Used',
+                                AppLocalizations.of(context).daysUsed,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: AppColors.cxPureWhite.withOpacity(0.8),
@@ -2918,7 +2914,7 @@ class _ProfileState extends State<Profile> {
                               ),
                               SizedBox(height: 4.h),
                               Text(
-                                'Max Days',
+                                AppLocalizations.of(context).maxDays,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   color: AppColors.cxPureWhite.withOpacity(0.8),
@@ -3115,11 +3111,11 @@ class _ProfileState extends State<Profile> {
     final branch = _profileData?['employee']?['branch'];
     
     return _buildInfoCard(
-      title: 'Job Information',
+      title: AppLocalizations.of(context).jobInformation,
       icon: Icons.work_outline,
       children: [
-        _buildInfoRow('Branch', branch?['name'] ?? 'Not specified'),
-        _buildInfoRow('Department', _profileData?['employee']?['department']?['name'] ?? 'Not specified'),
+        _buildInfoRow(AppLocalizations.of(context).branch, branch?['name'] ?? 'Not specified'),
+        _buildInfoRow(AppLocalizations.of(context).department, _profileData?['employee']?['department']?['name'] ?? 'Not specified'),
       ],
     );
   }
