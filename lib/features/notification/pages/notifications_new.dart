@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/model/notification_model.dart';
 import '../../../core/services/notification/notification_storage_service.dart';
 
@@ -162,7 +163,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Notifications',
+                  AppLocalizations.of(context).notifications,
                   style: TextStyle(
                     fontSize: 20.sp,
                     fontWeight: FontWeight.w700,
@@ -171,7 +172,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  'Stay updated with your latest activity',
+                  AppLocalizations.of(context).notificationsSubtitle,
                   style: TextStyle(
                     fontSize: 14.sp,
                     color: isDark ? const Color(0xFF9CA3AF) : AppColors.cxSilverTint,
@@ -196,7 +197,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
                 ),
               ),
               child: Text(
-                'Mark all read',
+                AppLocalizations.of(context).markAllRead,
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w600,
@@ -529,7 +530,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
               SizedBox(height: 12.h),
               Text(
-                'No notifications yet',
+                AppLocalizations.of(context).noNotifications,
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w700,
@@ -538,7 +539,7 @@ class _NotificationsPageState extends State<NotificationsPage> {
               ),
               SizedBox(height: 6.h),
               Text(
-                'You\'re all caught up. We\'ll let you know when there\'s something new.',
+                AppLocalizations.of(context).noNotSubTitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 12.sp,

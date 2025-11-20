@@ -74,7 +74,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       builder: (BuildContext context) {
         return AlertDialog(
           title: Text('$moduleTitle'),
-          content: Text('This feature is coming soon!'),
+          content: Text(AppLocalizations.of(context).comingSoon),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),

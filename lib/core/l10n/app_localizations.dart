@@ -81,6 +81,12 @@ class AppLocalizations {
       'total':'Total',
       'close':'Close',
 
+      //Notifications
+      'notifications':'Notifications',
+      'notificationsSubtitle':'Stay updated with your latest activity',
+      'markAllRead':'Mark all read',
+      'noNotifications':'No notifications yet',
+      'noNotSubTitle':'You\'re all caught up!',
 
     },
     'uz': {
@@ -154,9 +160,16 @@ class AppLocalizations {
       'total':'Jami',
       'close':'Yopish',
 
+      //Notifications
+      'notifications':'Bildirishnomalar',
+      'notificationsSubtitle':'So‘nggi faoliyatingizdan xabardor bo‘ling',
+      'markAllRead':'O\'qish',
+      'noNotifications':'Hozirgacha bildirishnoma yo‘q',
+      'noNotSubTitle':'Siz hamma narsani ko‘rib chiqdiz!'
 
 
-},
+
+    },
     'ru': {
       'title': 'Sieves',
       'welcome': 'Добро пожаловать',
@@ -227,6 +240,13 @@ class AppLocalizations {
       'orderDetails':'Детали заказа',
       'total':'Итого',
       'close':'Закрыть',
+
+      //Notifications
+      'notifications':'Уведомления',
+      'notificationsSubtitle':'Будьте в курсе последних событий',
+      'markAllRead':'Отметить всё',
+      'noNotifications':'Пока нет уведомлений',
+      'noNotSubTitle':'Вы всё просмотрели!'
 
 
     },
@@ -303,5 +323,13 @@ class AppLocalizations {
   String get orderDetails => translate('orderDetails');
   String get total => translate('total');
   String get close => translate('close');
+
+  //Notifications page
+  String get notifications => translate('notifications');
+  String get notificationsSubtitle => translate('notificationsSubtitle');
+  String get markAllRead => translate('markAllRead');
+  String get noNotifications => translate('noNotifications');
+  String get noNotSubTitle => translate('noNotSubTitle');
+
 
 }
