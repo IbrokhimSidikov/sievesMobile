@@ -280,14 +280,14 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Greeting Section
-            Text(
-              AppLocalizations.of(context).dear,
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w400,
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
+            // Text(
+            //   AppLocalizations.of(context).dear,
+            //   style: TextStyle(
+            //     fontSize: 18.sp,
+            //     fontWeight: FontWeight.w400,
+            //     color: theme.colorScheme.onSurfaceVariant,
+            //   ),
+            // ),
             SizedBox(height: 4.sp),
             Text(
               _getUserDisplayName(),

@@ -62,8 +62,8 @@ class AuthService {
             audience: _audience,
             scopes: {'openid', 'profile', 'email', 'offline_access'},
             // useRefreshTokens: true, // CRITICAL: Enable refresh tokens (same as web app)
-            // redirectUrl: 'sievesmob://callback',
-            redirectUrl: 'sievesmob://exodelicainc.eu.auth0.com/android/com.sieves.v1.sieves_mob/callback',
+            redirectUrl: 'sievesmob://callback',
+            // redirectUrl: 'sievesmob://exodelicainc.eu.auth0.com/android/com.sieves.v1.sieves_mob/callback',
             parameters: {
               'max_age': '0',
             },
