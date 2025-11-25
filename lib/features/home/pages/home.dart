@@ -18,21 +18,22 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> with WidgetsBindingObserver {
-  final AuthManager _authManager = AuthManager(); // Use singleton instance
+  final AuthManager _authManager = AuthManager();
   final ScrollController _scrollController = ScrollController();
   double _scrollOffset = 0;
   int _unreadNotificationCount = 0;
   Timer? _refreshTimer;
 
-  // Getter to access modules with localization
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
     return [
       _ModuleItem(localizations.profile, Icons.person_outline, AppColors.cxPrimary, '/profile'),
       _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
       _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
+      _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, null),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, null),
+
     ];
   }
 
@@ -41,7 +42,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     final identity = _authManager.currentIdentity;
 
     if (identity != null) {
-      // Try to get full name from employee individual data
       if (identity.employee?.individual != null) {
         final firstName = identity.employee!.individual!.firstName;
         final lastName = identity.employee!.individual!.lastName;
@@ -50,15 +50,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         }
       }
       
-      // Fallback to username or email
       return '${identity.username} 👋';
     }
     
-    // Fallback if no user data available
     return 'Welcome 👋';
   }
 
-  // Handle navigation to different modules
   void _navigateToModule(_ModuleItem module) {
     if (module.route != null) {
       context.push(module.route!);
@@ -649,6 +646,8 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
       return localizations.historySubtitle;
     } else if (title == localizations.lWallet) {
       return localizations.lWalletSubtitle;
+    } else if (title == localizations.learning) {
+      return localizations.learningSubtitle;
     } else {
       return "Tap to explore";
     }

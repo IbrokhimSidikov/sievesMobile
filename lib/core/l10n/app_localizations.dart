@@ -34,6 +34,8 @@ class AppLocalizations {
       'lWallet':'L-WALLET',
       'lWalletSubtitle':'Investment for your dreams',
       'comingSoon':'This feature is coming soon!',
+      'learning':'Learning',
+      'learningSubtitle':'Learning & Development',
 
       //Profile page
       'workHours':'Work Hours',
@@ -122,7 +124,8 @@ class AppLocalizations {
       'lWallet':'L-HAMYON',
       'lWalletSubtitle':'Orzularingiz uchun investitsiya',
       'comingSoon':'Bu funksiya tez orada qoʻshiladi!',
-
+      'learning':'Test & Imtihon',
+      'learningSubtitle':'O\'rganish va Izlanish',
       //Profile page
       'workHours':'Ish soatlari',
       'totalHours':'Umumiy soatlar',
@@ -210,6 +213,8 @@ class AppLocalizations {
       'lWallet':'L-КОШЕЛЁК',
       'lWalletSubtitle':'Инвестиции для ваших мечт',
       'comingSoon':'Эта функция скоро появится!',
+      'learning': 'Обучение',
+      'learningSubtitle': 'Обучение и Развитие',
 
       //Profile page
       'workHours':'Рабочие часы',
@@ -304,6 +309,9 @@ class AppLocalizations {
   String get lWallet => translate('lWallet');
   String get lWalletSubtitle => translate('lWalletSubtitle');
   String get comingSoon => translate('comingSoon');
+  String get learning => translate('learning');
+  String get learningSubtitle => translate('learningSubtitle');
+
   //Profile page
   String get workHours => translate('workHours');
   String get totalHours => translate('totalHours');
