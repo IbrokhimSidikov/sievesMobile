@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:sieves_mob/core/l10n/app_localizations.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../services/version/version_service.dart';
 
@@ -94,7 +95,7 @@ class ForceUpdateDialog extends StatelessWidget {
                       const SizedBox(height: 16),
                       // Title
                       Text(
-                        isRequired ? 'Update Required' : 'Update Available',
+                        isRequired ? AppLocalizations.of(context).updateRequired : AppLocalizations.of(context).updateAvailable,
                         style: const TextStyle(
                           fontSize: 26,
                           fontWeight: FontWeight.bold,
@@ -131,7 +132,7 @@ class ForceUpdateDialog extends StatelessWidget {
                           Expanded(
                             child: _buildVersionCard(
                               context,
-                              'Current',
+                              AppLocalizations.of(context).current,
                               updateStatus.currentVersion,
                               isDark,
                               Icons.phone_android,
@@ -147,7 +148,7 @@ class ForceUpdateDialog extends StatelessWidget {
                           Expanded(
                             child: _buildVersionCard(
                               context,
-                              'Latest',
+                              AppLocalizations.of(context).latest,
                               updateStatus.latestVersion,
                               isDark,
                               Icons.rocket_launch,
@@ -181,7 +182,7 @@ class ForceUpdateDialog extends StatelessWidget {
                               const SizedBox(width: 12),
                               Expanded(
                                 child: Text(
-                                  'You must update to continue',
+                                  AppLocalizations.of(context).updateDialog,
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: primaryGradient[0],
@@ -203,7 +204,7 @@ class ForceUpdateDialog extends StatelessWidget {
                             Expanded(
                               child: _buildSecondaryButton(
                                 context,
-                                'Later',
+                                AppLocalizations.of(context).later,
                                 () => Navigator.of(context).pop(),
                                 isDark,
                               ),
@@ -213,7 +214,7 @@ class ForceUpdateDialog extends StatelessWidget {
                             flex: isRequired ? 1 : 1,
                             child: _buildPrimaryButton(
                               context,
-                              'Update Now',
+                              AppLocalizations.of(context).updateNow,
                               () => _openStore(updateStatus),
                               primaryGradient,
                             ),

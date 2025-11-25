@@ -88,6 +88,15 @@ class AppLocalizations {
       'noNotifications':'No notifications yet',
       'noNotSubTitle':'You\'re all caught up!',
 
+      //Update required
+      'updateRequired':'Update Required',
+      'updateAvailable':'Update Available',
+      'current':'Current',
+      'latest':'Latest',
+      'updateDialog':'You must update to continue',
+      'later':'Later',
+      'updateNow':'Update Now'
+
     },
     'uz': {
       'title': 'Sieves',
@@ -165,11 +174,18 @@ class AppLocalizations {
       'notificationsSubtitle':'So‘nggi faoliyatingizdan xabardor bo‘ling',
       'markAllRead':'O\'qish',
       'noNotifications':'Hozirgacha bildirishnoma yo‘q',
-      'noNotSubTitle':'Siz hamma narsani ko‘rib chiqdiz!'
+      'noNotSubTitle':'Siz hamma narsani ko‘rib chiqdiz!',
 
+      //Update required
+      'updateRequired': 'Yangilash talab qilinadi',
+      'updateAvailable': 'Yangilash mavjud',
+      'current': 'Joriy',
+      'latest': 'Eng so‘nggi',
+      'updateDialog': 'Davom etish uchun ilovani yangilashingiz kerak',
+      'later': 'Keyinroq',
+      'updateNow': 'Hozir yangilash'
 
-
-    },
+},
     'ru': {
       'title': 'Sieves',
       'welcome': 'Добро пожаловать',
@@ -246,7 +262,16 @@ class AppLocalizations {
       'notificationsSubtitle':'Будьте в курсе последних событий',
       'markAllRead':'Отметить всё',
       'noNotifications':'Пока нет уведомлений',
-      'noNotSubTitle':'Вы всё просмотрели!'
+      'noNotSubTitle':'Вы всё просмотрели!',
+
+      //Update required
+      'updateRequired': 'Требуется обновление',
+      'updateAvailable': 'Доступно обновление',
+      'current': 'Текущая версия',
+      'latest': 'Последняя версия',
+      'updateDialog': 'Чтобы продолжить, необходимо обновить',
+      'later': 'Позже',
+      'updateNow': 'Обновить сейчас'
 
 
     },
@@ -331,5 +356,13 @@ class AppLocalizations {
   String get noNotifications => translate('noNotifications');
   String get noNotSubTitle => translate('noNotSubTitle');
 
+  //Update required
+  String get updateRequired => translate('updateRequired');
+  String get updateAvailable => translate('updateAvailable');
+  String get current => translate('current');
+  String get latest => translate('latest');
+  String get updateDialog => translate('updateDialog');
+  String get later => translate('later');
+  String get updateNow => translate('updateNow');
 
 }
