@@ -38,7 +38,7 @@ class _LmsPageState extends State<LmsPage> {
         totalQuestions: 10,
         passingScore: 70,
         imageUrl: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400',
-        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
+        courseUrl: 'https://raw.githubusercontent.com/IbrokhimSidikov/BannerItem/main/main/pdf/Spinner_tayyorlash_standarti.pdf', // Working sample PDF
         isCompleted: false,
         courseCompleted: false,
       ),
