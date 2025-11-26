@@ -6,6 +6,11 @@ import '../../features/break-records/pages/break_records.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
 import '../../features/lms/pages/lms_page.dart';
+import '../../features/lms/pages/test_detail_page.dart';
+import '../../features/lms/pages/test_taking_page.dart';
+import '../../features/lms/pages/test_result_page.dart';
+import '../../features/lms/models/test.dart';
+import '../../features/lms/models/test_answer.dart';
 import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
@@ -23,6 +28,9 @@ class AppRoutes {
   static const String history = '/history';
   static const String notificationNew = '/notificationNew';
   static const String lmsPage = '/lmsPage';
+  static const String testDetail = '/testDetail';
+  static const String testTaking = '/testTaking';
+  static const String testResult = '/testResult';
 
   static final GoRouter router = GoRouter(
       initialLocation: splash,
@@ -78,6 +86,38 @@ class AppRoutes {
           path: '/lmsPage',
           name: lmsPage,
           builder: (context, state) => const LmsPage()
+        ),
+
+        GoRoute(
+          path: '/testDetail',
+          name: testDetail,
+          builder: (context, state) {
+            final test = state.extra as Test;
+            return TestDetailPage(test: test);
+          }
+        ),
+
+        GoRoute(
+          path: '/testTaking',
+          name: testTaking,
+          builder: (context, state) {
+            final test = state.extra as Test;
+            return TestTakingPage(test: test);
+          }
+        ),
+
+        GoRoute(
+          path: '/testResult',
+          name: testResult,
+          builder: (context, state) {
+            final data = state.extra as Map<String, dynamic>;
+            return TestResultPage(
+              test: data['test'] as Test,
+              score: data['score'] as int,
+              answers: data['answers'] as Map<String, TestAnswer>,
+              timeTaken: data['timeTaken'] as int,
+            );
+          }
         ),
       ]);
 }
