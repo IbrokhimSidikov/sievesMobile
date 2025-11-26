@@ -195,10 +195,15 @@ class _TestTakingPageState extends State<TestTakingPage> {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                AppColors.cxWhite,
-                AppColors.cxF5F7F9,
-              ],
+              colors: Theme.of(context).brightness == Brightness.dark
+                  ? [
+                      Theme.of(context).scaffoldBackgroundColor,
+                      Theme.of(context).colorScheme.surface,
+                    ]
+                  : [
+                      AppColors.cxWhite,
+                      AppColors.cxF5F7F9,
+                    ],
             ),
           ),
           child: SafeArea(
@@ -230,6 +235,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
   }
 
   Widget _buildHeader() {
+    final theme = Theme.of(context);
     final minutes = _remainingSeconds ~/ 60;
     final seconds = _remainingSeconds % 60;
     final isLowTime = _remainingSeconds < 300; // Less than 5 minutes
@@ -237,10 +243,10 @@ class _TestTakingPageState extends State<TestTakingPage> {
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -251,7 +257,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
           Container(
             padding: EdgeInsets.all(10.w),
             decoration: BoxDecoration(
-              color: AppColors.cxF5F7F9,
+              color: theme.colorScheme.surfaceContainerHighest,
               borderRadius: BorderRadius.circular(12.r),
             ),
             child: Icon(
@@ -270,7 +276,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.cxDarkCharcoal,
+                    color: theme.colorScheme.onSurface,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -280,7 +286,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                   'Question ${_currentQuestionIndex + 1} of ${widget.test.questions!.length}',
                   style: TextStyle(
                     fontSize: 12.sp,
-                    color: AppColors.cxSilverTint,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],
@@ -323,6 +329,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
   }
 
   Widget _buildProgressBar() {
+    final theme = Theme.of(context);
     final answeredCount = _answers.length;
     final totalQuestions = widget.test.questions!.length;
     final progress = answeredCount / totalQuestions;
@@ -339,7 +346,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w600,
-                  color: AppColors.cxSilverTint,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
               Text(
@@ -358,7 +365,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 8.h,
-              backgroundColor: AppColors.cxF5F7F9,
+              backgroundColor: theme.colorScheme.surfaceContainerHighest,
               valueColor: AlwaysStoppedAnimation<Color>(AppColors.cxRoyalBlue),
             ),
           ),
@@ -368,6 +375,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
   }
 
   Widget _buildQuestionCard(Question question) {
+    final theme = Theme.of(context);
     final answer = _answers[question.id];
     final isMultiSelect = question.type == QuestionType.multiSelect;
 
@@ -376,11 +384,11 @@ class _TestTakingPageState extends State<TestTakingPage> {
       child: Container(
         padding: EdgeInsets.all(24.w),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: theme.colorScheme.surface,
           borderRadius: BorderRadius.circular(24.r),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.08),
+              color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.08),
               blurRadius: 20,
               offset: const Offset(0, 4),
             ),
@@ -438,7 +446,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w600,
-                color: AppColors.cxDarkCharcoal,
+                color: theme.colorScheme.onSurface,
                 height: 1.5,
               ),
             ),
@@ -454,7 +462,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                   decoration: BoxDecoration(
                     color: isSelected
                         ? AppColors.cxRoyalBlue.withOpacity(0.1)
-                        : AppColors.cxF5F7F9,
+                        : theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16.r),
                     border: Border.all(
                       color: isSelected
@@ -496,8 +504,8 @@ class _TestTakingPageState extends State<TestTakingPage> {
                           style: TextStyle(
                             fontSize: 15.sp,
                             color: isSelected
-                                ? AppColors.cxDarkCharcoal
-                                : AppColors.cxGraphiteGray,
+                                ? theme.colorScheme.onSurface
+                                : theme.colorScheme.onSurfaceVariant,
                             fontWeight: isSelected
                                 ? FontWeight.w600
                                 : FontWeight.normal,
@@ -516,16 +524,17 @@ class _TestTakingPageState extends State<TestTakingPage> {
   }
 
   Widget _buildNavigationBar() {
+    final theme = Theme.of(context);
     final isFirstQuestion = _currentQuestionIndex == 0;
     final isLastQuestion = _currentQuestionIndex == widget.test.questions!.length - 1;
 
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -540,14 +549,14 @@ class _TestTakingPageState extends State<TestTakingPage> {
               width: 56.w,
               height: 56.h,
               decoration: BoxDecoration(
-                color: AppColors.cxF5F7F9,
+                color: theme.colorScheme.surfaceContainerHighest,
                 borderRadius: BorderRadius.circular(16.r),
               ),
               child: IconButton(
                 onPressed: () => _showQuestionGrid(),
                 icon: Icon(
                   Icons.grid_view_rounded,
-                  color: AppColors.cxDarkCharcoal,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ),
@@ -558,7 +567,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                 child: Container(
                   height: 56.h,
                   decoration: BoxDecoration(
-                    color: AppColors.cxF5F7F9,
+                    color: theme.colorScheme.surfaceContainerHighest,
                     borderRadius: BorderRadius.circular(16.r),
                   ),
                   child: Material(
@@ -572,7 +581,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.w600,
-                            color: AppColors.cxDarkCharcoal,
+                            color: theme.colorScheme.onSurface,
                           ),
                         ),
                       ),
@@ -641,6 +650,8 @@ class _TestTakingPageState extends State<TestTakingPage> {
   }
 
   void _showQuestionGrid() {
+    final theme = Theme.of(context);
+    
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
@@ -649,7 +660,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
         return Container(
           height: MediaQuery.of(context).size.height * 0.7,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.only(
               topLeft: Radius.circular(24.r),
               topRight: Radius.circular(24.r),
@@ -676,7 +687,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                       style: TextStyle(
                         fontSize: 20.sp,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.cxDarkCharcoal,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     IconButton(
@@ -711,7 +722,7 @@ class _TestTakingPageState extends State<TestTakingPage> {
                               ? AppColors.cxRoyalBlue
                               : isAnswered
                                   ? AppColors.cxEmeraldGreen.withOpacity(0.1)
-                                  : AppColors.cxF5F7F9,
+                                  : theme.colorScheme.surfaceContainerHighest,
                           borderRadius: BorderRadius.circular(12.r),
                           border: Border.all(
                             color: isCurrent

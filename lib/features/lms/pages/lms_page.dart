@@ -82,17 +82,25 @@ class _LmsPageState extends State<LmsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.cxWhite,
-              AppColors.cxF5F7F9,
-              AppColors.cxF7F6F9,
-            ],
+            colors: isDark
+                ? [
+                    theme.scaffoldBackgroundColor,
+                    theme.colorScheme.surface,
+                  ]
+                : [
+                    AppColors.cxWhite,
+                    AppColors.cxF5F7F9,
+                    AppColors.cxF7F6F9,
+                  ],
           ),
         ),
         child: SafeArea(
@@ -197,6 +205,8 @@ class _LmsPageState extends State<LmsPage> {
   }
 
   Widget _buildLoadingState() {
+    final theme = Theme.of(context);
+    
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       itemCount: 3,
@@ -205,7 +215,7 @@ class _LmsPageState extends State<LmsPage> {
           margin: EdgeInsets.only(bottom: 16.h),
           height: 180.h,
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: theme.colorScheme.surface,
             borderRadius: BorderRadius.circular(20.r),
           ),
         );
@@ -248,16 +258,17 @@ class _LmsPageState extends State<LmsPage> {
   }
 
   Widget _buildTestCard(Test test) {
+    final theme = Theme.of(context);
     final categoryColor = _getCategoryColor(test.category);
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -384,7 +395,7 @@ class _LmsPageState extends State<LmsPage> {
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
-                        color: AppColors.cxDarkCharcoal,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                     SizedBox(height: 8.h),
@@ -392,7 +403,7 @@ class _LmsPageState extends State<LmsPage> {
                       test.description,
                       style: TextStyle(
                         fontSize: 13.sp,
-                        color: AppColors.cxSilverTint,
+                        color: theme.colorScheme.onSurfaceVariant,
                         height: 1.4,
                       ),
                       maxLines: 2,

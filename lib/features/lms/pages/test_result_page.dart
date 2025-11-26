@@ -22,6 +22,8 @@ class TestResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     final isPassed = score >= test.passingScore;
     final correctAnswers = _calculateCorrectAnswers();
     final totalQuestions = test.questions!.length;
@@ -37,11 +39,16 @@ class TestResultPage extends StatelessWidget {
             gradient: LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [
-                isPassed ? AppColors.cxEmeraldGreen.withOpacity(0.1) : AppColors.cxCrimsonRed.withOpacity(0.1),
-                AppColors.cxWhite,
-                AppColors.cxF5F7F9,
-              ],
+              colors: isDark
+                  ? [
+                      theme.scaffoldBackgroundColor,
+                      theme.colorScheme.surface,
+                    ]
+                  : [
+                      isPassed ? AppColors.cxEmeraldGreen.withOpacity(0.1) : AppColors.cxCrimsonRed.withOpacity(0.1),
+                      AppColors.cxWhite,
+                      AppColors.cxF5F7F9,
+                    ],
             ),
           ),
           child: SafeArea(
@@ -52,13 +59,13 @@ class TestResultPage extends StatelessWidget {
                     child: Column(
                       children: [
                         SizedBox(height: 40.h),
-                        _buildResultHeader(isPassed),
+                        _buildResultHeader(context, isPassed),
                         SizedBox(height: 32.h),
-                        _buildScoreCard(isPassed, correctAnswers, totalQuestions),
+                        _buildScoreCard(context, isPassed, correctAnswers, totalQuestions),
                         SizedBox(height: 24.h),
-                        _buildStatsCards(),
+                        _buildStatsCards(context),
                         SizedBox(height: 24.h),
-                        _buildReviewSection(),
+                        _buildReviewSection(context),
                         SizedBox(height: 20.h),
                       ],
                     ),
@@ -73,7 +80,7 @@ class TestResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildResultHeader(bool isPassed) {
+  Widget _buildResultHeader(BuildContext context, bool isPassed) {
     return Column(
       children: [
         Container(
@@ -106,7 +113,7 @@ class TestResultPage extends StatelessWidget {
           style: TextStyle(
             fontSize: 32.sp,
             fontWeight: FontWeight.bold,
-            color: AppColors.cxDarkCharcoal,
+            color: Theme.of(context).colorScheme.onSurface,
           ),
         ),
         SizedBox(height: 8.h),
@@ -116,23 +123,25 @@ class TestResultPage extends StatelessWidget {
               : 'You need ${test.passingScore}% to pass',
           style: TextStyle(
             fontSize: 16.sp,
-            color: AppColors.cxSilverTint,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildScoreCard(bool isPassed, int correctAnswers, int totalQuestions) {
+  Widget _buildScoreCard(BuildContext context, bool isPassed, int correctAnswers, int totalQuestions) {
+    final theme = Theme.of(context);
+    
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       padding: EdgeInsets.all(32.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -144,7 +153,7 @@ class TestResultPage extends StatelessWidget {
             'Your Score',
             style: TextStyle(
               fontSize: 16.sp,
-              color: AppColors.cxSilverTint,
+              color: theme.colorScheme.onSurfaceVariant,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -158,7 +167,7 @@ class TestResultPage extends StatelessWidget {
                 child: CircularProgressIndicator(
                   value: score / 100,
                   strokeWidth: 12.w,
-                  backgroundColor: AppColors.cxF5F7F9,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation<Color>(
                     isPassed ? AppColors.cxEmeraldGreen : AppColors.cxCrimsonRed,
                   ),
@@ -179,7 +188,7 @@ class TestResultPage extends StatelessWidget {
                     '$correctAnswers / $totalQuestions',
                     style: TextStyle(
                       fontSize: 14.sp,
-                      color: AppColors.cxSilverTint,
+                      color: theme.colorScheme.onSurfaceVariant,
                     ),
                   ),
                 ],
@@ -223,7 +232,7 @@ class TestResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatsCards() {
+  Widget _buildStatsCards(BuildContext context) {
     final minutes = timeTaken ~/ 60;
     final seconds = timeTaken % 60;
     final correctAnswers = _calculateCorrectAnswers();
@@ -236,6 +245,7 @@ class TestResultPage extends StatelessWidget {
         children: [
           Expanded(
             child: _buildStatCard(
+              context,
               Icons.check_circle_rounded,
               'Correct',
               '$correctAnswers',
@@ -245,6 +255,7 @@ class TestResultPage extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: _buildStatCard(
+              context,
               Icons.cancel_rounded,
               'Incorrect',
               '$incorrectAnswers',
@@ -254,6 +265,7 @@ class TestResultPage extends StatelessWidget {
           SizedBox(width: 12.w),
           Expanded(
             child: _buildStatCard(
+              context,
               Icons.timer_outlined,
               'Time',
               '${minutes}m ${seconds}s',
@@ -265,15 +277,17 @@ class TestResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildStatCard(IconData icon, String label, String value, Color color) {
+  Widget _buildStatCard(BuildContext context, IconData icon, String label, String value, Color color) {
+    final theme = Theme.of(context);
+    
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -299,7 +313,7 @@ class TestResultPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
-              color: AppColors.cxDarkCharcoal,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           SizedBox(height: 4.h),
@@ -307,7 +321,7 @@ class TestResultPage extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 11.sp,
-              color: AppColors.cxSilverTint,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ],
@@ -315,16 +329,18 @@ class TestResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildReviewSection() {
+  Widget _buildReviewSection(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -346,23 +362,25 @@ class TestResultPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.cxDarkCharcoal,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
           SizedBox(height: 16.h),
-          _buildSummaryRow('Test Name', test.title),
-          _buildSummaryRow('Category', test.category),
-          _buildSummaryRow('Total Questions', '${test.questions!.length}'),
-          _buildSummaryRow('Passing Score', '${test.passingScore}%'),
-          _buildSummaryRow('Your Score', '$score%'),
+          _buildSummaryRow(context, 'Test Name', test.title),
+          _buildSummaryRow(context, 'Category', test.category),
+          _buildSummaryRow(context, 'Total Questions', '${test.questions!.length}'),
+          _buildSummaryRow(context, 'Passing Score', '${test.passingScore}%'),
+          _buildSummaryRow(context, 'Your Score', '$score%'),
         ],
       ),
     );
   }
 
-  Widget _buildSummaryRow(String label, String value) {
+  Widget _buildSummaryRow(BuildContext context, String label, String value) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
@@ -372,7 +390,7 @@ class TestResultPage extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14.sp,
-              color: AppColors.cxSilverTint,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
           Text(
@@ -380,7 +398,7 @@ class TestResultPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 14.sp,
               fontWeight: FontWeight.w600,
-              color: AppColors.cxDarkCharcoal,
+              color: theme.colorScheme.onSurface,
             ),
           ),
         ],
@@ -389,13 +407,15 @@ class TestResultPage extends StatelessWidget {
   }
 
   Widget _buildActionButtons(BuildContext context, bool isPassed) {
+    final theme = Theme.of(context);
+    
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -409,7 +429,7 @@ class TestResultPage extends StatelessWidget {
               child: Container(
                 height: 56.h,
                 decoration: BoxDecoration(
-                  color: AppColors.cxF5F7F9,
+                  color: theme.colorScheme.surfaceContainerHighest,
                   borderRadius: BorderRadius.circular(16.r),
                 ),
                 child: Material(
@@ -423,7 +443,7 @@ class TestResultPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
-                          color: AppColors.cxDarkCharcoal,
+                          color: theme.colorScheme.onSurface,
                         ),
                       ),
                     ),

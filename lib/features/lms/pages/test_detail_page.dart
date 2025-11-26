@@ -14,16 +14,24 @@ class TestDetailPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              AppColors.cxWhite,
-              AppColors.cxF5F7F9,
-            ],
+            colors: isDark
+                ? [
+                    theme.scaffoldBackgroundColor,
+                    theme.colorScheme.surface,
+                  ]
+                : [
+                    AppColors.cxWhite,
+                    AppColors.cxF5F7F9,
+                  ],
           ),
         ),
         child: SafeArea(
@@ -34,9 +42,9 @@ class TestDetailPage extends StatelessWidget {
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      _buildHeader(),
-                      _buildInfoSection(),
-                      _buildInstructions(),
+                      _buildHeader(context),
+                      _buildInfoSection(context),
+                      _buildInstructions(context),
                       SizedBox(height: 20.h),
                     ],
                   ),
@@ -51,17 +59,19 @@ class TestDetailPage extends StatelessWidget {
   }
 
   Widget _buildAppBar(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: EdgeInsets.all(16.w),
       child: Row(
         children: [
           Container(
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: theme.colorScheme.surface,
               borderRadius: BorderRadius.circular(12.r),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
+                  color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
                   blurRadius: 10,
                   offset: const Offset(0, 2),
                 ),
@@ -70,7 +80,7 @@ class TestDetailPage extends StatelessWidget {
             child: IconButton(
               onPressed: () => context.pop(),
               icon: const Icon(Icons.arrow_back_ios_new_rounded),
-              color: AppColors.cxDarkCharcoal,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           SizedBox(width: 12.w),
@@ -80,7 +90,7 @@ class TestDetailPage extends StatelessWidget {
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
-                color: AppColors.cxDarkCharcoal,
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),
@@ -89,17 +99,18 @@ class TestDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(BuildContext context) {
+    final theme = Theme.of(context);
     final categoryColor = _getCategoryColor(test.category);
     
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(24.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.08),
             blurRadius: 20,
             offset: const Offset(0, 4),
           ),
@@ -212,7 +223,7 @@ class TestDetailPage extends StatelessWidget {
                   style: TextStyle(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.bold,
-                    color: AppColors.cxDarkCharcoal,
+                    color: theme.colorScheme.onSurface,
                     height: 1.3,
                   ),
                 ),
@@ -221,7 +232,7 @@ class TestDetailPage extends StatelessWidget {
                   test.description,
                   style: TextStyle(
                     fontSize: 15.sp,
-                    color: AppColors.cxSilverTint,
+                    color: theme.colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                 ),
@@ -311,16 +322,18 @@ class TestDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoSection() {
+  Widget _buildInfoSection(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
       margin: EdgeInsets.all(20.w),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -334,11 +347,12 @@ class TestDetailPage extends StatelessWidget {
             style: TextStyle(
               fontSize: 18.sp,
               fontWeight: FontWeight.bold,
-              color: AppColors.cxDarkCharcoal,
+              color: theme.colorScheme.onSurface,
             ),
           ),
           SizedBox(height: 16.h),
           _buildInfoRow(
+            context,
             Icons.quiz_outlined,
             'Total Questions',
             '${test.totalQuestions}',
@@ -346,6 +360,7 @@ class TestDetailPage extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           _buildInfoRow(
+            context,
             Icons.timer_outlined,
             'Duration',
             '${test.duration} minutes',
@@ -353,6 +368,7 @@ class TestDetailPage extends StatelessWidget {
           ),
           SizedBox(height: 12.h),
           _buildInfoRow(
+            context,
             Icons.emoji_events_outlined,
             'Passing Score',
             '${test.passingScore}%',
@@ -363,7 +379,9 @@ class TestDetailPage extends StatelessWidget {
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, Color color) {
+  Widget _buildInfoRow(BuildContext context, IconData icon, String label, String value, Color color) {
+    final theme = Theme.of(context);
+    
     return Row(
       children: [
         Container(
@@ -384,7 +402,7 @@ class TestDetailPage extends StatelessWidget {
             label,
             style: TextStyle(
               fontSize: 14.sp,
-              color: AppColors.cxSilverTint,
+              color: theme.colorScheme.onSurfaceVariant,
             ),
           ),
         ),
@@ -393,23 +411,25 @@ class TestDetailPage extends StatelessWidget {
           style: TextStyle(
             fontSize: 15.sp,
             fontWeight: FontWeight.bold,
-            color: AppColors.cxDarkCharcoal,
+            color: theme.colorScheme.onSurface,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildInstructions() {
+  Widget _buildInstructions(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -431,23 +451,25 @@ class TestDetailPage extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.cxDarkCharcoal,
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
             ],
           ),
           SizedBox(height: 16.h),
-          _buildInstructionItem('Read each question carefully before answering'),
-          _buildInstructionItem('You can navigate between questions freely'),
-          _buildInstructionItem('Review your answers before submitting'),
-          _buildInstructionItem('You must score ${test.passingScore}% or higher to pass'),
-          _buildInstructionItem('Timer will start once you begin the test'),
+          _buildInstructionItem(context, 'Read each question carefully before answering'),
+          _buildInstructionItem(context, 'You can navigate between questions freely'),
+          _buildInstructionItem(context, 'Review your answers before submitting'),
+          _buildInstructionItem(context, 'You must score ${test.passingScore}% or higher to pass'),
+          _buildInstructionItem(context, 'Timer will start once you begin the test'),
         ],
       ),
     );
   }
 
-  Widget _buildInstructionItem(String text) {
+  Widget _buildInstructionItem(BuildContext context, String text) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: Row(
@@ -468,7 +490,7 @@ class TestDetailPage extends StatelessWidget {
               text,
               style: TextStyle(
                 fontSize: 14.sp,
-                color: AppColors.cxSilverTint,
+                color: theme.colorScheme.onSurfaceVariant,
                 height: 1.5,
               ),
             ),
@@ -479,13 +501,15 @@ class TestDetailPage extends StatelessWidget {
   }
 
   Widget _buildStartButton(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
