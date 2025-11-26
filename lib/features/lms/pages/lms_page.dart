@@ -31,14 +31,14 @@ class _LmsPageState extends State<LmsPage> {
     _tests = [
       Test(
         id: '1',
-        title: 'Food Safety & Hygiene',
-        description: 'Essential food safety practices and hygiene standards for restaurant staff',
+        title: 'Spinner tayyorlash standarti',
+        description: 'Smile Box va Spiner tayyorlashda foydalaniladigan texnikalar instruksiyasi',
         category: 'Safety',
         duration: 15,
         totalQuestions: 10,
         passingScore: 70,
-        imageUrl: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400',
-        courseUrl: 'https://raw.githubusercontent.com/IbrokhimSidikov/BannerItem/main/main/pdf/Spinner_tayyorlash_standarti.pdf', // Working sample PDF
+        imageUrl: 'https://raw.githubusercontent.com/IbrokhimSidikov/BannerItem/main/main/bannerPhoto/spinerSalsa.jpg',
+        courseUrl: 'https://raw.githubusercontent.com/IbrokhimSidikov/BannerItem/main/main/pdf/Spinner_tayyorlash_standarti.pdf',
         isCompleted: false,
         courseCompleted: false,
       ),
