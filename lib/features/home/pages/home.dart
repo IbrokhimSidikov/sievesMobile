@@ -30,7 +30,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _ModuleItem(localizations.profile, Icons.person_outline, AppColors.cxPrimary, '/profile'),
       _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
       _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
-      _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, null),
+      _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, '/lmsPage'),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, null),
 

@@ -5,6 +5,7 @@ import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
+import '../../features/lms/pages/lms_page.dart';
 import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
@@ -21,6 +22,7 @@ class AppRoutes {
   static const String breakRecords = '/breakRecords';
   static const String history = '/history';
   static const String notificationNew = '/notificationNew';
+  static const String lmsPage = '/lmsPage';
 
   static final GoRouter router = GoRouter(
       initialLocation: splash,
@@ -70,6 +72,12 @@ class AppRoutes {
           path: '/notificationNew',
           name: notificationNew,
           builder: (context, state) => const NotificationsPage()
+        ),
+
+        GoRoute(
+          path: '/lmsPage',
+          name: lmsPage,
+          builder: (context, state) => const LmsPage()
         ),
       ]);
 }
