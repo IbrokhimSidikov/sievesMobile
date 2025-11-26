@@ -6,6 +6,7 @@ import '../../features/break-records/pages/break_records.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
 import '../../features/lms/pages/lms_page.dart';
+import '../../features/lms/pages/course_viewer_page.dart';
 import '../../features/lms/pages/test_detail_page.dart';
 import '../../features/lms/pages/test_taking_page.dart';
 import '../../features/lms/pages/test_result_page.dart';
@@ -28,6 +29,7 @@ class AppRoutes {
   static const String history = '/history';
   static const String notificationNew = '/notificationNew';
   static const String lmsPage = '/lmsPage';
+  static const String courseViewer = '/courseViewer';
   static const String testDetail = '/testDetail';
   static const String testTaking = '/testTaking';
   static const String testResult = '/testResult';
@@ -86,6 +88,15 @@ class AppRoutes {
           path: '/lmsPage',
           name: lmsPage,
           builder: (context, state) => const LmsPage()
+        ),
+
+        GoRoute(
+          path: '/courseViewer',
+          name: courseViewer,
+          builder: (context, state) {
+            final test = state.extra as Test;
+            return CourseViewerPage(test: test);
+          }
         ),
 
         GoRoute(

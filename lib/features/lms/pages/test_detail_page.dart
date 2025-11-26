@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:developer' as developer;
 import '../../../core/constants/app_colors.dart';
 import '../models/test.dart';
 import '../models/question.dart';
@@ -374,6 +375,20 @@ class TestDetailPage extends StatelessWidget {
             '${test.passingScore}%',
             AppColors.cxEmeraldGreen,
           ),
+          if (test.courseUrl != null) ...[
+            SizedBox(height: 12.h),
+            _buildInfoRow(
+              context,
+              test.courseCompleted
+                  ? Icons.check_circle_outline_rounded
+                  : Icons.menu_book_outlined,
+              'Course Material',
+              test.courseCompleted ? 'Completed' : 'Required',
+              test.courseCompleted
+                  ? AppColors.cxEmeraldGreen
+                  : AppColors.cxWarning,
+            ),
+          ],
         ],
       ),
     );
@@ -546,13 +561,21 @@ class TestDetailPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      test.isCompleted ? Icons.replay_rounded : Icons.play_arrow_rounded,
+                      test.isCompleted
+                          ? Icons.replay_rounded
+                          : (test.courseUrl != null && !test.courseCompleted)
+                              ? Icons.menu_book_rounded
+                              : Icons.play_arrow_rounded,
                       color: Colors.white,
                       size: 24.sp,
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      test.isCompleted ? 'Retake Test' : 'Start Test',
+                      test.isCompleted
+                          ? 'Retake Test'
+                          : (test.courseUrl != null && !test.courseCompleted)
+                              ? 'View Course'
+                              : 'Start Test',
                       style: TextStyle(
                         fontSize: 18.sp,
                         fontWeight: FontWeight.bold,
@@ -571,6 +594,23 @@ class TestDetailPage extends StatelessWidget {
   }
 
   void _startTest(BuildContext context) {
+    developer.log('=== START TEST CLICKED ===', name: 'TestDetail');
+    developer.log('Test ID: ${test.id}', name: 'TestDetail');
+    developer.log('Test Title: ${test.title}', name: 'TestDetail');
+    developer.log('Course URL: ${test.courseUrl}', name: 'TestDetail');
+    developer.log('Course Completed: ${test.courseCompleted}', name: 'TestDetail');
+    developer.log('Test Completed: ${test.isCompleted}', name: 'TestDetail');
+    
+    // Check if course material exists and hasn't been completed
+    if (test.courseUrl != null && !test.courseCompleted) {
+      developer.log('Navigating to COURSE VIEWER (course not completed)', name: 'TestDetail');
+      // Navigate to course viewer first
+      context.push('/courseViewer', extra: test);
+      return;
+    }
+    
+    developer.log('Navigating to TEST TAKING (course completed or no course)', name: 'TestDetail');
+    
     // Generate sample questions for demo
     final questions = _generateSampleQuestions();
     final testWithQuestions = test.copyWith(questions: questions);

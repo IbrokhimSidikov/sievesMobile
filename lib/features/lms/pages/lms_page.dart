@@ -27,7 +27,7 @@ class _LmsPageState extends State<LmsPage> {
     // Simulate API call - Replace with actual API integration
     await Future.delayed(const Duration(seconds: 1));
     
-    // Sample test data
+    // Sample test data with course URLs
     _tests = [
       Test(
         id: '1',
@@ -38,7 +38,9 @@ class _LmsPageState extends State<LmsPage> {
         totalQuestions: 10,
         passingScore: 70,
         imageUrl: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=400',
+        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
         isCompleted: false,
+        courseCompleted: false,
       ),
       Test(
         id: '2',
@@ -49,7 +51,9 @@ class _LmsPageState extends State<LmsPage> {
         totalQuestions: 15,
         passingScore: 75,
         imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400',
+        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
         isCompleted: true,
+        courseCompleted: true,
         userScore: 85,
       ),
       Test(
@@ -61,7 +65,9 @@ class _LmsPageState extends State<LmsPage> {
         totalQuestions: 20,
         passingScore: 80,
         imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
+        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
         isCompleted: false,
+        courseCompleted: false,
       ),
       Test(
         id: '4',
@@ -72,7 +78,9 @@ class _LmsPageState extends State<LmsPage> {
         totalQuestions: 25,
         passingScore: 75,
         imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
+        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
         isCompleted: true,
+        courseCompleted: true,
         userScore: 92,
       ),
     ];
