@@ -44,4 +44,20 @@ class Question {
       'points': points,
     };
   }
+
+  factory Question.fromApiJson(Map<String, dynamic> json) {
+    final optionsList = json['options'] as List<dynamic>;
+    final options = optionsList
+        .map((e) => AnswerOption.fromApiJson(e as Map<String, dynamic>))
+        .toList();
+    
+    return Question(
+      id: json['id'].toString(),
+      text: json['question'] as String,
+      type: QuestionType.multipleChoice,
+      options: options,
+      explanation: null,
+      points: 1,
+    );
+  }
 }

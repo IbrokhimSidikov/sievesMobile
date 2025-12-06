@@ -124,9 +124,11 @@ class AppRoutes {
             final data = state.extra as Map<String, dynamic>;
             return TestResultPage(
               test: data['test'] as Test,
-              score: data['score'] as int,
+              score: data['score'] as int?,
               answers: data['answers'] as Map<String, TestAnswer>,
               timeTaken: data['timeTaken'] as int,
+              sessionId: data['sessionId'] as int?,
+              sessionData: data['sessionData'] as Map<String, dynamic>?,
             );
           }
         ),

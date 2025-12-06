@@ -600,6 +600,7 @@ class TestDetailPage extends StatelessWidget {
     developer.log('Course URL: ${test.courseUrl}', name: 'TestDetail');
     developer.log('Course Completed: ${test.courseCompleted}', name: 'TestDetail');
     developer.log('Test Completed: ${test.isCompleted}', name: 'TestDetail');
+    developer.log('Questions available: ${test.questions?.length ?? 0}', name: 'TestDetail');
     
     // Check if course material exists and hasn't been completed
     if (test.courseUrl != null && !test.courseCompleted) {
@@ -611,8 +612,8 @@ class TestDetailPage extends StatelessWidget {
     
     developer.log('Navigating to TEST TAKING (course completed or no course)', name: 'TestDetail');
     
-    // Generate sample questions for demo
-    final questions = _generateSampleQuestions();
+    // Use real questions if available, otherwise generate sample questions
+    final questions = test.questions ?? _generateSampleQuestions();
     final testWithQuestions = test.copyWith(questions: questions);
     
     context.push('/testTaking', extra: testWithQuestions);

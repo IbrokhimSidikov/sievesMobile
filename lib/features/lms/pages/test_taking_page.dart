@@ -1,12 +1,16 @@
 import 'dart:async';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/auth/auth_manager.dart';
 import '../models/question_type.dart';
 import '../models/test.dart';
 import '../models/question.dart';
 import '../models/test_answer.dart';
+import '../models/test_session.dart';
 
 class TestTakingPage extends StatefulWidget {
   final Test test;
@@ -24,13 +28,69 @@ class _TestTakingPageState extends State<TestTakingPage> {
   Timer? _timer;
   int _remainingSeconds = 0;
   bool _isSubmitting = false;
+  int? _sessionId;
+  bool _isStartingSession = true;
 
   @override
   void initState() {
     super.initState();
     _pageController = PageController();
     _remainingSeconds = widget.test.duration * 60;
-    _startTimer();
+    _startSession();
+  }
+
+  Future<void> _startSession() async {
+    try {
+      final authManager = AuthManager();
+      final accessToken = await authManager.authService.getAccessToken();
+      
+      if (accessToken == null) {
+        print('❌ No access token available');
+        setState(() => _isStartingSession = false);
+        _startTimer();
+        return;
+      }
+      
+      print('📡 Starting test session for course ID: ${widget.test.id}');
+      
+      final response = await http.post(
+        Uri.parse('https://api.v3.sievesapp.com/course/session/start'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'course_id': int.parse(widget.test.id),
+        }),
+      );
+      
+      print('   Response Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final sessionData = json.decode(response.body);
+        final session = TestSession.fromJson(sessionData);
+        
+        setState(() {
+          _sessionId = session.id;
+          _isStartingSession = false;
+        });
+        
+        print('✅ Session started successfully');
+        print('   Session ID: ${session.id}');
+        
+        _startTimer();
+      } else {
+        print('❌ Failed to start session: ${response.statusCode}');
+        print('   Response: ${response.body}');
+        
+        setState(() => _isStartingSession = false);
+        _startTimer();
+      }
+    } catch (e) {
+      print('❌ Error starting session: $e');
+      setState(() => _isStartingSession = false);
+      _startTimer();
+    }
   }
 
   @override
@@ -122,7 +182,93 @@ class _TestTakingPageState extends State<TestTakingPage> {
 
     setState(() => _isSubmitting = true);
 
-    // Calculate score
+    try {
+      if (_sessionId != null) {
+        await _submitToAPI();
+      } else {
+        await _submitLocally();
+      }
+    } catch (e) {
+      print('❌ Error in submit flow: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to submit test. Please try again.'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _submitToAPI() async {
+    try {
+      final authManager = AuthManager();
+      final accessToken = await authManager.authService.getAccessToken();
+      
+      if (accessToken == null) {
+        print('❌ No access token available');
+        await _submitLocally();
+        return;
+      }
+      
+      print('📡 Submitting test answers to API...');
+      print('   Session ID: $_sessionId');
+      
+      final answers = <TestSessionAnswer>[];
+      for (var question in widget.test.questions!) {
+        final answer = _answers[question.id];
+        if (answer != null && answer.selectedOptionIds.isNotEmpty) {
+          answers.add(TestSessionAnswer(
+            testId: int.parse(question.id),
+            selectedOptionId: int.parse(answer.selectedOptionIds.first),
+          ));
+        }
+      }
+      
+      print('   Submitting ${answers.length} answers');
+      
+      final response = await http.post(
+        Uri.parse('https://api.v3.sievesapp.com/course/session/submit'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode({
+          'session_id': _sessionId,
+          'answers': answers.map((a) => a.toJson()).toList(),
+        }),
+      );
+      
+      print('   Response Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final resultData = json.decode(response.body);
+        print('✅ Test submitted successfully');
+        print('   Result: $resultData');
+        
+        if (mounted) {
+          context.pushReplacement('/testResult', extra: {
+            'test': widget.test,
+            'sessionId': _sessionId,
+            'sessionData': resultData,
+            'answers': _answers,
+            'timeTaken': widget.test.duration * 60 - _remainingSeconds,
+          });
+        }
+      } else {
+        print('❌ Failed to submit test: ${response.statusCode}');
+        print('   Response: ${response.body}');
+        await _submitLocally();
+      }
+    } catch (e) {
+      print('❌ Error submitting test: $e');
+      await _submitLocally();
+    }
+  }
+
+  Future<void> _submitLocally() async {
     int correctAnswers = 0;
     final questions = widget.test.questions!;
 
@@ -144,7 +290,6 @@ class _TestTakingPageState extends State<TestTakingPage> {
 
     final score = (correctAnswers / questions.length * 100).round();
 
-    // Navigate to results
     if (mounted) {
       context.pushReplacement('/testResult', extra: {
         'test': widget.test,
@@ -614,30 +759,55 @@ class _TestTakingPageState extends State<TestTakingPage> {
                 child: Material(
                   color: Colors.transparent,
                   child: InkWell(
-                    onTap: isLastQuestion
-                        ? _submitTest
-                        : () => _goToQuestion(_currentQuestionIndex + 1),
+                    onTap: _isSubmitting
+                        ? null
+                        : (isLastQuestion
+                            ? _submitTest
+                            : () => _goToQuestion(_currentQuestionIndex + 1)),
                     borderRadius: BorderRadius.circular(16.r),
                     child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            isLastQuestion ? 'Submit Test' : 'Next',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                      child: _isSubmitting && isLastQuestion
+                          ? Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                SizedBox(
+                                  width: 20.w,
+                                  height: 20.h,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                  ),
+                                ),
+                                SizedBox(width: 12.w),
+                                Text(
+                                  'Submitting...',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            )
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Text(
+                                  isLastQuestion ? 'Submit Test' : 'Next',
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Icon(
+                                  isLastQuestion ? Icons.check_rounded : Icons.arrow_forward_rounded,
+                                  color: Colors.white,
+                                  size: 20.sp,
+                                ),
+                              ],
                             ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Icon(
-                            isLastQuestion ? Icons.check_rounded : Icons.arrow_forward_rounded,
-                            color: Colors.white,
-                            size: 20.sp,
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                 ),

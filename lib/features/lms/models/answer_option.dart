@@ -17,6 +17,14 @@ class AnswerOption {
     );
   }
 
+  factory AnswerOption.fromApiJson(Map<String, dynamic> json) {
+    return AnswerOption(
+      id: json['id'].toString(),
+      text: json['option_text'] as String,
+      isCorrect: json['is_correct'] as bool,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,

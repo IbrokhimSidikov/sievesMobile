@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/auth/auth_manager.dart';
 import '../models/test.dart';
+import '../models/course.dart';
 
 class LmsPage extends StatefulWidget {
   const LmsPage({super.key});
@@ -24,68 +28,97 @@ class _LmsPageState extends State<LmsPage> {
   Future<void> _loadTests() async {
     setState(() => _isLoading = true);
     
-    // Simulate API call - Replace with actual API integration
-    await Future.delayed(const Duration(seconds: 1));
-    
-    // Sample test data with course URLs
-    _tests = [
-      Test(
-        id: '1',
-        title: 'Spinner tayyorlash standarti',
-        description: 'Smile Box va Spiner tayyorlashda foydalaniladigan texnikalar instruksiyasi',
-        category: 'Safety',
-        duration: 15,
-        totalQuestions: 10,
-        passingScore: 70,
-        imageUrl: 'https://raw.githubusercontent.com/IbrokhimSidikov/BannerItem/main/main/bannerPhoto/spinerSalsa.jpg',
-        courseUrl: 'https://raw.githubusercontent.com/IbrokhimSidikov/BannerItem/main/main/pdf/Spinner_tayyorlash_standarti.pdf',
-        isCompleted: false,
-        courseCompleted: false,
-      ),
-      Test(
-        id: '2',
-        title: 'Customer Service Excellence',
-        description: 'Master the art of providing exceptional customer service',
-        category: 'Service',
-        duration: 20,
-        totalQuestions: 15,
-        passingScore: 75,
-        imageUrl: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=400',
-        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
-        isCompleted: true,
-        courseCompleted: true,
-        userScore: 85,
-      ),
-      Test(
-        id: '3',
-        title: 'Kitchen Operations',
-        description: 'Understanding kitchen workflow, equipment, and procedures',
-        category: 'Operations',
-        duration: 25,
-        totalQuestions: 20,
-        passingScore: 80,
-        imageUrl: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=400',
-        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
-        isCompleted: false,
-        courseCompleted: false,
-      ),
-      Test(
-        id: '4',
-        title: 'Menu Knowledge',
-        description: 'Complete guide to menu items, ingredients, and preparation methods',
-        category: 'Product',
-        duration: 30,
-        totalQuestions: 25,
-        passingScore: 75,
-        imageUrl: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400',
-        courseUrl: 'https://mozilla.github.io/pdf.js/web/compressed.tracemonkey-pldi-09.pdf', // Working sample PDF
-        isCompleted: true,
-        courseCompleted: true,
-        userScore: 92,
-      ),
-    ];
+    try {
+      final authManager = AuthManager();
+      final accessToken = await authManager.authService.getAccessToken();
+      
+      if (accessToken == null) {
+        print('❌ No access token available');
+        setState(() => _isLoading = false);
+        return;
+      }
+      
+      print('📡 Fetching courses from API...');
+      final response = await http.get(
+        Uri.parse('https://api.v3.sievesapp.com/course'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('   Response Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> coursesJson = json.decode(response.body);
+        print('✅ Received ${coursesJson.length} courses');
+        
+        final courses = coursesJson
+            .map((json) => Course.fromJson(json))
+            .where((course) => course.isActive && !course.deleted)
+            .toList();
+        
+        _tests = courses.map((course) => Test.fromCourse(course)).toList();
+        
+        print('✅ Loaded ${_tests.length} active courses');
+      } else {
+        print('❌ Failed to load courses: ${response.statusCode}');
+        print('   Response: ${response.body}');
+      }
+    } catch (e) {
+      print('❌ Error loading courses: $e');
+    }
     
     setState(() => _isLoading = false);
+  }
+
+  Future<void> _onCourseClicked(BuildContext context, Test test) async {
+    try {
+      final authManager = AuthManager();
+      final accessToken = await authManager.authService.getAccessToken();
+      
+      if (accessToken == null) {
+        print('❌ No access token available');
+        return;
+      }
+      
+      print('📡 Fetching course details for ID: ${test.id}');
+      
+      final response = await http.get(
+        Uri.parse('https://api.v3.sievesapp.com/course/${test.id}'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('   Response Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final courseJson = json.decode(response.body);
+        final course = Course.fromJson(courseJson);
+        
+        print('✅ Course details loaded');
+        print('   Course: ${course.name}');
+        print('   Tests: ${course.tests?.length ?? 0}');
+        
+        final testWithQuestions = Test.fromCourse(course);
+        
+        if (!context.mounted) return;
+        context.push('/testDetail', extra: testWithQuestions);
+      } else {
+        print('❌ Failed to load course details: ${response.statusCode}');
+        print('   Response: ${response.body}');
+        
+        if (!context.mounted) return;
+        context.push('/testDetail', extra: test);
+      }
+    } catch (e) {
+      print('❌ Error loading course details: $e');
+      
+      if (!context.mounted) return;
+      context.push('/testDetail', extra: test);
+    }
   }
 
   @override
@@ -285,9 +318,7 @@ class _LmsPageState extends State<LmsPage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () {
-            context.push('/testDetail', extra: test);
-          },
+          onTap: () => _onCourseClicked(context, test),
           borderRadius: BorderRadius.circular(20.r),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,

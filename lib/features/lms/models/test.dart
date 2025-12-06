@@ -1,4 +1,5 @@
 import 'question.dart';
+import 'course.dart';
 
 class Test {
   final String id;
@@ -108,6 +109,26 @@ class Test {
       isCompleted: isCompleted ?? this.isCompleted,
       courseCompleted: courseCompleted ?? this.courseCompleted,
       userScore: userScore ?? this.userScore,
+    );
+  }
+
+  factory Test.fromCourse(Course course) {
+    final questionCount = course.tests?.length ?? 10;
+    
+    return Test(
+      id: course.id.toString(),
+      title: course.name,
+      description: course.description,
+      category: 'Training',
+      duration: 15,
+      totalQuestions: questionCount,
+      passingScore: 70,
+      imageUrl: null,
+      courseUrl: course.pdfUrl,
+      questions: course.tests,
+      createdAt: course.createdAt,
+      isCompleted: false,
+      courseCompleted: false,
     );
   }
 }

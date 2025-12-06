@@ -5,27 +5,55 @@ import 'dart:ui';
 import '../../../core/constants/app_colors.dart';
 import '../models/test.dart';
 import '../models/test_answer.dart';
+import '../models/test_session.dart';
 
 class TestResultPage extends StatelessWidget {
   final Test test;
-  final int score;
+  final int? score;
   final Map<String, TestAnswer> answers;
   final int timeTaken; // in seconds
+  final int? sessionId;
+  final Map<String, dynamic>? sessionData;
 
   const TestResultPage({
     super.key,
     required this.test,
-    required this.score,
+    this.score,
     required this.answers,
     required this.timeTaken,
+    this.sessionId,
+    this.sessionData,
   });
+
+  int? _parseScore(dynamic value) {
+    if (value == null) return null;
+    if (value is num) return value.toInt();
+    if (value is String) {
+      final doubleValue = double.tryParse(value);
+      return doubleValue?.toInt();
+    }
+    return null;
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isPassed = score >= test.passingScore;
-    final correctAnswers = _calculateCorrectAnswers();
+    
+    final actualScore = sessionData != null 
+        ? _parseScore(sessionData!['score_percentage']) ?? score ?? 0
+        : score ?? 0;
+    
+    print('📊 Test Result Page:');
+    print('   Score from sessionData: ${sessionData?['score_percentage']}');
+    print('   Parsed actualScore: $actualScore');
+    print('   Passing score: ${test.passingScore}');
+    print('   isPassed: ${actualScore >= test.passingScore}');
+    
+    final isPassed = actualScore >= test.passingScore;
+    final correctAnswers = sessionData != null
+        ? (sessionData!['correct_answers'] as int?) ?? _calculateCorrectAnswers()
+        : _calculateCorrectAnswers();
     final totalQuestions = test.questions!.length;
 
     return WillPopScope(
@@ -61,7 +89,7 @@ class TestResultPage extends StatelessWidget {
                         SizedBox(height: 40.h),
                         _buildResultHeader(context, isPassed),
                         SizedBox(height: 32.h),
-                        _buildScoreCard(context, isPassed, correctAnswers, totalQuestions),
+                        _buildScoreCard(context, isPassed, correctAnswers, totalQuestions, actualScore),
                         SizedBox(height: 24.h),
                         _buildStatsCards(context),
                         SizedBox(height: 24.h),
@@ -130,7 +158,7 @@ class TestResultPage extends StatelessWidget {
     );
   }
 
-  Widget _buildScoreCard(BuildContext context, bool isPassed, int correctAnswers, int totalQuestions) {
+  Widget _buildScoreCard(BuildContext context, bool isPassed, int correctAnswers, int totalQuestions, int actualScore) {
     final theme = Theme.of(context);
     
     return Container(
@@ -165,7 +193,7 @@ class TestResultPage extends StatelessWidget {
                 width: 160.w,
                 height: 160.h,
                 child: CircularProgressIndicator(
-                  value: score / 100,
+                  value: actualScore / 100,
                   strokeWidth: 12.w,
                   backgroundColor: theme.colorScheme.surfaceContainerHighest,
                   valueColor: AlwaysStoppedAnimation<Color>(
@@ -176,7 +204,7 @@ class TestResultPage extends StatelessWidget {
               Column(
                 children: [
                   Text(
-                    '$score%',
+                    '$actualScore%',
                     style: TextStyle(
                       fontSize: 48.sp,
                       fontWeight: FontWeight.bold,
