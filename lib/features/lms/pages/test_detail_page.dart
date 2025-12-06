@@ -2,16 +2,74 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:developer' as developer;
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/auth/auth_manager.dart';
 import '../models/test.dart';
 import '../models/question.dart';
 import '../models/answer_option.dart';
 import '../models/question_type.dart';
+import '../models/test_session.dart';
 
-class TestDetailPage extends StatelessWidget {
+class TestDetailPage extends StatefulWidget {
   final Test test;
 
   const TestDetailPage({super.key, required this.test});
+
+  @override
+  State<TestDetailPage> createState() => _TestDetailPageState();
+}
+
+class _TestDetailPageState extends State<TestDetailPage> {
+  List<TestSession> _sessions = [];
+  bool _isLoadingSessions = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSessions();
+  }
+
+  Future<void> _loadSessions() async {
+    try {
+      final authManager = AuthManager();
+      final accessToken = await authManager.authService.getAccessToken();
+      
+      if (accessToken == null) {
+        print('❌ No access token available');
+        setState(() => _isLoadingSessions = false);
+        return;
+      }
+      
+      print('📡 Fetching sessions for course ID: ${widget.test.id}');
+      
+      final response = await http.get(
+        Uri.parse('https://api.v3.sievesapp.com/course/sessions/my?course_id=${widget.test.id}'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+      
+      print('   Response Status: ${response.statusCode}');
+      
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _sessions = data.map((json) => TestSession.fromJson(json)).toList();
+          _isLoadingSessions = false;
+        });
+        print('✅ Loaded ${_sessions.length} sessions');
+      } else {
+        print('❌ Failed to load sessions: ${response.statusCode}');
+        setState(() => _isLoadingSessions = false);
+      }
+    } catch (e) {
+      print('❌ Error loading sessions: $e');
+      setState(() => _isLoadingSessions = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +103,7 @@ class TestDetailPage extends StatelessWidget {
                     children: [
                       _buildHeader(context),
                       _buildInfoSection(context),
+                      if (_sessions.isNotEmpty) _buildSessionHistory(context),
                       _buildInstructions(context),
                       SizedBox(height: 20.h),
                     ],
@@ -102,7 +161,7 @@ class TestDetailPage extends StatelessWidget {
 
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = _getCategoryColor(test.category);
+    final categoryColor = _getCategoryColor(widget.test.category);
     
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
@@ -119,7 +178,7 @@ class TestDetailPage extends StatelessWidget {
       ),
       child: Column(
         children: [
-          if (test.imageUrl != null)
+          if (widget.test.imageUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(24.r),
@@ -128,7 +187,7 @@ class TestDetailPage extends StatelessWidget {
               child: Stack(
                 children: [
                   Image.network(
-                    test.imageUrl!,
+                    widget.test.imageUrl!,
                     height: 200.h,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -178,7 +237,7 @@ class TestDetailPage extends StatelessWidget {
                         ],
                       ),
                       child: Text(
-                        test.category,
+                        widget.test.category,
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
@@ -187,7 +246,7 @@ class TestDetailPage extends StatelessWidget {
                       ),
                     ),
                   ),
-                  if (test.isCompleted)
+                  if (widget.test.isCompleted)
                     Positioned(
                       top: 16.h,
                       right: 16.w,
@@ -220,7 +279,7 @@ class TestDetailPage extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  test.title,
+                  widget.test.title,
                   style: TextStyle(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.bold,
@@ -230,14 +289,14 @@ class TestDetailPage extends StatelessWidget {
                 ),
                 SizedBox(height: 12.h),
                 Text(
-                  test.description,
+                  widget.test.description,
                   style: TextStyle(
                     fontSize: 15.sp,
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                 ),
-                if (test.isCompleted && test.userScore != null) ...[
+                if (widget.test.isCompleted && widget.test.userScore != null) ...[
                   SizedBox(height: 16.h),
                   Container(
                     padding: EdgeInsets.all(16.w),
@@ -282,7 +341,7 @@ class TestDetailPage extends StatelessWidget {
                               ),
                               SizedBox(height: 2.h),
                               Text(
-                                '${test.userScore}%',
+                                '${widget.test.userScore}%',
                                 style: TextStyle(
                                   fontSize: 22.sp,
                                   fontWeight: FontWeight.bold,
@@ -292,7 +351,7 @@ class TestDetailPage extends StatelessWidget {
                             ],
                           ),
                         ),
-                        if (test.userScore! >= test.passingScore)
+                        if (widget.test.userScore! >= widget.test.passingScore)
                           Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: 12.w,
@@ -356,7 +415,7 @@ class TestDetailPage extends StatelessWidget {
             context,
             Icons.quiz_outlined,
             'Total Questions',
-            '${test.totalQuestions}',
+            '${widget.test.totalQuestions}',
             AppColors.cxRoyalBlue,
           ),
           SizedBox(height: 12.h),
@@ -364,7 +423,7 @@ class TestDetailPage extends StatelessWidget {
             context,
             Icons.timer_outlined,
             'Duration',
-            '${test.duration} minutes',
+            '${widget.test.duration} minutes',
             AppColors.cxWarning,
           ),
           SizedBox(height: 12.h),
@@ -372,19 +431,19 @@ class TestDetailPage extends StatelessWidget {
             context,
             Icons.emoji_events_outlined,
             'Passing Score',
-            '${test.passingScore}%',
+            '${widget.test.passingScore}%',
             AppColors.cxEmeraldGreen,
           ),
-          if (test.courseUrl != null) ...[
+          if (widget.test.courseUrl != null) ...[
             SizedBox(height: 12.h),
             _buildInfoRow(
               context,
-              test.courseCompleted
+              widget.test.courseCompleted
                   ? Icons.check_circle_outline_rounded
                   : Icons.menu_book_outlined,
               'Course Material',
-              test.courseCompleted ? 'Completed' : 'Required',
-              test.courseCompleted
+              widget.test.courseCompleted ? 'Completed' : 'Required',
+              widget.test.courseCompleted
                   ? AppColors.cxEmeraldGreen
                   : AppColors.cxWarning,
             ),
@@ -475,7 +534,7 @@ class TestDetailPage extends StatelessWidget {
           _buildInstructionItem(context, 'Read each question carefully before answering'),
           _buildInstructionItem(context, 'You can navigate between questions freely'),
           _buildInstructionItem(context, 'Review your answers before submitting'),
-          _buildInstructionItem(context, 'You must score ${test.passingScore}% or higher to pass'),
+          _buildInstructionItem(context, 'You must score ${widget.test.passingScore}% or higher to pass'),
           _buildInstructionItem(context, 'Timer will start once you begin the test'),
         ],
       ),
@@ -561,9 +620,9 @@ class TestDetailPage extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      test.isCompleted
+                      widget.test.isCompleted
                           ? Icons.replay_rounded
-                          : (test.courseUrl != null && !test.courseCompleted)
+                          : (widget.test.courseUrl != null && !widget.test.courseCompleted)
                               ? Icons.menu_book_rounded
                               : Icons.play_arrow_rounded,
                       color: Colors.white,
@@ -571,9 +630,9 @@ class TestDetailPage extends StatelessWidget {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      test.isCompleted
+                      widget.test.isCompleted
                           ? 'Retake Test'
-                          : (test.courseUrl != null && !test.courseCompleted)
+                          : (widget.test.courseUrl != null && !widget.test.courseCompleted)
                               ? 'View Course'
                               : 'Start Test',
                       style: TextStyle(
@@ -595,36 +654,36 @@ class TestDetailPage extends StatelessWidget {
 
   void _startTest(BuildContext context) {
     developer.log('=== START TEST CLICKED ===', name: 'TestDetail');
-    developer.log('Test ID: ${test.id}', name: 'TestDetail');
-    developer.log('Test Title: ${test.title}', name: 'TestDetail');
-    developer.log('Course URL: ${test.courseUrl}', name: 'TestDetail');
-    developer.log('Course Completed: ${test.courseCompleted}', name: 'TestDetail');
-    developer.log('Test Completed: ${test.isCompleted}', name: 'TestDetail');
-    developer.log('Questions available: ${test.questions?.length ?? 0}', name: 'TestDetail');
+    developer.log('Test ID: ${widget.test.id}', name: 'TestDetail');
+    developer.log('Test Title: ${widget.test.title}', name: 'TestDetail');
+    developer.log('Course URL: ${widget.test.courseUrl}', name: 'TestDetail');
+    developer.log('Course Completed: ${widget.test.courseCompleted}', name: 'TestDetail');
+    developer.log('Test Completed: ${widget.test.isCompleted}', name: 'TestDetail');
+    developer.log('Questions available: ${widget.test.questions?.length ?? 0}', name: 'TestDetail');
     
     // Check if course material exists and hasn't been completed
-    if (test.courseUrl != null && !test.courseCompleted) {
+    if (widget.test.courseUrl != null && !widget.test.courseCompleted) {
       developer.log('Navigating to COURSE VIEWER (course not completed)', name: 'TestDetail');
       // Navigate to course viewer first
-      context.push('/courseViewer', extra: test);
+      context.push('/courseViewer', extra: widget.test);
       return;
     }
     
     developer.log('Navigating to TEST TAKING (course completed or no course)', name: 'TestDetail');
     
     // Use real questions if available, otherwise generate sample questions
-    final questions = test.questions ?? _generateSampleQuestions();
-    final testWithQuestions = test.copyWith(questions: questions);
+    final questions = widget.test.questions ?? _generateSampleQuestions();
+    final testWithQuestions = widget.test.copyWith(questions: questions);
     
     context.push('/testTaking', extra: testWithQuestions);
   }
 
   List<Question> _generateSampleQuestions() {
     // Sample questions based on test category
-    return List.generate(test.totalQuestions, (index) {
+    return List.generate(widget.test.totalQuestions, (index) {
       return Question(
         id: 'q${index + 1}',
-        text: 'Sample question ${index + 1} for ${test.title}?',
+        text: 'Sample question ${index + 1} for ${widget.test.title}?',
         type: index % 3 == 0 ? QuestionType.trueFalse : QuestionType.multipleChoice,
         points: 1,
         explanation: 'This is the explanation for question ${index + 1}.',
@@ -641,6 +700,181 @@ class TestDetailPage extends StatelessWidget {
               ],
       );
     });
+  }
+
+  Widget _buildSessionHistory(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return Container(
+      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 10.h),
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.history_rounded,
+                color: AppColors.cxRoyalBlue,
+                size: 24.sp,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                'Test History',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              Spacer(),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cxRoyalBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Text(
+                  '${_sessions.length} ${_sessions.length == 1 ? 'attempt' : 'attempts'}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cxRoyalBlue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          ..._sessions.map((session) => _buildSessionItem(context, session)).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionItem(BuildContext context, TestSession session) {
+    final theme = Theme.of(context);
+    final isPassed = session.status.toLowerCase() == 'passed';
+    final statusColor = isPassed ? AppColors.cxEmeraldGreen : AppColors.cxCrimsonRed;
+    final score = session.scorePercentage?.toInt() ?? 0;
+    
+    return Container(
+      margin: EdgeInsets.only(bottom: 12.h),
+      padding: EdgeInsets.all(16.w),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            statusColor.withOpacity(0.1),
+            statusColor.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: statusColor.withOpacity(0.3),
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(12.w),
+            decoration: BoxDecoration(
+              color: statusColor,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              isPassed ? Icons.check_rounded : Icons.close_rounded,
+              color: Colors.white,
+              size: 20.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Text(
+                      session.status.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.bold,
+                        color: statusColor,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(width: 8.w),
+                    Text(
+                      _formatDate(session.completedAt ?? session.startedAt),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '${session.correctAnswers ?? 0}/${session.totalQuestions} correct',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: statusColor,
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: Text(
+              '$score%',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.bold,
+                color: Colors.white,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatDate(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+    
+    if (difference.inDays == 0) {
+      return 'Today';
+    } else if (difference.inDays == 1) {
+      return 'Yesterday';
+    } else if (difference.inDays < 7) {
+      return '${difference.inDays} days ago';
+    } else {
+      return '${date.day}/${date.month}/${date.year}';
+    }
   }
 
   Color _getCategoryColor(String category) {
