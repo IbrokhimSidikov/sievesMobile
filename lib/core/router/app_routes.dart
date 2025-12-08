@@ -19,6 +19,7 @@ import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
 import '../../features/splash/pages/splash.dart';
+import '../services/auth/auth_manager.dart';
 
 class AppRoutes {
 
@@ -85,6 +86,13 @@ class AppRoutes {
         GoRoute(
           path: '/productivityTimer',
           name: productivityTimer,
+          redirect: (context, state) {
+            final authManager = AuthManager();
+            if (!authManager.hasStopwatchAccess) {
+              return '/home';
+            }
+            return null;
+          },
           builder: (context, state) => const ProductivityTimer()
         ),
         GoRoute(

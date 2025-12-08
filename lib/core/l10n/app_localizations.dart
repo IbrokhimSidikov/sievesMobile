@@ -101,7 +101,40 @@ class AppLocalizations {
       'latest':'Latest',
       'updateDialog':'You must update to continue',
       'later':'Later',
-      'updateNow':'Update Now'
+      'updateNow':'Update Now',
+
+      //Productivity Timer
+      'stopwatch':'Stopwatch',
+      'employee':'Employee',
+      'selectEmployee':'Select employee',
+      'noEmployeesAvailable':'No employees available',
+      'loadingEmployees':'Loading employees...',
+      'product':'Product',
+      'selectProduct':'Select product',
+      'note':'Note',
+      'optional':'(Optional)',
+      'addNote':'Add a note or comment...',
+      'start':'Start',
+      'pause':'Pause',
+      'resume':'Resume',
+      'stop':'Stop',
+      'reset':'Reset',
+      'submit':'Submit',
+      'submitting':'Submitting...',
+      'running':'Running',
+      'paused':'Paused',
+      'readyToStart':'Ready to start',
+      'tipsTitle':'💡 Tips',
+      'tip1':'• Select employee and product before starting',
+      'tip2':'• You can pause and resume the timer',
+      'tip3':'• Add notes to track your work details',
+      'tip4':'• Submit when you\'re done to save the record',
+      'validationEmployeeRequired':'Please select an employee',
+      'validationProductRequired':'Please select a product',
+      'errorLoadEmployees':'Failed to load employees. Please try again.',
+      'errorSubmit':'Failed to submit data. Please try again.',
+      'successSubmit':'Data submitted successfully!',
+      'ok':'OK'
 
     },
     'uz': {
@@ -130,7 +163,7 @@ class AppLocalizations {
       'comingSoon':'Bu funksiya tez orada qoʻshiladi!',
       'learning':'Test & Imtihon',
       'learningSubtitle':'O\'rganish va Izlanish',
-      'productivityTimer':'Ish vaqti',
+      'productivityTimer':'Tayyorlash sifati',
       'productivityTimerSubtitle':'Diqqat vaqtini kuzatish',
       'checklist':'Vazifalar ro\'yxati',
       'checklistSubtitle':'Vazifalarni boshqarish',
@@ -194,7 +227,40 @@ class AppLocalizations {
       'latest': 'Eng so‘nggi',
       'updateDialog': 'Davom etish uchun ilovani yangilashingiz kerak',
       'later': 'Keyinroq',
-      'updateNow': 'Hozir yangilash'
+      'updateNow': 'Hozir yangilash',
+
+      //Productivity Timer
+      'stopwatch':'Sekundomer',
+      'employee':'Xodim',
+      'selectEmployee':'Xodimni tanlang',
+      'noEmployeesAvailable':'Xodimlar mavjud emas',
+      'loadingEmployees':'Xodimlar yuklanmoqda...',
+      'product':'Mahsulot',
+      'selectProduct':'Mahsulotni tanlang',
+      'note':'Izoh',
+      'optional':'(Ixtiyoriy)',
+      'addNote':'Izoh yoki sharh qo\'shing...',
+      'start':'Boshlash',
+      'pause':'Pauza',
+      'resume':'Davom etish',
+      'stop':'To\'xtatish',
+      'reset':'Qayta',
+      'submit':'Yuborish',
+      'submitting':'Yuborilmoqda...',
+      'running':'Ishlayapti',
+      'paused':'Pauza',
+      'readyToStart':'Boshlashga tayyor',
+      'tipsTitle':'💡 Maslahatlar',
+      'tip1':'• Boshlashdan oldin xodim va mahsulotni tanlang',
+      'tip2':'• Vaqt hisoblagichni to\'xtatib, davom ettirish mumkin',
+      'tip3':'• Ish tafsilotlarini kuzatish uchun izoh qo\'shing',
+      'tip4':'• Yozuvni saqlash uchun tugagach yuboring',
+      'validationEmployeeRequired':'Iltimos, xodimni tanlang',
+      'validationProductRequired':'Iltimos, mahsulotni tanlang',
+      'errorLoadEmployees':'Xodimlarni yuklashda xatolik. Qayta urinib ko\'ring.',
+      'errorSubmit':'Ma\'lumotlarni yuborishda xatolik. Qayta urinib ko\'ring.',
+      'successSubmit':'Qayd etildi!',
+      'ok':'OK'
 
 },
     'ru': {
@@ -288,7 +354,40 @@ class AppLocalizations {
       'latest': 'Последняя версия',
       'updateDialog': 'Чтобы продолжить, необходимо обновить',
       'later': 'Позже',
-      'updateNow': 'Обновить сейчас'
+      'updateNow': 'Обновить сейчас',
+
+      //Productivity Timer
+      'stopwatch':'Секундомер',
+      'employee':'Сотрудник',
+      'selectEmployee':'Выберите сотрудника',
+      'noEmployeesAvailable':'Сотрудники недоступны',
+      'loadingEmployees':'Загрузка сотрудников...',
+      'product':'Продукт',
+      'selectProduct':'Выберите продукт',
+      'note':'Заметка',
+      'optional':'(Необязательно)',
+      'addNote':'Добавьте заметку или комментарий...',
+      'start':'Старт',
+      'pause':'Пауза',
+      'resume':'Продолжить',
+      'stop':'Стоп',
+      'reset':'Сброс',
+      'submit':'Отправить',
+      'submitting':'Отправка...',
+      'running':'Работает',
+      'paused':'Пауза',
+      'readyToStart':'Готов к запуску',
+      'tipsTitle':'💡 Советы',
+      'tip1':'• Выберите сотрудника и продукт перед началом',
+      'tip2':'• Вы можете приостановить и возобновить таймер',
+      'tip3':'• Добавляйте заметки для отслеживания деталей',
+      'tip4':'• Отправьте данные по завершении работы',
+      'validationEmployeeRequired':'Пожалуйста, выберите сотрудника',
+      'validationProductRequired':'Пожалуйста, выберите продукт',
+      'errorLoadEmployees':'Не удалось загрузить сотрудников. Попробуйте снова.',
+      'errorSubmit':'Не удалось отправить данные. Попробуйте снова.',
+      'successSubmit':'Данные успешно отправлены!',
+      'ok':'ОК'
 
 
     },
@@ -388,5 +487,38 @@ class AppLocalizations {
   String get updateDialog => translate('updateDialog');
   String get later => translate('later');
   String get updateNow => translate('updateNow');
+
+  //Productivity Timer
+  String get stopwatch => translate('stopwatch');
+  String get employee => translate('employee');
+  String get selectEmployee => translate('selectEmployee');
+  String get noEmployeesAvailable => translate('noEmployeesAvailable');
+  String get loadingEmployees => translate('loadingEmployees');
+  String get product => translate('product');
+  String get selectProduct => translate('selectProduct');
+  String get note => translate('note');
+  String get optional => translate('optional');
+  String get addNote => translate('addNote');
+  String get start => translate('start');
+  String get pause => translate('pause');
+  String get resume => translate('resume');
+  String get stop => translate('stop');
+  String get reset => translate('reset');
+  String get submit => translate('submit');
+  String get submitting => translate('submitting');
+  String get running => translate('running');
+  String get paused => translate('paused');
+  String get readyToStart => translate('readyToStart');
+  String get tipsTitle => translate('tipsTitle');
+  String get tip1 => translate('tip1');
+  String get tip2 => translate('tip2');
+  String get tip3 => translate('tip3');
+  String get tip4 => translate('tip4');
+  String get validationEmployeeRequired => translate('validationEmployeeRequired');
+  String get validationProductRequired => translate('validationProductRequired');
+  String get errorLoadEmployees => translate('errorLoadEmployees');
+  String get errorSubmit => translate('errorSubmit');
+  String get successSubmit => translate('successSubmit');
+  String get ok => translate('ok');
 
 }

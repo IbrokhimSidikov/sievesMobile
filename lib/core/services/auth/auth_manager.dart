@@ -39,6 +39,20 @@ class AuthManager {
   // Get employee ID from current identity
   int? get currentEmployeeId => _currentIdentity?.employee?.id;
   
+  // Get current user role
+  String? get currentUserRole => _currentIdentity?.role;
+  
+  // Check if user has required role for stopwatch access
+  bool get hasStopwatchAccess {
+    if (_currentIdentity == null) return false;
+    final role = _currentIdentity!.role.toLowerCase();
+    return role == 'admin' || 
+           role == 'manager' || 
+           role == 'teamleader' || 
+           role == 'trainer' || 
+           role == 'superadmin';
+  }
+  
   // Callback for when session expires (refresh token failed)
   Function()? onSessionExpired;
 

@@ -26,17 +26,19 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
-    return [
+    final allModules = [
       _ModuleItem(localizations.profile, Icons.person_outline, AppColors.cxPrimary, '/profile'),
       _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
       _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
       _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, '/lmsPage'),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
-      _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
+      if (_authManager.hasStopwatchAccess)
+        _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
       _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, null),
 
     ];
+    return allModules;
   }
 
   // Helper method to get user's display name

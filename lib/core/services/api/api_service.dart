@@ -656,4 +656,73 @@ class ApiService {
       return null;
     }
   }
+
+  // Get kitchen employees for productivity timer
+  Future<List<dynamic>?> getKitchenEmployees() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/efficiency-tracker/kitchen-employees');
+
+      print('👨‍🍳 Fetching kitchen employees: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        print('✅ Fetched ${data.length} kitchen employees');
+        return data;
+      } else {
+        print('❌ Error getting kitchen employees: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting kitchen employees: $e');
+      return null;
+    }
+  }
+
+  // Submit efficiency tracker data
+  Future<bool> submitEfficiencyTracker({
+    required int employeeId,
+    required int jobPositionId,
+    required String employeeName,
+    required String jobPositionName,
+    required String time,
+    int? productId,
+    String? comment,
+    String? productName,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/efficiency-tracker');
+
+      final body = {
+        'employee_id': employeeId,
+        'job_position_id': jobPositionId,
+        'employee_name': employeeName,
+        'job_position_name': jobPositionName,
+        'time': time,
+        'product_id': productId,
+        'comment': comment ?? '',
+        'product_name': productName ?? '',
+      };
+
+      print('⏱️ Submitting efficiency tracker data: $body');
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ Efficiency tracker data submitted successfully');
+        return true;
+      } else {
+        print('❌ Error submitting efficiency tracker: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ Exception submitting efficiency tracker: $e');
+      return false;
+    }
+  }
 }
