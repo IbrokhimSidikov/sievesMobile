@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/cache/lms_cache_service.dart';
 import '../models/test.dart';
 import '../models/course.dart';
 import '../models/test_session.dart';
@@ -17,21 +18,59 @@ class LmsPage extends StatefulWidget {
   State<LmsPage> createState() => _LmsPageState();
 }
 
-class _LmsPageState extends State<LmsPage> {
+class _LmsPageState extends State<LmsPage> with SingleTickerProviderStateMixin {
+  final LmsCacheService _cacheService = LmsCacheService();
   bool _isLoading = true;
   List<Test> _tests = [];
   String? _loadingCourseId;
+  late AnimationController _shimmerController;
+  late Animation<double> _shimmerAnimation;
 
   @override
   void initState() {
     super.initState();
+    _shimmerController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    
+    _shimmerAnimation = Tween<double>(
+      begin: 0.3,
+      end: 0.7,
+    ).animate(CurvedAnimation(
+      parent: _shimmerController,
+      curve: Curves.easeInOut,
+    ));
+    
     _loadTests();
+  }
+
+  @override
+  void dispose() {
+    _shimmerController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadTests() async {
     setState(() => _isLoading = true);
     
     try {
+      // Try to load from cache first
+      final cachedCourses = await _cacheService.getCachedCourses();
+      if (cachedCourses != null) {
+        final courses = cachedCourses
+            .map((json) => Course.fromJson(json))
+            .where((course) => course.isActive && !course.deleted)
+            .toList();
+        
+        _tests = courses.map((course) => Test.fromCourse(course)).toList();
+        setState(() => _isLoading = false);
+        print('📦 Loaded ${_tests.length} courses from cache');
+        return;
+      }
+
+      // If no cache, fetch from API
+      print('🌐 No cache found, fetching courses from API...');
       final authManager = AuthManager();
       final accessToken = await authManager.authService.getAccessToken();
       
@@ -55,6 +94,10 @@ class _LmsPageState extends State<LmsPage> {
       if (response.statusCode == 200) {
         final List<dynamic> coursesJson = json.decode(response.body);
         print('✅ Received ${coursesJson.length} courses');
+        
+        // Cache the raw course data
+        final coursesData = coursesJson.cast<Map<String, dynamic>>();
+        await _cacheService.cacheCourses(coursesData);
         
         final courses = coursesJson
             .map((json) => Course.fromJson(json))
@@ -200,104 +243,207 @@ class _LmsPageState extends State<LmsPage> {
   }
 
   Widget _buildHeader() {
-    return Container(
-      margin: EdgeInsets.all(20.w),
-      padding: EdgeInsets.all(24.w),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF6366F1),
-            Color(0xFF8B5CF6),
-          ],
+    final theme = Theme.of(context);
+    
+    return Column(
+      children: [
+        Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+          child: Row(
+            children: [
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () => context.go('/home'),
+                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  color: const Color(0xFF6366F1),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                'Learning Center',
+                style: TextStyle(
+                  fontSize: 20.sp,
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
+          ),
         ),
-        borderRadius: BorderRadius.circular(24.r),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF6366F1).withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Icon(
-              Icons.school_rounded,
-              color: Colors.white,
-              size: 32.sp,
-            ),
-          ),
-          SizedBox(width: 16.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Learning Center',
-                  style: TextStyle(
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'Test your knowledge',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: Colors.white.withOpacity(0.9),
-                  ),
-                ),
+        Container(
+          margin: EdgeInsets.symmetric(horizontal: 20.w),
+          padding: EdgeInsets.all(24.w),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Color(0xFF6366F1),
+                Color(0xFF8B5CF6),
               ],
             ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(
-                color: Colors.white.withOpacity(0.3),
-                width: 1,
+            borderRadius: BorderRadius.circular(24.r),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF6366F1).withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-            ),
-            child: Text(
-              '${_tests.length} Tests',
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w600,
-                color: Colors.white,
-              ),
-            ),
+            ],
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(16.w),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Icon(
+                  Icons.school_rounded,
+                  color: Colors.white,
+                  size: 32.sp,
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Learning Center',
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Test your knowledge',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: Colors.white.withOpacity(0.9),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  '${_tests.length} Tests',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
   Widget _buildLoadingState() {
     final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     
     return ListView.builder(
       padding: EdgeInsets.symmetric(horizontal: 20.w),
       itemCount: 3,
       itemBuilder: (context, index) {
-        return Container(
-          margin: EdgeInsets.only(bottom: 16.h),
-          height: 180.h,
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(20.r),
-          ),
+        return AnimatedBuilder(
+          animation: _shimmerAnimation,
+          builder: (context, child) {
+            return Container(
+              margin: EdgeInsets.only(bottom: 16.h),
+              height: 220.h,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                borderRadius: BorderRadius.circular(20.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Image placeholder
+                  Container(
+                    height: 140.h,
+                    decoration: BoxDecoration(
+                      color: isDark 
+                          ? Colors.white.withOpacity(0.05 * _shimmerAnimation.value)
+                          : Colors.grey.withOpacity(0.2 * _shimmerAnimation.value),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(20.r),
+                        topRight: Radius.circular(20.r),
+                      ),
+                    ),
+                  ),
+                  // Content placeholder
+                  Padding(
+                    padding: EdgeInsets.all(16.w),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title placeholder
+                        Container(
+                          height: 18.h,
+                          width: double.infinity,
+                          decoration: BoxDecoration(
+                            color: isDark 
+                                ? Colors.white.withOpacity(0.1 * _shimmerAnimation.value)
+                                : Colors.grey.withOpacity(0.3 * _shimmerAnimation.value),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                        SizedBox(height: 8.h),
+                        // Description placeholder
+                        Container(
+                          height: 14.h,
+                          width: 200.w,
+                          decoration: BoxDecoration(
+                            color: isDark 
+                                ? Colors.white.withOpacity(0.08 * _shimmerAnimation.value)
+                                : Colors.grey.withOpacity(0.25 * _shimmerAnimation.value),
+                            borderRadius: BorderRadius.circular(4.r),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
         );
       },
     );

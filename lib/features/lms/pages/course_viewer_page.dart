@@ -5,6 +5,7 @@ import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:developer' as developer;
 import '../../../core/constants/app_colors.dart';
 import '../models/test.dart';
+import '../models/test_with_sessions.dart';
 
 class CourseViewerPage extends StatefulWidget {
   final Test test;
@@ -103,8 +104,11 @@ class _CourseViewerPageState extends State<CourseViewerPage> {
     // Update test with course completion
     final updatedTest = widget.test.copyWith(courseCompleted: true);
     
+    // Wrap in TestWithSessions (sessions will be fetched on detail page)
+    final testWithSessions = TestWithSessions(test: updatedTest);
+    
     // Navigate to test detail page
-    context.pushReplacement('/testDetail', extra: updatedTest);
+    context.pushReplacement('/testDetail', extra: testWithSessions);
   }
 
   void _showCompletionRequiredDialog() {

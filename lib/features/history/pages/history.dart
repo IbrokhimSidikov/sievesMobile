@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/model/history_model.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/cache/history_cache_service.dart';
 
 class History extends StatefulWidget {
   const History({super.key});
@@ -14,6 +16,7 @@ class History extends StatefulWidget {
 
 class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
+  final HistoryCacheService _cacheService = HistoryCacheService();
   List<HistoryRecord> historyRecords = [];
   bool isLoading = true;
   String? errorMessage;
@@ -74,9 +77,27 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
         return;
       }
 
+      // Try to load from cache first
+      final cachedData = await _cacheService.getCachedHistoryRecords(employeeId);
+      if (cachedData != null) {
+        final cachedRecords = cachedData.map((json) => HistoryRecord.fromJson(json)).toList();
+        setState(() {
+          historyRecords = cachedRecords;
+          isLoading = false;
+        });
+        print('📦 Loaded ${cachedRecords.length} history records from cache');
+        return;
+      }
+
+      // If no cache, fetch from API
+      print('🌐 No cache found, fetching from API...');
       final records = await _authManager.apiService.getHistory(employeeId);
 
       if (records != null) {
+        // Cache the records
+        final recordsJson = records.map((record) => record.toJson()).toList();
+        await _cacheService.cacheHistoryRecords(employeeId, recordsJson);
+        
         setState(() {
           historyRecords = records;
           isLoading = false;
@@ -132,9 +153,12 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Back button
+              _buildBackButton(),
+              SizedBox(height: 16.h),
               // Header
-              _buildHeader(),
-              SizedBox(height: 20.h),
+              // _buildHeader(),
+              // SizedBox(height: 20.h),
               
               // Filter Section
               _buildFilterSection(),
@@ -310,7 +334,44 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
     );
   }
 
+  Widget _buildBackButton() {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12.r),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
+                blurRadius: 10,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: IconButton(
+            onPressed: () => context.go('/home'),
+            icon: const Icon(Icons.arrow_back_ios_new_rounded),
+            color: AppColors.cxBlue,
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Text(
+          'History Records',
+          style: TextStyle(
+            fontSize: 20.sp,
+            fontWeight: FontWeight.bold,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildHeader() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
       decoration: BoxDecoration(
@@ -399,15 +460,26 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
   }
 
   Widget _buildFilterSection() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Container(
       padding: EdgeInsets.all(16.w),
       decoration: BoxDecoration(
-        color: AppColors.cxWhite,
-        borderRadius: BorderRadius.circular(12.r),
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+        gradient: isDark ? null : LinearGradient(
+          colors: [
+            AppColors.cxWhite,
+            AppColors.cxF5F7F9,
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(16.r),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxBlack.withOpacity(0.05),
-            blurRadius: 8,
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 10,
             offset: const Offset(0, 2),
           ),
         ],
@@ -415,17 +487,38 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'Filter by Type',
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w600,
-              color: AppColors.cxDarkCharcoal,
-            ),
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.cxBlue, AppColors.cx02D5F5],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Icon(
+                  Icons.filter_list_rounded,
+                  color: Colors.white,
+                  size: 18.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Text(
+                'Filter by Type',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 12.h),
+          SizedBox(height: 16.h),
           SizedBox(
-            height: 35.h,
+            height: 38.h,
             child: ListView.builder(
               scrollDirection: Axis.horizontal,
               itemCount: filterOptions.length,
@@ -440,9 +533,9 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                         selectedFilter = option;
                       });
                     },
-                    borderRadius: BorderRadius.circular(18.r),
+                    borderRadius: BorderRadius.circular(20.r),
                     child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
                       decoration: BoxDecoration(
                         gradient: isSelected
                             ? LinearGradient(
@@ -451,19 +544,36 @@ class _HistoryState extends State<History> with SingleTickerProviderStateMixin {
                                 end: Alignment.bottomRight,
                               )
                             : null,
-                        color: isSelected ? null : AppColors.cxF5F7F9,
-                        borderRadius: BorderRadius.circular(18.r),
+                        color: isSelected 
+                            ? null 
+                            : isDark 
+                                ? theme.colorScheme.surfaceVariant.withOpacity(0.5)
+                                : AppColors.cxF5F7F9,
+                        borderRadius: BorderRadius.circular(20.r),
                         border: Border.all(
-                          color: isSelected ? Colors.transparent : AppColors.cxPlatinumGray.withOpacity(0.3),
+                          color: isSelected 
+                              ? Colors.transparent 
+                              : isDark
+                                  ? theme.colorScheme.outline.withOpacity(0.3)
+                                  : AppColors.cxPlatinumGray.withOpacity(0.3),
                           width: 1,
                         ),
+                        boxShadow: isSelected ? [
+                          BoxShadow(
+                            color: AppColors.cxBlue.withOpacity(0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ] : null,
                       ),
                       child: Text(
                         option,
                         style: TextStyle(
-                          fontSize: 11.sp,
+                          fontSize: 12.sp,
                           fontWeight: FontWeight.w600,
-                          color: isSelected ? AppColors.cxWhite : AppColors.cxGraphiteGray,
+                          color: isSelected 
+                              ? Colors.white 
+                              : theme.colorScheme.onSurface,
                         ),
                       ),
                     ),
