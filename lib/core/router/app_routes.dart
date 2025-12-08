@@ -3,9 +3,11 @@ import 'package:sieves_mob/features/home/pages/home.dart';
 
 import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
+import '../../features/checklist/pages/checklist.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
 import '../../features/lms/pages/lms_page.dart';
+import '../../features/productivity-timer/pages/productivity_timer.dart';
 import '../../features/lms/pages/course_viewer_page.dart';
 import '../../features/lms/pages/test_detail_page.dart';
 import '../../features/lms/pages/test_taking_page.dart';
@@ -28,6 +30,8 @@ class AppRoutes {
   static const String attendance = '/attendance';
   static const String breakRecords = '/breakRecords';
   static const String history = '/history';
+  static const String productivityTimer = '/productivityTimer';
+  static const String checklist = '/checklist';
   static const String notificationNew = '/notificationNew';
   static const String lmsPage = '/lmsPage';
   static const String courseViewer = '/courseViewer';
@@ -77,6 +81,16 @@ class AppRoutes {
           path: '/history',
           name: history,
           builder: (context, state) => const History()
+        ),
+        GoRoute(
+          path: '/productivityTimer',
+          name: productivityTimer,
+          builder: (context, state) => const ProductivityTimer()
+        ),
+        GoRoute(
+          path: '/checklist',
+          name: checklist,
+          builder: (context, state) => const Checklist()
         ),
         
         GoRoute(

@@ -32,6 +32,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
       _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, '/lmsPage'),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
+      _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
+      _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, null),
 
     ];
@@ -648,6 +650,10 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
       return localizations.lWalletSubtitle;
     } else if (title == localizations.learning) {
       return localizations.learningSubtitle;
+    } else if (title == localizations.productivityTimer) {
+      return localizations.productivityTimerSubtitle;
+    } else if (title == localizations.checklist) {
+      return localizations.checklistSubtitle;
     } else {
       return "Tap to explore";
     }

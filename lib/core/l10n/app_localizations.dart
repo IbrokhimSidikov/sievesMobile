@@ -36,6 +36,10 @@ class AppLocalizations {
       'comingSoon':'This feature is coming soon!',
       'learning':'Learning',
       'learningSubtitle':'Learning & Development',
+      'productivityTimer':'Productivity Timer',
+      'productivityTimerSubtitle':'Track your focus time',
+      'checklist':'Checklist',
+      'checklistSubtitle':'Manage your tasks',
 
       //Profile page
       'workHours':'Work Hours',
@@ -126,6 +130,10 @@ class AppLocalizations {
       'comingSoon':'Bu funksiya tez orada qoʻshiladi!',
       'learning':'Test & Imtihon',
       'learningSubtitle':'O\'rganish va Izlanish',
+      'productivityTimer':'Ish vaqti',
+      'productivityTimerSubtitle':'Diqqat vaqtini kuzatish',
+      'checklist':'Vazifalar ro\'yxati',
+      'checklistSubtitle':'Vazifalarni boshqarish',
       //Profile page
       'workHours':'Ish soatlari',
       'totalHours':'Umumiy soatlar',
@@ -215,6 +223,10 @@ class AppLocalizations {
       'comingSoon':'Эта функция скоро появится!',
       'learning': 'Обучение',
       'learningSubtitle': 'Обучение и Развитие',
+      'productivityTimer':'Таймер продуктивности',
+      'productivityTimerSubtitle':'Отслеживайте время фокуса',
+      'checklist':'Список задач',
+      'checklistSubtitle':'Управляйте задачами',
 
       //Profile page
       'workHours':'Рабочие часы',
@@ -311,6 +323,10 @@ class AppLocalizations {
   String get comingSoon => translate('comingSoon');
   String get learning => translate('learning');
   String get learningSubtitle => translate('learningSubtitle');
+  String get productivityTimer => translate('productivityTimer');
+  String get productivityTimerSubtitle => translate('productivityTimerSubtitle');
+  String get checklist => translate('checklist');
+  String get checklistSubtitle => translate('checklistSubtitle');
 
   //Profile page
   String get workHours => translate('workHours');
