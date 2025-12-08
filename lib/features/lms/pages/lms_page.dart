@@ -7,6 +7,8 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../models/test.dart';
 import '../models/course.dart';
+import '../models/test_session.dart';
+import '../models/test_with_sessions.dart';
 
 class LmsPage extends StatefulWidget {
   const LmsPage({super.key});
@@ -86,9 +88,10 @@ class _LmsPageState extends State<LmsPage> {
         return;
       }
       
-      print('📡 Fetching course details for ID: ${test.id}');
+      print('📡 Fetching course details and sessions for ID: ${test.id}');
       
-      final response = await http.get(
+      // Fetch both course details and sessions in parallel
+      final courseResponse = http.get(
         Uri.parse('https://api.v3.sievesapp.com/course/${test.id}'),
         headers: {
           'Authorization': 'Bearer $accessToken',
@@ -96,35 +99,64 @@ class _LmsPageState extends State<LmsPage> {
         },
       );
       
-      print('   Response Status: ${response.statusCode}');
+      final sessionsResponse = http.get(
+        Uri.parse('https://api.v3.sievesapp.com/course/sessions/my?course_id=${test.id}'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
       
-      if (response.statusCode == 200) {
-        final courseJson = json.decode(response.body);
+      // Wait for both requests to complete
+      final responses = await Future.wait([courseResponse, sessionsResponse]);
+      
+      print('   Course Response Status: ${responses[0].statusCode}');
+      print('   Sessions Response Status: ${responses[1].statusCode}');
+      
+      Test finalTest = test;
+      List<TestSession>? sessions;
+      
+      // Process course details
+      if (responses[0].statusCode == 200) {
+        final courseJson = json.decode(responses[0].body);
         final course = Course.fromJson(courseJson);
         
         print('✅ Course details loaded');
         print('   Course: ${course.name}');
         print('   Tests: ${course.tests?.length ?? 0}');
         
-        final testWithQuestions = Test.fromCourse(course);
-        
-        setState(() => _loadingCourseId = null);
-        if (!context.mounted) return;
-        context.push('/testDetail', extra: testWithQuestions);
+        finalTest = Test.fromCourse(course);
       } else {
-        print('❌ Failed to load course details: ${response.statusCode}');
-        print('   Response: ${response.body}');
-        
-        setState(() => _loadingCourseId = null);
-        if (!context.mounted) return;
-        context.push('/testDetail', extra: test);
+        print('⚠️ Using basic course info (details fetch failed)');
       }
-    } catch (e) {
-      print('❌ Error loading course details: $e');
+      
+      // Process sessions
+      if (responses[1].statusCode == 200) {
+        final List<dynamic> sessionsData = json.decode(responses[1].body);
+        sessions = sessionsData.map((json) => TestSession.fromJson(json)).toList();
+        print('✅ Preloaded ${sessions.length} test sessions');
+      } else {
+        print('⚠️ No sessions data available');
+      }
       
       setState(() => _loadingCourseId = null);
       if (!context.mounted) return;
-      context.push('/testDetail', extra: test);
+      
+      // Pass both test and sessions
+      final testWithSessions = TestWithSessions(
+        test: finalTest,
+        sessions: sessions,
+      );
+      context.push('/testDetail', extra: testWithSessions);
+    } catch (e) {
+      print('❌ Error loading course data: $e');
+      
+      setState(() => _loadingCourseId = null);
+      if (!context.mounted) return;
+      
+      // Pass test without sessions on error
+      final testWithSessions = TestWithSessions(test: test);
+      context.push('/testDetail', extra: testWithSessions);
     }
   }
 

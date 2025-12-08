@@ -11,11 +11,12 @@ import '../models/question.dart';
 import '../models/answer_option.dart';
 import '../models/question_type.dart';
 import '../models/test_session.dart';
+import '../models/test_with_sessions.dart';
 
 class TestDetailPage extends StatefulWidget {
-  final Test test;
+  final TestWithSessions testWithSessions;
 
-  const TestDetailPage({super.key, required this.test});
+  const TestDetailPage({super.key, required this.testWithSessions});
 
   @override
   State<TestDetailPage> createState() => _TestDetailPageState();
@@ -28,7 +29,15 @@ class _TestDetailPageState extends State<TestDetailPage> {
   @override
   void initState() {
     super.initState();
-    _loadSessions();
+    // Use preloaded sessions if available, otherwise fetch
+    if (widget.testWithSessions.sessions != null) {
+      print('✅ Using preloaded sessions (${widget.testWithSessions.sessions!.length} sessions)');
+      _sessions = widget.testWithSessions.sessions!;
+      _isLoadingSessions = false;
+    } else {
+      print('📡 No preloaded sessions, fetching...');
+      _loadSessions();
+    }
   }
 
   Future<void> _loadSessions() async {
@@ -42,10 +51,10 @@ class _TestDetailPageState extends State<TestDetailPage> {
         return;
       }
       
-      print('📡 Fetching sessions for course ID: ${widget.test.id}');
+      print('📡 Fetching sessions for course ID: ${widget.testWithSessions.test.id}');
       
       final response = await http.get(
-        Uri.parse('https://api.v3.sievesapp.com/course/sessions/my?course_id=${widget.test.id}'),
+        Uri.parse('https://api.v3.sievesapp.com/course/sessions/my?course_id=${widget.testWithSessions.test.id}'),
         headers: {
           'Authorization': 'Bearer $accessToken',
           'Content-Type': 'application/json',
@@ -161,7 +170,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
 
   Widget _buildHeader(BuildContext context) {
     final theme = Theme.of(context);
-    final categoryColor = _getCategoryColor(widget.test.category);
+    final categoryColor = _getCategoryColor(widget.testWithSessions.test.category);
     
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w),
@@ -178,7 +187,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
       ),
       child: Column(
         children: [
-          if (widget.test.imageUrl != null)
+          if (widget.testWithSessions.test.imageUrl != null)
             ClipRRect(
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(24.r),
@@ -187,7 +196,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
               child: Stack(
                 children: [
                   Image.network(
-                    widget.test.imageUrl!,
+                    widget.testWithSessions.test.imageUrl!,
                     height: 200.h,
                     width: double.infinity,
                     fit: BoxFit.cover,
@@ -237,7 +246,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
                         ],
                       ),
                       child: Text(
-                        widget.test.category,
+                        widget.testWithSessions.test.category,
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.bold,
@@ -246,7 +255,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
                       ),
                     ),
                   ),
-                  if (widget.test.isCompleted)
+                  if (widget.testWithSessions.test.isCompleted)
                     Positioned(
                       top: 16.h,
                       right: 16.w,
@@ -279,7 +288,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.test.title,
+                  widget.testWithSessions.test.title,
                   style: TextStyle(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.bold,
@@ -289,14 +298,14 @@ class _TestDetailPageState extends State<TestDetailPage> {
                 ),
                 SizedBox(height: 12.h),
                 Text(
-                  widget.test.description,
+                  widget.testWithSessions.test.description,
                   style: TextStyle(
                     fontSize: 15.sp,
                     color: theme.colorScheme.onSurfaceVariant,
                     height: 1.5,
                   ),
                 ),
-                if (widget.test.isCompleted && widget.test.userScore != null) ...[
+                if (widget.testWithSessions.test.isCompleted && widget.testWithSessions.test.userScore != null) ...[
                   SizedBox(height: 16.h),
                   Container(
                     padding: EdgeInsets.all(16.w),
@@ -341,7 +350,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
                               ),
                               SizedBox(height: 2.h),
                               Text(
-                                '${widget.test.userScore}%',
+                                '${widget.testWithSessions.test.userScore}%',
                                 style: TextStyle(
                                   fontSize: 22.sp,
                                   fontWeight: FontWeight.bold,
@@ -351,7 +360,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
                             ],
                           ),
                         ),
-                        if (widget.test.userScore! >= widget.test.passingScore)
+                        if (widget.testWithSessions.test.userScore! >= widget.testWithSessions.test.passingScore)
                           Container(
                             padding: EdgeInsets.symmetric(
                               horizontal: 12.w,
@@ -415,7 +424,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
             context,
             Icons.quiz_outlined,
             'Total Questions',
-            '${widget.test.totalQuestions}',
+            '${widget.testWithSessions.test.totalQuestions}',
             AppColors.cxRoyalBlue,
           ),
           SizedBox(height: 12.h),
@@ -423,7 +432,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
             context,
             Icons.timer_outlined,
             'Duration',
-            '${widget.test.duration} minutes',
+            '${widget.testWithSessions.test.duration} minutes',
             AppColors.cxWarning,
           ),
           SizedBox(height: 12.h),
@@ -431,19 +440,19 @@ class _TestDetailPageState extends State<TestDetailPage> {
             context,
             Icons.emoji_events_outlined,
             'Passing Score',
-            '${widget.test.passingScore}%',
+            '${widget.testWithSessions.test.passingScore}%',
             AppColors.cxEmeraldGreen,
           ),
-          if (widget.test.courseUrl != null) ...[
+          if (widget.testWithSessions.test.courseUrl != null) ...[
             SizedBox(height: 12.h),
             _buildInfoRow(
               context,
-              widget.test.courseCompleted
+              widget.testWithSessions.test.courseCompleted
                   ? Icons.check_circle_outline_rounded
                   : Icons.menu_book_outlined,
               'Course Material',
-              widget.test.courseCompleted ? 'Completed' : 'Required',
-              widget.test.courseCompleted
+              widget.testWithSessions.test.courseCompleted ? 'Completed' : 'Required',
+              widget.testWithSessions.test.courseCompleted
                   ? AppColors.cxEmeraldGreen
                   : AppColors.cxWarning,
             ),
@@ -534,7 +543,7 @@ class _TestDetailPageState extends State<TestDetailPage> {
           _buildInstructionItem(context, 'Read each question carefully before answering'),
           _buildInstructionItem(context, 'You can navigate between questions freely'),
           _buildInstructionItem(context, 'Review your answers before submitting'),
-          _buildInstructionItem(context, 'You must score ${widget.test.passingScore}% or higher to pass'),
+          _buildInstructionItem(context, 'You must score ${widget.testWithSessions.test.passingScore}% or higher to pass'),
           _buildInstructionItem(context, 'Timer will start once you begin the test'),
         ],
       ),
@@ -620,9 +629,9 @@ class _TestDetailPageState extends State<TestDetailPage> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Icon(
-                      widget.test.isCompleted
+                      widget.testWithSessions.test.isCompleted
                           ? Icons.replay_rounded
-                          : (widget.test.courseUrl != null && !widget.test.courseCompleted)
+                          : (widget.testWithSessions.test.courseUrl != null && !widget.testWithSessions.test.courseCompleted)
                               ? Icons.menu_book_rounded
                               : Icons.play_arrow_rounded,
                       color: Colors.white,
@@ -630,9 +639,9 @@ class _TestDetailPageState extends State<TestDetailPage> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      widget.test.isCompleted
+                      widget.testWithSessions.test.isCompleted
                           ? 'Retake Test'
-                          : (widget.test.courseUrl != null && !widget.test.courseCompleted)
+                          : (widget.testWithSessions.test.courseUrl != null && !widget.testWithSessions.test.courseCompleted)
                               ? 'View Course'
                               : 'Start Test',
                       style: TextStyle(
@@ -653,37 +662,38 @@ class _TestDetailPageState extends State<TestDetailPage> {
   }
 
   void _startTest(BuildContext context) {
+    final test = widget.testWithSessions.test;
     developer.log('=== START TEST CLICKED ===', name: 'TestDetail');
-    developer.log('Test ID: ${widget.test.id}', name: 'TestDetail');
-    developer.log('Test Title: ${widget.test.title}', name: 'TestDetail');
-    developer.log('Course URL: ${widget.test.courseUrl}', name: 'TestDetail');
-    developer.log('Course Completed: ${widget.test.courseCompleted}', name: 'TestDetail');
-    developer.log('Test Completed: ${widget.test.isCompleted}', name: 'TestDetail');
-    developer.log('Questions available: ${widget.test.questions?.length ?? 0}', name: 'TestDetail');
+    developer.log('Test ID: ${test.id}', name: 'TestDetail');
+    developer.log('Test Title: ${test.title}', name: 'TestDetail');
+    developer.log('Course URL: ${test.courseUrl}', name: 'TestDetail');
+    developer.log('Course Completed: ${test.courseCompleted}', name: 'TestDetail');
+    developer.log('Test Completed: ${test.isCompleted}', name: 'TestDetail');
+    developer.log('Questions available: ${test.questions?.length ?? 0}', name: 'TestDetail');
     
     // Check if course material exists and hasn't been completed
-    if (widget.test.courseUrl != null && !widget.test.courseCompleted) {
+    if (test.courseUrl != null && !test.courseCompleted) {
       developer.log('Navigating to COURSE VIEWER (course not completed)', name: 'TestDetail');
       // Navigate to course viewer first
-      context.push('/courseViewer', extra: widget.test);
+      context.push('/courseViewer', extra: test);
       return;
     }
     
     developer.log('Navigating to TEST TAKING (course completed or no course)', name: 'TestDetail');
     
     // Use real questions if available, otherwise generate sample questions
-    final questions = widget.test.questions ?? _generateSampleQuestions();
-    final testWithQuestions = widget.test.copyWith(questions: questions);
+    final questions = test.questions ?? _generateSampleQuestions();
+    final testWithQuestions = test.copyWith(questions: questions);
     
     context.push('/testTaking', extra: testWithQuestions);
   }
 
   List<Question> _generateSampleQuestions() {
     // Sample questions based on test category
-    return List.generate(widget.test.totalQuestions, (index) {
+    return List.generate(widget.testWithSessions.test.totalQuestions, (index) {
       return Question(
         id: 'q${index + 1}',
-        text: 'Sample question ${index + 1} for ${widget.test.title}?',
+        text: 'Sample question ${index + 1} for ${widget.testWithSessions.test.title}?',
         type: index % 3 == 0 ? QuestionType.trueFalse : QuestionType.multipleChoice,
         points: 1,
         explanation: 'This is the explanation for question ${index + 1}.',

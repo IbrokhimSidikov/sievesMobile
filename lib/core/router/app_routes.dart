@@ -12,6 +12,7 @@ import '../../features/lms/pages/test_taking_page.dart';
 import '../../features/lms/pages/test_result_page.dart';
 import '../../features/lms/models/test.dart';
 import '../../features/lms/models/test_answer.dart';
+import '../../features/lms/models/test_with_sessions.dart';
 import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
@@ -103,8 +104,8 @@ class AppRoutes {
           path: '/testDetail',
           name: testDetail,
           builder: (context, state) {
-            final test = state.extra as Test;
-            return TestDetailPage(test: test);
+            final testWithSessions = state.extra as TestWithSessions;
+            return TestDetailPage(testWithSessions: testWithSessions);
           }
         ),
 
