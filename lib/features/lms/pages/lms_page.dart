@@ -18,6 +18,7 @@ class LmsPage extends StatefulWidget {
 class _LmsPageState extends State<LmsPage> {
   bool _isLoading = true;
   List<Test> _tests = [];
+  String? _loadingCourseId;
 
   @override
   void initState() {
@@ -73,12 +74,15 @@ class _LmsPageState extends State<LmsPage> {
   }
 
   Future<void> _onCourseClicked(BuildContext context, Test test) async {
+    setState(() => _loadingCourseId = test.id);
+    
     try {
       final authManager = AuthManager();
       final accessToken = await authManager.authService.getAccessToken();
       
       if (accessToken == null) {
         print('❌ No access token available');
+        setState(() => _loadingCourseId = null);
         return;
       }
       
@@ -104,18 +108,21 @@ class _LmsPageState extends State<LmsPage> {
         
         final testWithQuestions = Test.fromCourse(course);
         
+        setState(() => _loadingCourseId = null);
         if (!context.mounted) return;
         context.push('/testDetail', extra: testWithQuestions);
       } else {
         print('❌ Failed to load course details: ${response.statusCode}');
         print('   Response: ${response.body}');
         
+        setState(() => _loadingCourseId = null);
         if (!context.mounted) return;
         context.push('/testDetail', extra: test);
       }
     } catch (e) {
       print('❌ Error loading course details: $e');
       
+      setState(() => _loadingCourseId = null);
       if (!context.mounted) return;
       context.push('/testDetail', extra: test);
     }
@@ -301,6 +308,7 @@ class _LmsPageState extends State<LmsPage> {
   Widget _buildTestCard(Test test) {
     final theme = Theme.of(context);
     final categoryColor = _getCategoryColor(test.category);
+    final isLoading = _loadingCourseId == test.id;
     
     return Container(
       margin: EdgeInsets.only(bottom: 16.h),
@@ -318,9 +326,11 @@ class _LmsPageState extends State<LmsPage> {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _onCourseClicked(context, test),
+          onTap: isLoading ? null : () => _onCourseClicked(context, test),
           borderRadius: BorderRadius.circular(20.r),
-          child: Column(
+          child: Stack(
+            children: [
+              Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Image header
@@ -518,6 +528,45 @@ class _LmsPageState extends State<LmsPage> {
                   ],
                 ),
               ),
+            ],
+          ),
+              // Loading overlay
+              if (isLoading)
+                Positioned.fill(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: Container(
+                      color: theme.colorScheme.surface.withOpacity(0.95),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Loading course...',
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurface,
+                            ),
+                          ),
+                          SizedBox(height: 16.h),
+                          Padding(
+                            padding: EdgeInsets.symmetric(horizontal: 40.w),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8.r),
+                              child: LinearProgressIndicator(
+                                minHeight: 8.h,
+                                backgroundColor: categoryColor.withOpacity(0.2),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  categoryColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
