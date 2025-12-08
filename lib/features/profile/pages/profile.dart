@@ -48,6 +48,8 @@ class _ProfileState extends State<Profile> {
   bool _isPrePaidFromCache = false;
   bool _isVacationFromCache = false;
   bool _isBonusFromCache = false;
+  String? _role;
+  String? _jobPositionName;
 
   @override
   void initState() {
@@ -94,12 +96,30 @@ class _ProfileState extends State<Profile> {
           if (mounted) {
             setState(() {
               _profileData = cachedData;
+              _role = cachedData['role'] as String?;
+              _jobPositionName = cachedData['jobPositionName'] as String?;
               _isLoading = false;
               _isFromCache = true;
             });
           }
           return;
         }
+      }
+
+      // Fetch additional employee data with identity and jobPosition
+      print('🔍 Fetching employee data with identity and jobPosition');
+      final employeeData = await _apiService.getEmployeeWithExpand(
+        employeeId,
+        ['identity', 'jobPosition'],
+      );
+
+      String? role;
+      String? jobPositionName;
+
+      if (employeeData != null) {
+        role = employeeData['identity']?['role'] as String?;
+        jobPositionName = employeeData['jobPosition']?['name'] as String?;
+        print('✅ Role: $role, Job Position: $jobPositionName');
       }
 
       // Convert Identity model to Map for UI consumption
@@ -135,6 +155,8 @@ class _ProfileState extends State<Profile> {
             'type': identity.employee!.reward!.type,
           } : null,
         } : null,
+        'role': role,
+        'jobPositionName': jobPositionName,
       };
 
       // Cache the profile data
@@ -143,6 +165,8 @@ class _ProfileState extends State<Profile> {
       if (mounted) {
         setState(() {
           _profileData = identityData;
+          _role = role;
+          _jobPositionName = jobPositionName;
           _isLoading = false;
           _isFromCache = false;
         });
@@ -1151,20 +1175,196 @@ class _ProfileState extends State<Profile> {
 
   Widget _buildLoadingState() {
     final theme = Theme.of(context);
-    return Center(
+    final isDark = theme.brightness == Brightness.dark;
+    final shimmerBase = isDark 
+        ? Colors.white.withOpacity(0.05) 
+        : AppColors.cxF5F7F9;
+    final shimmerHighlight = isDark 
+        ? Colors.white.withOpacity(0.1) 
+        : AppColors.cxPureWhite;
+    
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20.w),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircularProgressIndicator(
-            color: theme.colorScheme.primary,
-            strokeWidth: 3,
+          // Header shimmer
+          Row(
+            children: [
+              Shimmer.fromColors(
+                baseColor: shimmerBase,
+                highlightColor: shimmerHighlight,
+                child: Container(
+                  width: 40.w,
+                  height: 40.h,
+                  decoration: BoxDecoration(
+                    color: shimmerBase,
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Shimmer.fromColors(
+                  baseColor: shimmerBase,
+                  highlightColor: shimmerHighlight,
+                  child: Container(
+                    width: 120.w,
+                    height: 32.h,
+                    decoration: BoxDecoration(
+                      color: shimmerBase,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Shimmer.fromColors(
+                baseColor: shimmerBase,
+                highlightColor: shimmerHighlight,
+                child: Container(
+                  width: 48.w,
+                  height: 48.h,
+                  decoration: BoxDecoration(
+                    color: shimmerBase,
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Shimmer.fromColors(
+                baseColor: shimmerBase,
+                highlightColor: shimmerHighlight,
+                child: Container(
+                  width: 48.w,
+                  height: 48.h,
+                  decoration: BoxDecoration(
+                    color: shimmerBase,
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 16.h),
-          Text(
-            'Loading profile...',
-            style: TextStyle(
-              fontSize: 16.sp,
-              color: theme.colorScheme.onSurfaceVariant,
+          SizedBox(height: 24.h),
+          
+          // Profile card shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              width: double.infinity,
+              height: 280.h,
+              decoration: BoxDecoration(
+                color: shimmerBase,
+                borderRadius: BorderRadius.circular(24.r),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 100.w,
+                    height: 100.h,
+                    decoration: BoxDecoration(
+                      color: shimmerHighlight,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  Container(
+                    width: 150.w,
+                    height: 24.h,
+                    decoration: BoxDecoration(
+                      color: shimmerHighlight,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                  ),
+                  SizedBox(height: 8.h),
+                  Container(
+                    width: 200.w,
+                    height: 16.h,
+                    decoration: BoxDecoration(
+                      color: shimmerHighlight,
+                      borderRadius: BorderRadius.circular(6.r),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          
+          // Work hours card shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              width: double.infinity,
+              height: 240.h,
+              decoration: BoxDecoration(
+                color: shimmerBase,
+                borderRadius: BorderRadius.circular(24.r),
+              ),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          
+          // Bonus card shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              width: double.infinity,
+              height: 160.h,
+              decoration: BoxDecoration(
+                color: shimmerBase,
+                borderRadius: BorderRadius.circular(24.r),
+              ),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          
+          // Prepaid card shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              width: double.infinity,
+              height: 160.h,
+              decoration: BoxDecoration(
+                color: shimmerBase,
+                borderRadius: BorderRadius.circular(24.r),
+              ),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          
+          // Vacation card shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              width: double.infinity,
+              height: 160.h,
+              decoration: BoxDecoration(
+                color: shimmerBase,
+                borderRadius: BorderRadius.circular(24.r),
+              ),
+            ),
+          ),
+          SizedBox(height: 20.h),
+          
+          // Job info card shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              width: double.infinity,
+              height: 200.h,
+              decoration: BoxDecoration(
+                color: shimmerBase,
+                borderRadius: BorderRadius.circular(24.r),
+              ),
             ),
           ),
         ],
@@ -1429,6 +1629,69 @@ class _ProfileState extends State<Profile> {
                 color: AppColors.cxPureWhite.withOpacity(0.9),
               ),
             ),
+            // Role and Job Position
+            if (_role != null || _jobPositionName != null) ...[
+              SizedBox(height: 16.h),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+                decoration: BoxDecoration(
+                  color: AppColors.cxPureWhite.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.cxPureWhite.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    if (_role != null) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.admin_panel_settings_rounded,
+                            color: AppColors.cxPureWhite.withOpacity(0.9),
+                            size: 18.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            _role!,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.cxPureWhite.withOpacity(0.95),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (_role != null && _jobPositionName != null)
+                      SizedBox(height: 8.h),
+                    if (_jobPositionName != null) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.work_outline_rounded,
+                            color: AppColors.cxPureWhite.withOpacity(0.9),
+                            size: 18.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            _jobPositionName!,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.cxPureWhite.withOpacity(0.95),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ],
         ),
       ),

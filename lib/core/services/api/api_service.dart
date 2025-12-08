@@ -124,6 +124,35 @@ class ApiService {
     }
   }
 
+  // Get employee data with custom expand parameters
+  Future<Map<String, dynamic>?> getEmployeeWithExpand(int employeeId, List<String> expandFields) async {
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'expand': expandFields.join(','),
+      };
+
+      final uri = Uri.parse('$baseUrl/employee/$employeeId').replace(
+        queryParameters: queryParams,
+      );
+
+      print('🔍 Fetching employee data from: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        print('✅ Employee data received');
+        return data;
+      } else {
+        print('❌ Error getting employee data: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting employee data: $e');
+      return null;
+    }
+  }
+
   // Get detailed employee profile data for profile page
   Future<Map<String, dynamic>?> getEmployeeProfileData(int employeeId) async {
     try {
