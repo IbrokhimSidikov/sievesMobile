@@ -230,12 +230,14 @@ class _ProductivityTimerState extends State<ProductivityTimer> {
                 size: 28.sp,
               ),
               SizedBox(width: 12.w),
-              Text(
-                l10n.successSubmit,
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              Expanded(
+                child: Text(
+                  l10n.successSubmit,
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
                 ),
               ),
             ],

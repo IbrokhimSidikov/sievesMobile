@@ -392,7 +392,7 @@ class AppLocalizations {
       'validationProductRequired':'Пожалуйста, выберите продукт',
       'errorLoadEmployees':'Не удалось загрузить сотрудников. Попробуйте снова.',
       'errorSubmit':'Не удалось отправить данные. Попробуйте снова.',
-      'successSubmit':'Данные успешно отправлены!',
+      'successSubmit':'Успешно отправлено!',
       'ok':'ОК'
 
 
