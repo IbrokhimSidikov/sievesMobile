@@ -34,7 +34,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
       if (_authManager.hasStopwatchAccess)
         _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
-      _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
+      _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), null),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, null),
 
     ];

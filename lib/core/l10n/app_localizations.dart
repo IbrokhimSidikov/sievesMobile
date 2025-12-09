@@ -165,7 +165,7 @@ class AppLocalizations {
       'learningSubtitle':'O\'rganish va Izlanish',
       'productivityTimer':'Tayyorlash sifati',
       'productivityTimerSubtitle':'Diqqat vaqtini kuzatish',
-      'checklist':'Vazifalar ro\'yxati',
+      'checklist':'Checklist ro\'yxati',
       'checklistSubtitle':'Vazifalarni boshqarish',
       //Profile page
       'workHours':'Ish soatlari',
