@@ -12,6 +12,7 @@ import '../../features/lms/pages/course_viewer_page.dart';
 import '../../features/lms/pages/test_detail_page.dart';
 import '../../features/lms/pages/test_taking_page.dart';
 import '../../features/lms/pages/test_result_page.dart';
+import '../../features/lms/pages/test_history_page.dart';
 import '../../features/lms/models/test.dart';
 import '../../features/lms/models/test_answer.dart';
 import '../../features/lms/models/test_with_sessions.dart';
@@ -39,6 +40,7 @@ class AppRoutes {
   static const String testDetail = '/testDetail';
   static const String testTaking = '/testTaking';
   static const String testResult = '/testResult';
+  static const String testHistory = '/testHistory';
 
   static final GoRouter router = GoRouter(
       initialLocation: splash,
@@ -111,6 +113,12 @@ class AppRoutes {
           path: '/lmsPage',
           name: lmsPage,
           builder: (context, state) => const LmsPage()
+        ),
+
+        GoRoute(
+          path: '/testHistory',
+          name: testHistory,
+          builder: (context, state) => const TestHistoryPage()
         ),
 
         GoRoute(

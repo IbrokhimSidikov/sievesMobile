@@ -36,6 +36,8 @@ class AppLocalizations {
       'comingSoon':'This feature is coming soon!',
       'learning':'Learning',
       'learningSubtitle':'Learning & Development',
+      'testHistory':'Test History',
+      'testHistorySubtitle':'Your test journey',
       'productivityTimer':'Productivity Timer',
       'productivityTimerSubtitle':'Track your focus time',
       'checklist':'Checklist',
@@ -163,6 +165,8 @@ class AppLocalizations {
       'comingSoon':'Bu funksiya tez orada qoʻshiladi!',
       'learning':'Test & Imtihon',
       'learningSubtitle':'O\'rganish va Izlanish',
+      'testHistory':'Test Tarixi',
+      'testHistorySubtitle':'Sizning test sayohatingiz',
       'productivityTimer':'Tayyorlash sifati',
       'productivityTimerSubtitle':'Diqqat vaqtini kuzatish',
       'checklist':'Checklist ro\'yxati',
@@ -289,6 +293,8 @@ class AppLocalizations {
       'comingSoon':'Эта функция скоро появится!',
       'learning': 'Обучение',
       'learningSubtitle': 'Обучение и Развитие',
+      'testHistory':'История Тестов',
+      'testHistorySubtitle':'Ваш путь тестирования',
       'productivityTimer':'Таймер продуктивности',
       'productivityTimerSubtitle':'Отслеживайте время фокуса',
       'checklist':'Список задач',
@@ -422,6 +428,8 @@ class AppLocalizations {
   String get comingSoon => translate('comingSoon');
   String get learning => translate('learning');
   String get learningSubtitle => translate('learningSubtitle');
+  String get testHistory => translate('testHistory');
+  String get testHistorySubtitle => translate('testHistorySubtitle');
   String get productivityTimer => translate('productivityTimer');
   String get productivityTimerSubtitle => translate('productivityTimerSubtitle');
   String get checklist => translate('checklist');

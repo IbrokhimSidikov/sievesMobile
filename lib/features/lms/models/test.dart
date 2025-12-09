@@ -119,7 +119,7 @@ class Test {
       id: course.id.toString(),
       title: course.name,
       description: course.description,
-      category: 'Training',
+      category: course.category ?? 'Training',
       duration: 15,
       totalQuestions: questionCount,
       passingScore: 70,

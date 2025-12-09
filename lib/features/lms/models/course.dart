@@ -7,6 +7,7 @@ class Course {
   final int updatedBy;
   final String name;
   final String description;
+  final String? category;
   final String pdfUrl;
   final int sortOrder;
   final bool isActive;
@@ -23,6 +24,7 @@ class Course {
     required this.updatedBy,
     required this.name,
     required this.description,
+    this.category,
     required this.pdfUrl,
     required this.sortOrder,
     required this.isActive,
@@ -48,6 +50,7 @@ class Course {
       updatedBy: json['updated_by'] as int,
       name: json['name'] as String,
       description: json['description'] as String,
+      category: json['category'] as String?,
       pdfUrl: json['pdf_url'] as String,
       sortOrder: json['sort_order'] as int,
       isActive: json['is_active'] as bool,
@@ -69,6 +72,7 @@ class Course {
       'updated_by': updatedBy,
       'name': name,
       'description': description,
+      'category': category,
       'pdf_url': pdfUrl,
       'sort_order': sortOrder,
       'is_active': isActive,

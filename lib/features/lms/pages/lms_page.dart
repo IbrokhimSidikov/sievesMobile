@@ -270,12 +270,33 @@ class _LmsPageState extends State<LmsPage> with SingleTickerProviderStateMixin {
                 ),
               ),
               SizedBox(width: 12.w),
-              Text(
-                'Learning Center',
-                style: TextStyle(
-                  fontSize: 20.sp,
-                  fontWeight: FontWeight.bold,
-                  color: theme.colorScheme.onSurface,
+              Expanded(
+                child: Text(
+                  'Learning Center',
+                  style: TextStyle(
+                    fontSize: 20.sp,
+                    fontWeight: FontWeight.bold,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: () => context.push('/testHistory'),
+                  icon: const Icon(Icons.history_edu_rounded),
+                  color: const Color(0xFF6366F1),
+                  tooltip: 'Test History',
                 ),
               ),
             ],

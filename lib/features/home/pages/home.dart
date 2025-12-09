@@ -652,6 +652,8 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
       return localizations.lWalletSubtitle;
     } else if (title == localizations.learning) {
       return localizations.learningSubtitle;
+    } else if (title == localizations.testHistory) {
+      return localizations.testHistorySubtitle;
     } else if (title == localizations.productivityTimer) {
       return localizations.productivityTimerSubtitle;
     } else if (title == localizations.checklist) {
