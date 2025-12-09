@@ -301,28 +301,23 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
             SizedBox(height: 24.sp),
 
-            // Apple-Style Tiles
+            // Uniform Grid Layout
             Expanded(
-              child: ListView.builder(
+              child: GridView.builder(
                 controller: _scrollController,
+                physics: const BouncingScrollPhysics(),
                 padding: EdgeInsets.only(top: 8.sp, bottom: 32.sp),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: 2,
+                  childAspectRatio: 1.0,
+                  crossAxisSpacing: 12.sp,
+                  mainAxisSpacing: 12.sp,
+                ),
                 itemCount: modules.length,
                 itemBuilder: (context, index) {
-                  // Calculate parallax effect
-                  final itemPosition = index * 120.h;
-                  final difference = _scrollOffset - itemPosition;
-                  final parallaxOffset = difference * 0.15;
-                  
-                  return Padding(
-                    padding: EdgeInsets.only(bottom: 16.sp),
-                    child: Transform.translate(
-                      offset: Offset(0, -parallaxOffset),
-                      child: _AppleTile(
-                        module: modules[index],
-                        index: index,
-                        onTap: () => _navigateToModule(modules[index]),
-                      ),
-                    ),
+                  return _PremiumCard(
+                    module: modules[index],
+                    onTap: () => _navigateToModule(modules[index]),
                   );
                 },
               ),
@@ -441,35 +436,32 @@ class _ModuleItem {
   _ModuleItem(this.title, this.icon, this.color, this.route);
 }
 
-// Apple-Style Tile Widget
-class _AppleTile extends StatefulWidget {
+// Premium Uniform Card Widget
+class _PremiumCard extends StatefulWidget {
   final _ModuleItem module;
-  final int index;
   final VoidCallback onTap;
 
-  const _AppleTile({
+  const _PremiumCard({
     required this.module,
-    required this.index,
     required this.onTap,
   });
 
   @override
-  State<_AppleTile> createState() => _AppleTileState();
+  State<_PremiumCard> createState() => _PremiumCardState();
 }
 
-class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMixin {
+class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _scaleAnimation;
-  bool _isPressed = false;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: Duration(milliseconds: 200),
+      duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.97).animate(
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
   }
@@ -482,148 +474,157 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return GestureDetector(
-      onTapDown: (_) {
-        setState(() => _isPressed = true);
-        _controller.forward();
-      },
+      onTapDown: (_) => _controller.forward(),
       onTapUp: (_) {
-        setState(() => _isPressed = false);
         _controller.reverse();
-        Future.delayed(Duration(milliseconds: 100), widget.onTap);
+        Future.delayed(const Duration(milliseconds: 100), widget.onTap);
       },
-      onTapCancel: () {
-        setState(() => _isPressed = false);
-        _controller.reverse();
-      },
+      onTapCancel: () => _controller.reverse(),
       child: ScaleTransition(
         scale: _scaleAnimation,
-        child: Hero(
-          tag: 'module_${widget.index}',
-          child: Container(
-            height: 110.h,
-            margin: EdgeInsets.symmetric(horizontal: 4.sp),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.r),
-              gradient: LinearGradient(
-                colors: [
-                  widget.module.color.withOpacity(0.92),
-                  widget.module.color.withOpacity(0.88),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(20.r),
+            gradient: LinearGradient(
+              colors: isDark
+                  ? [
+                      widget.module.color.withOpacity(0.25),
+                      widget.module.color.withOpacity(0.12),
+                    ]
+                  : [
+                      widget.module.color.withOpacity(0.9),
+                      widget.module.color.withOpacity(0.75),
+                    ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+            border: isDark
+                ? Border.all(
+                    color: widget.module.color.withOpacity(0.25),
+                    width: 1.5,
+                  )
+                : null,
+            boxShadow: [
+              BoxShadow(
+                color: widget.module.color.withOpacity(isDark ? 0.12 : 0.25),
+                blurRadius: 16,
+                offset: const Offset(0, 8),
+                spreadRadius: -4,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: widget.module.color.withOpacity(0.25),
-                  blurRadius: 16,
-                  offset: Offset(0, 8),
-                  spreadRadius: -3,
-                ),
+              if (!isDark)
                 BoxShadow(
                   color: Colors.black.withOpacity(0.08),
                   blurRadius: 24,
-                  offset: Offset(0, 12),
+                  offset: const Offset(0, 12),
                   spreadRadius: -6,
                 ),
-              ],
-            ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(20.r),
             child: Stack(
               children: [
-                // Subtle background pattern
-                Positioned.fill(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20.r),
-                      gradient: LinearGradient(
-                        colors: [
-                          Colors.white.withOpacity(0.08),
-                          Colors.transparent,
-                          Colors.black.withOpacity(0.05),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                // Glassmorphism overlay
+                if (isDark)
+                  Positioned.fill(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.04),
+                            Colors.transparent,
+                            Colors.black.withOpacity(0.08),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
                       ),
                     ),
                   ),
-                ),
                 
-                // Decorative corner element
+                // Decorative circle
                 Positioned(
-                  top: -20,
-                  right: -20,
+                  top: -25,
+                  right: -25,
                   child: Container(
-                    width: 80.sp,
-                    height: 80.sp,
+                    width: 70.sp,
+                    height: 70.sp,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: Colors.white.withOpacity(0.1),
+                      color: isDark
+                          ? Colors.white.withOpacity(0.04)
+                          : Colors.white.withOpacity(0.12),
                     ),
                   ),
                 ),
                 
                 // Content
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 20.sp, vertical: 16.sp),
-                  child: Row(
+                  padding: EdgeInsets.all(16.sp),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      // Icon with Apple-style minimal background
+                      // Icon
                       Container(
-                        width: 56.sp,
-                        height: 56.sp,
+                        width: 48.sp,
+                        height: 48.sp,
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14.r),
-                          color: Colors.white.withOpacity(0.2),
+                          color: isDark
+                              ? Colors.white.withOpacity(0.12)
+                              : Colors.white.withOpacity(0.22),
                           border: Border.all(
-                            color: Colors.white.withOpacity(0.15),
-                            width: 0.5,
+                            color: isDark
+                                ? Colors.white.withOpacity(0.15)
+                                : Colors.white.withOpacity(0.25),
+                            width: 0.8,
                           ),
                         ),
                         child: Icon(
                           widget.module.icon,
-                          size: 30.sp,
+                          size: 24.sp,
                           color: Colors.white,
                         ),
                       ),
                       
-                      SizedBox(width: 16.sp),
-                      
-                      // Text content - Apple-style typography
-                      Expanded(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              widget.module.title,
-                              style: TextStyle(
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
-                                letterSpacing: -0.3,
-                                height: 1.2,
-                              ),
+                      // Title
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.module.title,
+                            style: TextStyle(
+                              fontSize: 20.sp,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? Colors.white
+                                  : Colors.white,
+                              letterSpacing: -0.3,
+                              height: 1.2,
                             ),
-                            SizedBox(height: 4.sp),
-                            Text(
-                              _getSubtitle(widget.module.title),
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.white.withOpacity(0.85),
-                                letterSpacing: -0.1,
-                                height: 1.3,
-                              ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 4.sp),
+                          Text(
+                            _getSubtitle(widget.module.title),
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: isDark
+                                  ? Colors.white.withOpacity(0.65)
+                                  : Colors.white.withOpacity(0.85),
+                              height: 1.3,
                             ),
-                          ],
-                        ),
-                      ),
-                      
-                      // Chevron indicator
-                      Icon(
-                        Icons.chevron_right_rounded,
-                        color: Colors.white.withOpacity(0.6),
-                        size: 24.sp,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -638,28 +639,15 @@ class _AppleTileState extends State<_AppleTile> with SingleTickerProviderStateMi
 
   String _getSubtitle(String title) {
     final localizations = AppLocalizations.of(context);
-    
-    // Match against translated titles
-    if (title == localizations.profile) {
-      return localizations.profileSubtitle;
-    } else if (title == localizations.attendance) {
-      return localizations.attendanceSubtitle;
-    } else if (title == localizations.breakRecords) {
-      return localizations.breakRecordsSubtitle;
-    } else if (title == localizations.history) {
-      return localizations.historySubtitle;
-    } else if (title == localizations.lWallet) {
-      return localizations.lWalletSubtitle;
-    } else if (title == localizations.learning) {
-      return localizations.learningSubtitle;
-    } else if (title == localizations.testHistory) {
-      return localizations.testHistorySubtitle;
-    } else if (title == localizations.productivityTimer) {
-      return localizations.productivityTimerSubtitle;
-    } else if (title == localizations.checklist) {
-      return localizations.checklistSubtitle;
-    } else {
-      return "Tap to explore";
-    }
+    if (title == localizations.profile) return localizations.profileSubtitle;
+    if (title == localizations.attendance) return localizations.attendanceSubtitle;
+    if (title == localizations.breakRecords) return localizations.breakRecordsSubtitle;
+    if (title == localizations.history) return localizations.historySubtitle;
+    if (title == localizations.lWallet) return localizations.lWalletSubtitle;
+    if (title == localizations.learning) return localizations.learningSubtitle;
+    if (title == localizations.testHistory) return localizations.testHistorySubtitle;
+    if (title == localizations.productivityTimer) return localizations.productivityTimerSubtitle;
+    if (title == localizations.checklist) return localizations.checklistSubtitle;
+    return "Tap to explore";
   }
 }
