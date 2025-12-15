@@ -125,10 +125,33 @@ class AuthManager {
         _currentIdentity = identity;
         await _saveIdentity(identity);
         print('✅ Identity data refreshed');
+        print('📸 Photo URL after refresh: ${identity.employee?.individual?.photoUrl}');
       }
     } catch (e) {
       print('❌ Error refreshing identity: $e');
     }
+  }
+
+  /// Ensure photo data is loaded for face verification
+  Future<String?> getProfilePhotoUrl() async {
+    // First check if we already have the photo URL
+    if (_currentIdentity?.employee?.individual?.photoUrl != null) {
+      print('✅ Photo URL found in current identity: ${_currentIdentity!.employee!.individual!.photoUrl}');
+      return _currentIdentity!.employee!.individual!.photoUrl;
+    }
+
+    // If not, refresh the identity to get the latest data with photo
+    print('⚠️ Photo URL not found in current identity, refreshing...');
+    await refreshIdentity();
+
+    // Check again after refresh
+    if (_currentIdentity?.employee?.individual?.photoUrl != null) {
+      print('✅ Photo URL found after refresh: ${_currentIdentity!.employee!.individual!.photoUrl}');
+      return _currentIdentity!.employee!.individual!.photoUrl;
+    }
+
+    print('❌ Photo URL still not available after refresh');
+    return null;
   }
 
   // Complete login flow

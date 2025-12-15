@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../../model/employee_model.dart';
 import '../../model/identity_model.dart';
 import '../../model/work_entry_model.dart';
@@ -793,6 +795,140 @@ class ApiService {
     } catch (e) {
       print('❌ Exception getting inventory: $e');
       return [];
+    }
+  }
+
+  // Upload break photo
+  Future<int?> uploadBreakPhoto(File photoFile) async {
+    try {
+      final token = await authService.getAccessToken();
+      if (token == null) {
+        print('❌ No access token available for photo upload');
+        return null;
+      }
+
+      final uri = Uri.parse('$baseUrl/photo?belongs_to=employee_break');
+      print('📸 [API] Uploading break photo to: $uri');
+      print('📸 [API] Photo file path: ${photoFile.path}');
+      print('📸 [API] Photo file exists: ${await photoFile.exists()}');
+      
+      final photoBytes = await photoFile.readAsBytes();
+      print('📸 [API] Photo size: ${photoBytes.length} bytes');
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      
+      // Add the photo file with proper content type
+      request.files.add(http.MultipartFile.fromBytes(
+        'photos',
+        photoBytes,
+        filename: 'break_photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
+        contentType: MediaType('image', 'jpeg'),
+      ));
+
+      print('📸 [API] Sending multipart request...');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📸 [API] Photo upload response status: ${response.statusCode}');
+      print('📸 [API] Photo upload response headers: ${response.headers}');
+      print('📸 [API] Photo upload response body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonData = jsonDecode(response.body);
+        print('📸 [API] Parsed response: $jsonData');
+        print('📸 [API] Response type: ${jsonData.runtimeType}');
+        
+        // Response can be a single object or array
+        if (jsonData is List && jsonData.isNotEmpty) {
+          final photoId = jsonData[0]['id'] as int?;
+          print('✅ [API] Photo uploaded successfully (from array), ID: $photoId');
+          return photoId;
+        } else if (jsonData is Map && jsonData.containsKey('id')) {
+          final photoId = jsonData['id'] as int?;
+          print('✅ [API] Photo uploaded successfully (from object), ID: $photoId');
+          return photoId;
+        }
+        print('❌ [API] Unexpected photo upload response format: $jsonData');
+        return null;
+      } else {
+        print('❌ [API] Error uploading photo: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e, stackTrace) {
+      print('❌ [API] Exception uploading photo: $e');
+      print('❌ [API] Stack trace: $stackTrace');
+      return null;
+    }
+  }
+
+  // Create break order
+  Future<Map<String, dynamic>?> createBreakOrder({
+    required int branchId,
+    required int breakEmployeeId,
+    required int breakPhotoId,
+    required int employeeId,
+    required List<Map<String, dynamic>> orderItems,
+    required int totalValue,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/order');
+
+      final body = {
+        'delivery_employee_id': null,
+        'isSynchronous': 'sync',
+        'is_fast': 0,
+        'queue_type': 'sync',
+        'day_session_id': 26705,
+        'employee_id': employeeId,
+        'pos_id': 42,
+        'pos_session_id': 127262,
+        'order_type_id': 5,
+        'customer_id': null,
+        'start_time': 'now',
+        'pager_number': 0,
+        'orderItems': orderItems,
+        'transactions': [
+          {
+            'account_id': 1,
+            'payment_type_id': 2,
+            'amount': totalValue,
+            'type': 'deposit',
+          }
+        ],
+        'value': totalValue,
+        'break_employee_id': breakEmployeeId,
+        'break_photo_id': breakPhotoId,
+        'note': null,
+        'customer_quantity': 1,
+        'branch_id': branchId,
+        'paid': totalValue,
+      };
+
+      print('🛒 [API] Creating break order: $uri');
+      print('🛒 [API] Order payload: ${jsonEncode(body)}');
+
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print('🛒 [API] Order response: ${response.statusCode}');
+      print('🛒 [API] Order body: ${response.body}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonData = jsonDecode(response.body);
+        print('✅ [API] Break order created successfully');
+        return jsonData;
+      } else {
+        print('❌ [API] Error creating order: ${response.statusCode} - ${response.body}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ [API] Exception creating order: $e');
+      return null;
     }
   }
 

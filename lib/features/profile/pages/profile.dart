@@ -54,7 +54,6 @@ class _ProfileState extends State<Profile> {
   @override
   void initState() {
     super.initState();
-    print('🎬 [Profile] initState called');
     _loadProfileData();
     _loadCurrentMonthWorkEntries();
     _loadPrePaidAmount();
@@ -64,7 +63,6 @@ class _ProfileState extends State<Profile> {
 
   @override
   void dispose() {
-    print('🗑️  [Profile] dispose called');
     super.dispose();
   }
 
@@ -88,21 +86,10 @@ class _ProfileState extends State<Profile> {
         throw Exception('No employee ID found. Please login again.');
       }
 
-      // Debug logging
-      print('🔍 [Profile] Identity employee: ${identity.employee}');
-      print('🔍 [Profile] Individual: ${identity.employee?.individual}');
-      print('🔍 [Profile] Photo object: ${identity.employee?.individual?.photo}');
-      if (identity.employee?.individual?.photo != null) {
-        print('🔍 [Profile] Photo path: ${identity.employee!.individual!.photo!.path}');
-        print('🔍 [Profile] Photo name: ${identity.employee!.individual!.photo!.name}');
-        print('🔍 [Profile] Photo format: ${identity.employee!.individual!.photo!.format}');
-      }
-
       // Try to load from cache first (if not forcing refresh)
       if (!forceRefresh) {
         final cachedData = await _cacheService.getCachedProfileData(employeeId);
         if (cachedData != null) {
-          print('✅ Loaded profile data from cache');
           if (mounted) {
             setState(() {
               _profileData = cachedData;
@@ -116,8 +103,6 @@ class _ProfileState extends State<Profile> {
         }
       }
 
-      // Fetch additional employee data with identity, jobPosition, and photo
-      print('🔍 Fetching employee data with identity, jobPosition, and photo');
       final employeeData = await _apiService.getEmployeeWithExpand(
         employeeId,
         ['identity', 'jobPosition', 'individual.photo'],
@@ -133,8 +118,6 @@ class _ProfileState extends State<Profile> {
         print('🖼️ Employee photo data from API: ${employeeData['individual']?['photo']}');
       }
 
-      // Convert Identity model to Map for UI consumption
-      // Use photo from employeeData if available (it has the expanded photo), otherwise fall back to identity
       final Map<String, dynamic> identityData = {
         'id': identity.id,
         'email': identity.email,

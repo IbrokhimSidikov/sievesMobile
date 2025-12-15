@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:http/http.dart' as http;
 import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/model/inventory_model.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/cache/menu_cache_service.dart';
+import '../../../core/services/face_verification/face_verification_service.dart';
+import '../widgets/face_capture_dialog.dart';
 
 class BreakPage extends StatefulWidget {
   const BreakPage({super.key});
@@ -25,6 +29,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
   Map<int, int> _cart = {};
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
+  bool _isSubmittingOrder = false;
 
   @override
   void initState() {
@@ -193,6 +198,296 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
 
   int _getCartItemCount() {
     return _cart.values.fold(0, (sum, quantity) => sum + quantity);
+  }
+
+  Future<void> _handleOrderSubmission() async {
+    final startTime = DateTime.now();
+    print('');
+    print('╔══════════════════════════════════════════════════════════════╗');
+    print('║           🛒 BREAK ORDER SUBMISSION STARTED                  ║');
+    print('╚══════════════════════════════════════════════════════════════╝');
+    print('⏰ Start time: ${startTime.toIso8601String()}');
+    print('📦 Cart items: ${_cart.length}');
+    print('💰 Cart total: ${_getCartTotal()} UZS');
+    print('');
+    
+    try {
+      setState(() {
+        _isSubmittingOrder = true;
+      });
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 1: GET PROFILE PHOTO URL
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 1: Getting profile photo URL                          │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      
+      final step1Start = DateTime.now();
+      final profilePhotoUrl = await _authManager.getProfilePhotoUrl();
+      final step1Duration = DateTime.now().difference(step1Start);
+      
+      if (profilePhotoUrl == null) {
+        print('❌ Profile photo URL is null');
+        throw Exception('Profile photo not found. Please update your profile picture in the app settings.');
+      }
+      print('✅ Profile photo URL obtained in ${step1Duration.inMilliseconds}ms');
+      print('   URL: $profilePhotoUrl');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 2: DOWNLOAD PROFILE PHOTO
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 2: Downloading profile photo                          │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      
+      final step2Start = DateTime.now();
+      final profileImageResponse = await http.get(Uri.parse(profilePhotoUrl));
+      final step2Duration = DateTime.now().difference(step2Start);
+      
+      print('   HTTP Status: ${profileImageResponse.statusCode}');
+      print('   Response size: ${profileImageResponse.bodyBytes.length} bytes');
+      
+      if (profileImageResponse.statusCode != 200) {
+        print('❌ Failed to download profile photo');
+        throw Exception('Failed to download profile photo');
+      }
+
+      final tempDir = Directory.systemTemp;
+      final profileImageFile = File('${tempDir.path}/profile_image_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      await profileImageFile.writeAsBytes(profileImageResponse.bodyBytes);
+      print('✅ Profile photo downloaded in ${step2Duration.inMilliseconds}ms');
+      print('   Saved to: ${profileImageFile.path}');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 3: CAPTURE FACE FROM CAMERA
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 3: Opening face capture dialog                        │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      
+      final step3Start = DateTime.now();
+      final capturedImage = await showDialog<File>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const FaceCaptureDialog(),
+      );
+      final step3Duration = DateTime.now().difference(step3Start);
+
+      if (capturedImage == null) {
+        print('❌ User cancelled face capture after ${step3Duration.inMilliseconds}ms');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Face verification cancelled'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+      print('✅ Face captured in ${step3Duration.inMilliseconds}ms');
+      print('   Path: ${capturedImage.path}');
+      print('   Size: ${await capturedImage.length()} bytes');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 4: VERIFY FACE
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 4: Verifying face                                     │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      
+      final step4Start = DateTime.now();
+      final verificationService = FaceVerificationService();
+      final result = await verificationService.verifyFace(
+        profileImage: profileImageFile,
+        capturedImage: capturedImage,
+      );
+      final step4Duration = DateTime.now().difference(step4Start);
+
+      // Clean up profile image file (keep captured image for upload)
+      try {
+        await profileImageFile.delete();
+        print('   🗑️ Profile image file cleaned up');
+      } catch (e) {
+        print('   ⚠️ Failed to clean up profile image file: $e');
+      }
+
+      print('   Verification result: ${result.success ? "SUCCESS" : "FAILED"}');
+      print('   Message: ${result.message}');
+      print('   Duration: ${step4Duration.inMilliseconds}ms');
+
+      if (!result.success) {
+        print('❌ Face verification failed');
+        try {
+          await capturedImage.delete();
+        } catch (e) {
+          print('   ⚠️ Failed to clean up captured image: $e');
+        }
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(result.message),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+        return;
+      }
+      print('✅ Face verification passed in ${step4Duration.inMilliseconds}ms');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 5: UPLOAD BREAK PHOTO
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 5: Uploading break photo                              │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      print('   Endpoint: POST /v1/photo?belongs_to=employee_break');
+      
+      final step5Start = DateTime.now();
+      final photoId = await _authManager.apiService.uploadBreakPhoto(capturedImage);
+      final step5Duration = DateTime.now().difference(step5Start);
+      
+      // Clean up captured image after upload
+      try {
+        await capturedImage.delete();
+        print('   🗑️ Captured image file cleaned up');
+      } catch (e) {
+        print('   ⚠️ Failed to clean up captured image: $e');
+      }
+      
+      if (photoId == null) {
+        print('❌ Photo upload failed');
+        throw Exception('Failed to upload break photo');
+      }
+      print('✅ Photo uploaded in ${step5Duration.inMilliseconds}ms');
+      print('   Photo ID: $photoId');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 6: PREPARE ORDER DATA
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 6: Preparing order data                               │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      
+      final orderItems = <Map<String, dynamic>>[];
+      print('   Order items:');
+      for (var entry in _cart.entries) {
+        final itemId = entry.key;
+        final quantity = entry.value;
+        final item = _menuItems.firstWhere((i) => i.id == itemId);
+        final price = item.inventoryPriceList?.price ?? 0;
+        
+        print('   - ${item.name}: qty=$quantity, actual_price=$price UZS');
+        
+        orderItems.add({
+          'product_id': item.id.toString(),
+          'quantity': quantity,
+          'actual_price': price.toString(),
+        });
+      }
+
+      final employeeId = _authManager.currentEmployeeId;
+      final branchId = _authManager.currentIdentity?.employee?.branchId;
+      final totalValue = _getCartTotal();
+      
+      print('');
+      print('   Employee ID: $employeeId');
+      print('   Branch ID: $branchId');
+      print('   Break Photo ID: $photoId');
+      print('   Total Value: $totalValue UZS');
+      
+      if (employeeId == null || branchId == null) {
+        print('❌ Missing employee or branch information');
+        throw Exception('Employee or branch information not available');
+      }
+      print('✅ Order data prepared');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // STEP 7: CREATE BREAK ORDER
+      // ═══════════════════════════════════════════════════════════════
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 7: Creating break order                               │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      print('   Endpoint: POST /v1/order');
+      
+      final step7Start = DateTime.now();
+      final orderResult = await _authManager.apiService.createBreakOrder(
+        branchId: branchId,
+        breakEmployeeId: employeeId,
+        breakPhotoId: photoId,
+        employeeId: employeeId,
+        orderItems: orderItems,
+        totalValue: totalValue,
+      );
+      final step7Duration = DateTime.now().difference(step7Start);
+
+      if (orderResult == null) {
+        print('❌ Order creation failed');
+        throw Exception('Failed to create break order');
+      }
+      
+      print('✅ Order created in ${step7Duration.inMilliseconds}ms');
+      print('   Order response: $orderResult');
+      print('');
+
+      // ═══════════════════════════════════════════════════════════════
+      // SUCCESS
+      // ═══════════════════════════════════════════════════════════════
+      final totalDuration = DateTime.now().difference(startTime);
+      print('╔══════════════════════════════════════════════════════════════╗');
+      print('║           ✅ ORDER SUBMISSION COMPLETED                      ║');
+      print('╚══════════════════════════════════════════════════════════════╝');
+      print('⏱️ Total duration: ${totalDuration.inMilliseconds}ms');
+      print('');
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Order placed successfully!'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+
+      // Clear cart after successful order
+      setState(() {
+        _cart.clear();
+      });
+
+    } catch (e, stackTrace) {
+      final totalDuration = DateTime.now().difference(startTime);
+      print('');
+      print('╔══════════════════════════════════════════════════════════════╗');
+      print('║           ❌ ORDER SUBMISSION FAILED                         ║');
+      print('╚══════════════════════════════════════════════════════════════╝');
+      print('⏱️ Failed after: ${totalDuration.inMilliseconds}ms');
+      print('❌ Error: $e');
+      print('📋 Stack trace:');
+      print(stackTrace);
+      print('');
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSubmittingOrder = false;
+        });
+      }
+    }
   }
 
   @override
@@ -750,15 +1045,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
           SizedBox(width: 16.w),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                // TODO: Implement order submission
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Order submission coming soon!'),
-                    backgroundColor: AppColors.cxSuccess,
-                  ),
-                );
-              },
+              onTap: _isSubmittingOrder ? null : _handleOrderSubmission,
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 16.h),
                 decoration: BoxDecoration(
@@ -778,25 +1065,38 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                     ),
                   ],
                 ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(
-                      Icons.shopping_cart_checkout_rounded,
-                      color: AppColors.cxWhite,
-                      size: 24.sp,
-                    ),
-                    SizedBox(width: 8.w),
-                    Text(
-                      AppLocalizations.of(context).placeOrder,
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.cxWhite,
+                child: _isSubmittingOrder
+                    ? Center(
+                        child: SizedBox(
+                          height: 24.h,
+                          width: 24.w,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.cxWhite,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.shopping_cart_checkout_rounded,
+                            color: AppColors.cxWhite,
+                            size: 24.sp,
+                          ),
+                          SizedBox(width: 8.w),
+                          Text(
+                            AppLocalizations.of(context).placeOrder,
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.cxWhite,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),

@@ -74,5 +74,11 @@
 	</dict>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
+	<key>NSCameraUsageDescription</key>
+	<string>This app needs camera access to verify your identity for order placement</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>This app needs photo library access to select images</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app needs microphone access for camera functionality</string>
 </dict>
 </plist>
