@@ -88,6 +88,16 @@ class _ProfileState extends State<Profile> {
         throw Exception('No employee ID found. Please login again.');
       }
 
+      // Debug logging
+      print('🔍 [Profile] Identity employee: ${identity.employee}');
+      print('🔍 [Profile] Individual: ${identity.employee?.individual}');
+      print('🔍 [Profile] Photo object: ${identity.employee?.individual?.photo}');
+      if (identity.employee?.individual?.photo != null) {
+        print('🔍 [Profile] Photo path: ${identity.employee!.individual!.photo!.path}');
+        print('🔍 [Profile] Photo name: ${identity.employee!.individual!.photo!.name}');
+        print('🔍 [Profile] Photo format: ${identity.employee!.individual!.photo!.format}');
+      }
+
       // Try to load from cache first (if not forcing refresh)
       if (!forceRefresh) {
         final cachedData = await _cacheService.getCachedProfileData(employeeId);
@@ -106,11 +116,11 @@ class _ProfileState extends State<Profile> {
         }
       }
 
-      // Fetch additional employee data with identity and jobPosition
-      print('🔍 Fetching employee data with identity and jobPosition');
+      // Fetch additional employee data with identity, jobPosition, and photo
+      print('🔍 Fetching employee data with identity, jobPosition, and photo');
       final employeeData = await _apiService.getEmployeeWithExpand(
         employeeId,
-        ['identity', 'jobPosition'],
+        ['identity', 'jobPosition', 'individual.photo'],
       );
 
       String? role;
@@ -120,10 +130,12 @@ class _ProfileState extends State<Profile> {
         role = employeeData['identity']?['role'] as String?;
         jobPositionName = employeeData['jobPosition']?['name'] as String?;
         print('✅ Role: $role, Job Position: $jobPositionName');
+        print('🖼️ Employee photo data from API: ${employeeData['individual']?['photo']}');
       }
 
       // Convert Identity model to Map for UI consumption
-      final identityData = {
+      // Use photo from employeeData if available (it has the expanded photo), otherwise fall back to identity
+      final Map<String, dynamic> identityData = {
         'id': identity.id,
         'email': identity.email,
         'username': identity.username,
@@ -138,7 +150,14 @@ class _ProfileState extends State<Profile> {
             'lastName': identity.employee!.individual!.lastName,
             'email': identity.employee!.individual!.email,
             'phone': identity.employee!.individual!.phone,
-            'photo': identity.employee!.individual!.photo,
+            // Use photo from employeeData API response if available
+            'photo': employeeData?['individual']?['photo'] ?? (identity.employee!.individual!.photo != null ? {
+              'id': identity.employee!.individual!.photo!.id,
+              'path': identity.employee!.individual!.photo!.path,
+              'name': identity.employee!.individual!.photo!.name,
+              'format': identity.employee!.individual!.photo!.format,
+              'thumbnail': identity.employee!.individual!.photo!.thumbnail,
+            } : null),
           } : null,
           'branch': identity.employee!.branch != null ? {
             'name': identity.employee!.branch!.name,
@@ -159,6 +178,9 @@ class _ProfileState extends State<Profile> {
         'jobPositionName': jobPositionName,
       };
 
+      // Debug: Log the converted identity data
+      print('📦 [Profile] Converted identity data photo: ${identityData['employee']?['individual']?['photo']}');
+      
       // Cache the profile data
       await _cacheService.cacheProfileData(employeeId, identityData);
       
@@ -1177,18 +1199,18 @@ class _ProfileState extends State<Profile> {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final shimmerBase = isDark 
-        ? Colors.white.withOpacity(0.05) 
-        : AppColors.cxF5F7F9;
+        ? Colors.white.withOpacity(0.03) 
+        : Colors.grey.shade200;
     final shimmerHighlight = isDark 
-        ? Colors.white.withOpacity(0.1) 
-        : AppColors.cxPureWhite;
+        ? Colors.white.withOpacity(0.08) 
+        : Colors.grey.shade50;
     
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header shimmer
+          // Header shimmer - more refined
           Row(
             children: [
               Shimmer.fromColors(
@@ -1209,8 +1231,7 @@ class _ProfileState extends State<Profile> {
                   baseColor: shimmerBase,
                   highlightColor: shimmerHighlight,
                   child: Container(
-                    width: 120.w,
-                    height: 32.h,
+                    height: 28.h,
                     decoration: BoxDecoration(
                       color: shimmerBase,
                       borderRadius: BorderRadius.circular(8.r),
@@ -1218,7 +1239,7 @@ class _ProfileState extends State<Profile> {
                   ),
                 ),
               ),
-              SizedBox(width: 8.w),
+              SizedBox(width: 12.w),
               Shimmer.fromColors(
                 baseColor: shimmerBase,
                 highlightColor: shimmerHighlight,
@@ -1248,44 +1269,92 @@ class _ProfileState extends State<Profile> {
           ),
           SizedBox(height: 24.h),
           
-          // Profile card shimmer
-          Shimmer.fromColors(
-            baseColor: shimmerBase,
-            highlightColor: shimmerHighlight,
-            child: Container(
-              width: double.infinity,
-              height: 280.h,
-              decoration: BoxDecoration(
-                color: shimmerBase,
-                borderRadius: BorderRadius.circular(24.r),
+          // Profile card shimmer with gradient effect
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.cxRoyalBlue.withOpacity(0.3),
+                  AppColors.cxEmeraldGreen.withOpacity(0.3),
+                ],
               ),
+              borderRadius: BorderRadius.circular(24.r),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cxRoyalBlue.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(24.w),
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Container(
-                    width: 100.w,
-                    height: 100.h,
-                    decoration: BoxDecoration(
-                      color: shimmerHighlight,
-                      shape: BoxShape.circle,
+                  // Profile photo shimmer
+                  Shimmer.fromColors(
+                    baseColor: Colors.white.withOpacity(0.3),
+                    highlightColor: Colors.white.withOpacity(0.5),
+                    child: Container(
+                      width: 100.w,
+                      height: 100.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.4),
+                          width: 3,
+                        ),
+                      ),
                     ),
                   ),
                   SizedBox(height: 16.h),
-                  Container(
-                    width: 150.w,
-                    height: 24.h,
-                    decoration: BoxDecoration(
-                      color: shimmerHighlight,
-                      borderRadius: BorderRadius.circular(8.r),
+                  // Name shimmer
+                  Shimmer.fromColors(
+                    baseColor: Colors.white.withOpacity(0.3),
+                    highlightColor: Colors.white.withOpacity(0.5),
+                    child: Container(
+                      width: 180.w,
+                      height: 24.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
                     ),
                   ),
                   SizedBox(height: 8.h),
-                  Container(
-                    width: 200.w,
-                    height: 16.h,
-                    decoration: BoxDecoration(
-                      color: shimmerHighlight,
-                      borderRadius: BorderRadius.circular(6.r),
+                  // Email shimmer
+                  Shimmer.fromColors(
+                    baseColor: Colors.white.withOpacity(0.3),
+                    highlightColor: Colors.white.withOpacity(0.5),
+                    child: Container(
+                      width: 220.w,
+                      height: 16.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  // Role badge shimmer
+                  Shimmer.fromColors(
+                    baseColor: Colors.white.withOpacity(0.2),
+                    highlightColor: Colors.white.withOpacity(0.4),
+                    child: Container(
+                      width: 140.w,
+                      height: 40.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -1294,80 +1363,261 @@ class _ProfileState extends State<Profile> {
           ),
           SizedBox(height: 20.h),
           
-          // Work hours card shimmer
-          Shimmer.fromColors(
-            baseColor: shimmerBase,
-            highlightColor: shimmerHighlight,
-            child: Container(
-              width: double.infinity,
-              height: 240.h,
-              decoration: BoxDecoration(
-                color: shimmerBase,
-                borderRadius: BorderRadius.circular(24.r),
+          // Work hours card shimmer with gradient
+          Container(
+            width: double.infinity,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.cxEmeraldGreen.withOpacity(0.3),
+                  AppColors.cxEmeraldGreen.withOpacity(0.25),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(24.r),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.cxEmeraldGreen.withOpacity(0.15),
+                  blurRadius: 20,
+                  offset: Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(24.w),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Shimmer.fromColors(
+                        baseColor: Colors.white.withOpacity(0.3),
+                        highlightColor: Colors.white.withOpacity(0.5),
+                        child: Container(
+                          width: 52.w,
+                          height: 52.h,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.3),
+                            borderRadius: BorderRadius.circular(16.r),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 16.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Shimmer.fromColors(
+                              baseColor: Colors.white.withOpacity(0.3),
+                              highlightColor: Colors.white.withOpacity(0.5),
+                              child: Container(
+                                width: 120.w,
+                                height: 20.h,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(6.r),
+                                ),
+                              ),
+                            ),
+                            SizedBox(height: 6.h),
+                            Shimmer.fromColors(
+                              baseColor: Colors.white.withOpacity(0.3),
+                              highlightColor: Colors.white.withOpacity(0.5),
+                              child: Container(
+                                width: 90.w,
+                                height: 14.h,
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.3),
+                                  borderRadius: BorderRadius.circular(6.r),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 24.h),
+                  Shimmer.fromColors(
+                    baseColor: Colors.white.withOpacity(0.3),
+                    highlightColor: Colors.white.withOpacity(0.5),
+                    child: Container(
+                      width: 160.w,
+                      height: 48.h,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Shimmer.fromColors(
+                          baseColor: Colors.white.withOpacity(0.2),
+                          highlightColor: Colors.white.withOpacity(0.4),
+                          child: Container(
+                            height: 100.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16.r),
+                            ),
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Shimmer.fromColors(
+                          baseColor: Colors.white.withOpacity(0.2),
+                          highlightColor: Colors.white.withOpacity(0.4),
+                          child: Container(
+                            height: 100.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(16.r),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
             ),
           ),
           SizedBox(height: 20.h),
           
-          // Bonus card shimmer
-          Shimmer.fromColors(
-            baseColor: shimmerBase,
-            highlightColor: shimmerHighlight,
-            child: Container(
-              width: double.infinity,
-              height: 160.h,
-              decoration: BoxDecoration(
-                color: shimmerBase,
-                borderRadius: BorderRadius.circular(24.r),
+          // Info cards shimmer - 2 columns
+          Row(
+            children: [
+              Expanded(
+                child: _buildShimmerCard(
+                  shimmerBase: shimmerBase,
+                  shimmerHighlight: shimmerHighlight,
+                  height: 160.h,
+                  gradient: [
+                    AppColors.cxWarning.withOpacity(0.3),
+                    AppColors.cxWarning.withOpacity(0.25),
+                  ],
+                ),
               ),
-            ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: _buildShimmerCard(
+                  shimmerBase: shimmerBase,
+                  shimmerHighlight: shimmerHighlight,
+                  height: 160.h,
+                  gradient: [
+                    AppColors.cxRoyalBlue.withOpacity(0.3),
+                    AppColors.cxRoyalBlue.withOpacity(0.25),
+                  ],
+                ),
+              ),
+            ],
           ),
-          SizedBox(height: 20.h),
+          SizedBox(height: 12.h),
           
-          // Prepaid card shimmer
-          Shimmer.fromColors(
-            baseColor: shimmerBase,
-            highlightColor: shimmerHighlight,
-            child: Container(
-              width: double.infinity,
-              height: 160.h,
-              decoration: BoxDecoration(
-                color: shimmerBase,
-                borderRadius: BorderRadius.circular(24.r),
+          Row(
+            children: [
+              Expanded(
+                child: _buildShimmerCard(
+                  shimmerBase: shimmerBase,
+                  shimmerHighlight: shimmerHighlight,
+                  height: 160.h,
+                  gradient: [
+                    AppColors.cxEmeraldGreen.withOpacity(0.3),
+                    AppColors.cxEmeraldGreen.withOpacity(0.25),
+                  ],
+                ),
               ),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          
-          // Vacation card shimmer
-          Shimmer.fromColors(
-            baseColor: shimmerBase,
-            highlightColor: shimmerHighlight,
-            child: Container(
-              width: double.infinity,
-              height: 160.h,
-              decoration: BoxDecoration(
-                color: shimmerBase,
-                borderRadius: BorderRadius.circular(24.r),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: _buildShimmerCard(
+                  shimmerBase: shimmerBase,
+                  shimmerHighlight: shimmerHighlight,
+                  height: 160.h,
+                  gradient: [
+                    Colors.purple.withOpacity(0.3),
+                    Colors.purple.withOpacity(0.25),
+                  ],
+                ),
               ),
-            ),
-          ),
-          SizedBox(height: 20.h),
-          
-          // Job info card shimmer
-          Shimmer.fromColors(
-            baseColor: shimmerBase,
-            highlightColor: shimmerHighlight,
-            child: Container(
-              width: double.infinity,
-              height: 200.h,
-              decoration: BoxDecoration(
-                color: shimmerBase,
-                borderRadius: BorderRadius.circular(24.r),
-              ),
-            ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildShimmerCard({
+    required Color shimmerBase,
+    required Color shimmerHighlight,
+    required double height,
+    required List<Color> gradient,
+  }) {
+    return Container(
+      height: height,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: gradient,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: gradient[0].withOpacity(0.3),
+            blurRadius: 15,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Shimmer.fromColors(
+              baseColor: Colors.white.withOpacity(0.3),
+              highlightColor: Colors.white.withOpacity(0.5),
+              child: Container(
+                width: 40.w,
+                height: 40.h,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+            ),
+            Spacer(),
+            Shimmer.fromColors(
+              baseColor: Colors.white.withOpacity(0.3),
+              highlightColor: Colors.white.withOpacity(0.5),
+              child: Container(
+                width: 80.w,
+                height: 28.h,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            Shimmer.fromColors(
+              baseColor: Colors.white.withOpacity(0.3),
+              highlightColor: Colors.white.withOpacity(0.5),
+              child: Container(
+                width: 60.w,
+                height: 14.h,
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.3),
+                  borderRadius: BorderRadius.circular(6.r),
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1555,6 +1805,28 @@ class _ProfileState extends State<Profile> {
     final employee = _profileData?['employee'];
     final employeeIndividual = employee?['individual'];
     
+    // Debug logging
+    print('🖼️ [Profile] Individual data: $individual');
+    print('🖼️ [Profile] Photo data: ${individual?['photo']}');
+    
+    // Get the photo URL from the individual's photo object
+    String? photoUrl;
+    final photoData = individual?['photo'];
+    if (photoData != null && photoData is Map) {
+      final path = photoData['path'] as String?;
+      final name = photoData['name'] as String?;
+      final format = photoData['format'] as String?;
+      
+      print('🖼️ [Profile] Photo path: $path, name: $name, format: $format');
+      
+      if (path != null && name != null && format != null) {
+        photoUrl = 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
+        print('🖼️ [Profile] Constructed photo URL: $photoUrl');
+      }
+    } else {
+      print('🖼️ [Profile] Photo data is null or not a Map');
+    }
+    
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -1598,9 +1870,9 @@ class _ProfileState extends State<Profile> {
                 ],
               ),
               child: ClipOval(
-                child: individual?['photo'] != null
+                child: photoUrl != null
                     ? Image.network(
-                        individual['photo'],
+                        photoUrl,
                         fit: BoxFit.cover,
                         errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
                       )

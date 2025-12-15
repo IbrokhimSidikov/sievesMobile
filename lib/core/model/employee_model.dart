@@ -77,7 +77,7 @@ class Individual {
   final String? lastName;
   final String? email;
   final String? phone;
-  final String? photo;
+  final IndividualPhoto? photo;
 
   Individual({
     this.id,
@@ -95,7 +95,9 @@ class Individual {
       lastName: json['last_name'],
       email: json['email'],
       phone: json['phone'],
-      photo: json['photo'],
+      photo: json['photo'] != null && json['photo'] is Map
+          ? IndividualPhoto.fromJson(json['photo'])
+          : null,
     );
   }
 
@@ -106,8 +108,53 @@ class Individual {
       'last_name': lastName,
       'email': email,
       'phone': phone,
-      'photo': photo,
+      'photo': photo?.toJson(),
     };
+  }
+
+  String? get photoUrl {
+    if (photo == null) return null;
+    return 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/${photo!.path}/${photo!.name}.${photo!.format}';
+  }
+}
+
+class IndividualPhoto {
+  final int id;
+  final String path;
+  final String name;
+  final String format;
+  final String? thumbnail;
+
+  IndividualPhoto({
+    required this.id,
+    required this.path,
+    required this.name,
+    required this.format,
+    this.thumbnail,
+  });
+
+  factory IndividualPhoto.fromJson(Map<String, dynamic> json) {
+    return IndividualPhoto(
+      id: json['id'] ?? 0,
+      path: json['path'] ?? '',
+      name: json['name'] ?? '',
+      format: json['format'] ?? '',
+      thumbnail: json['thumbnail'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'path': path,
+      'name': name,
+      'format': format,
+      'thumbnail': thumbnail,
+    };
+  }
+
+  String get fullUrl {
+    return 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
   }
 }
 

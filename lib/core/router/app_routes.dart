@@ -3,6 +3,7 @@ import 'package:sieves_mob/features/home/pages/home.dart';
 
 import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
+import '../../features/break/pages/break_page.dart';
 import '../../features/checklist/pages/checklist.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
@@ -31,6 +32,7 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String attendance = '/attendance';
   static const String breakRecords = '/breakRecords';
+  static const String breakOrder = '/breakOrder';
   static const String history = '/history';
   static const String productivityTimer = '/productivityTimer';
   static const String checklist = '/checklist';
@@ -79,6 +81,11 @@ class AppRoutes {
             path: '/breakRecords',
             name: breakRecords,
             builder: (context, state) => const BreakRecords()
+        ),
+        GoRoute(
+            path: '/breakOrder',
+            name: breakOrder,
+            builder: (context, state) => const BreakPage()
         ),
         GoRoute(
           path: '/history',

@@ -27,8 +27,11 @@ class AppLocalizations {
       'profileSubtitle':'Profile information',
       'attendance':'Attendance',
       'attendanceSubtitle':'Work hours & tracking',
+      'breakOrder':'Break Order',
+      'breakOrderSubtitle':'Order your meal',
       'breakRecords':'Break Records',
       'breakRecordsSubtitle':'Meal history',
+      'placeOrder':'Place Order',
       'history':'History',
       'historySubtitle':'Activity log',
       'lWallet':'L-WALLET',
@@ -156,8 +159,11 @@ class AppLocalizations {
       'profileSubtitle':'Profil maʼlumotlari',
       'attendance':'Davomat',
       'attendanceSubtitle':'Ish soatlari va keldi-ketdi',
+      'breakOrder':'Break Buyurtma',
+      'breakOrderSubtitle':'Ovqat buyurtma qiling',
       'breakRecords':'Break ma\'lumotlari',
       'breakRecordsSubtitle':'Break balans va qaydlar',
+      'placeOrder':'Buyurtma berish',
       'history':'Tarix',
       'historySubtitle':'Faoliyat jurnali',
       'lWallet':'L-HAMYON',
@@ -284,8 +290,11 @@ class AppLocalizations {
       'profileSubtitle':'Информация профиля',
       'attendance':'Посещаемость',
       'attendanceSubtitle':'Рабочие часы и отслеживание',
+      'breakOrder':'Заказ Break',
+      'breakOrderSubtitle':'Закажите еду',
       'breakRecords':'Записи перерывов',
       'breakRecordsSubtitle':'История приёмов пищи',
+      'placeOrder':'Оформить заказ',
       'history':'История',
       'historySubtitle':'Журнал активности',
       'lWallet':'L-КОШЕЛЁК',
@@ -419,8 +428,11 @@ class AppLocalizations {
   String get profileSubtitle => translate('profileSubtitle');
   String get attendance => translate('attendance');
   String get attendanceSubtitle => translate('attendanceSubtitle');
+  String get breakOrder => translate('breakOrder');
+  String get breakOrderSubtitle => translate('breakOrderSubtitle');
   String get breakRecords => translate('breakRecords');
   String get breakRecordsSubtitle => translate('breakRecordsSubtitle');
+  String get placeOrder => translate('placeOrder');
   String get history => translate('history');
   String get historySubtitle => translate('historySubtitle');
   String get lWallet => translate('lWallet');

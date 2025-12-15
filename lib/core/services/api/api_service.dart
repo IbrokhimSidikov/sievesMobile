@@ -5,6 +5,7 @@ import '../../model/identity_model.dart';
 import '../../model/work_entry_model.dart';
 import '../../model/break_order_model.dart';
 import '../../model/history_model.dart';
+import '../../model/inventory_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
@@ -50,20 +51,29 @@ class ApiService {
       final headers = await _getHeaders();
       final queryParams = {
         'auth_id': authId,
-        'expand': ['employee.branch', 'employee.individual', 'employee.reward'].join(','),
+        'expand': ['employee.branch', 'employee.individual', 'employee.individual.photo', 'employee.reward'].join(','),
       };
 
       final uri = Uri.parse('$baseUrl/identity/0').replace(
         queryParameters: queryParams,
       );
 
-      // test uri
-      // final uri = Uri.parse('https://app.sievesapp.com/v1/identity/0?auth_id=auth0%7C65bcde009830a9e7bbce75d4&expand=employee.branch,employee.individual,employee.reward');
+      print('🌐 [API] Calling identity endpoint: $uri');
+      print('🌐 [API] Expand parameter: ${queryParams['expand']}');
 
       final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
-        return Identity.fromJson(jsonDecode(response.body));
+        final responseBody = jsonDecode(response.body);
+        print('🔍 [API] Identity response received');
+        print('🔍 [API] Employee data: ${responseBody['employee']}');
+        print('🔍 [API] Individual data: ${responseBody['employee']?['individual']}');
+        print('🔍 [API] Photo data: ${responseBody['employee']?['individual']?['photo']}');
+        
+        final identity = Identity.fromJson(responseBody);
+        print('🔍 [API] Parsed identity photo: ${identity.employee?.individual?.photo}');
+        
+        return identity;
       } else {
         print('Error getting identity: ${response.body}');
         return null;
@@ -103,7 +113,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final queryParams = {
-        'expand': ['branch', 'individual', 'jobPosition'].join(','),
+        'expand': ['branch', 'individual.photo', 'jobPosition'].join(','),
       };
 
       final uri = Uri.parse('$baseUrl/employee/$employeeId').replace(
@@ -723,6 +733,119 @@ class ApiService {
     } catch (e) {
       print('❌ Exception submitting efficiency tracker: $e');
       return false;
+    }
+  }
+
+  // Get inventory menu items (recommended items for break orders)
+  Future<List<InventoryItem>> getInventoryMenu() async {
+    final startTime = DateTime.now();
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'is_active': '1',
+        'is_pos': '1',
+        'expand': 'inventoryPriceList,photo',
+        'limit': '100',
+      };
+
+      final uri = Uri.parse('$baseUrl/inventory').replace(
+        queryParameters: queryParams,
+      );
+
+      print('🍔 [API] Fetching inventory menu: $uri');
+      final requestStart = DateTime.now();
+      final response = await _httpClient.get(uri, headers: headers);
+      final requestDuration = DateTime.now().difference(requestStart);
+      final responseSizeKB = (response.body.length / 1024).toStringAsFixed(2);
+      print('⏱️ [API] Inventory HTTP request took: ${requestDuration.inMilliseconds}ms (${responseSizeKB}KB)');
+
+      if (response.statusCode == 200) {
+        final parseStart = DateTime.now();
+        final jsonData = jsonDecode(response.body);
+        final parseDuration = DateTime.now().difference(parseStart);
+        print('⏱️ [API] JSON decode took: ${parseDuration.inMilliseconds}ms');
+        print('📊 JSON Type: ${jsonData.runtimeType}');
+        
+        List<dynamic> inventoryList;
+        if (jsonData is List) {
+          inventoryList = jsonData;
+        } else if (jsonData is Map && jsonData.containsKey('models')) {
+          inventoryList = jsonData['models'] as List;
+        } else if (jsonData is Map && jsonData.containsKey('data')) {
+          inventoryList = jsonData['data'] as List;
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return [];
+        }
+        
+        final mappingStart = DateTime.now();
+        final items = inventoryList.map((json) => InventoryItem.fromJson(json)).toList();
+        final mappingDuration = DateTime.now().difference(mappingStart);
+        
+        final totalDuration = DateTime.now().difference(startTime);
+        print('⏱️ [API] Object mapping took: ${mappingDuration.inMilliseconds}ms');
+        print('✅ [API] Fetched ${items.length} inventory items in ${totalDuration.inMilliseconds}ms');
+        return items;
+      } else {
+        print('❌ Error getting inventory: ${response.statusCode} - ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception getting inventory: $e');
+      return [];
+    }
+  }
+
+  // Get POS categories
+  Future<List<PosActiveCategory>> getPosCategories() async {
+    final startTime = DateTime.now();
+    try {
+      final headers = await _getHeaders();
+      final queryParams = {
+        'expand': 'posActiveCategories.posCategory',
+      };
+
+      final uri = Uri.parse('$baseUrl/pos/94').replace(
+        queryParameters: queryParams,
+      );
+
+      print('📂 [API] Fetching POS categories: $uri');
+      final requestStart = DateTime.now();
+      final response = await _httpClient.get(uri, headers: headers);
+      final requestDuration = DateTime.now().difference(requestStart);
+      final responseSizeKB = (response.body.length / 1024).toStringAsFixed(2);
+      print('⏱️ [API] POS categories HTTP request took: ${requestDuration.inMilliseconds}ms (${responseSizeKB}KB)');
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        
+        if (jsonData is Map && jsonData.containsKey('posActiveCategories')) {
+          final categoriesList = jsonData['posActiveCategories'] as List;
+          final categories = categoriesList
+              .map((json) => PosActiveCategory.fromJson(json))
+              .toList();
+          
+          // Sort by index
+          categories.sort((a, b) {
+            final aIndex = int.tryParse(a.posCategory?.index ?? '0') ?? 0;
+            final bIndex = int.tryParse(b.posCategory?.index ?? '0') ?? 0;
+            return aIndex.compareTo(bIndex);
+          });
+          
+          final totalDuration = DateTime.now().difference(startTime);
+          print('✅ [API] Fetched ${categories.length} POS categories in ${totalDuration.inMilliseconds}ms');
+          return categories;
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return [];
+        }
+      } else {
+        print('❌ Error getting POS categories: ${response.statusCode} - ${response.body}');
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception getting POS categories: $e');
+      return [];
     }
   }
 }

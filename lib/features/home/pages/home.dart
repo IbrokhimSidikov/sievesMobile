@@ -29,6 +29,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     final allModules = [
       _ModuleItem(localizations.profile, Icons.person_outline, AppColors.cxPrimary, '/profile'),
       _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
+      _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, const Color(0xFFFF9800), '/breakOrder'),
       _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
       _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, '/lmsPage'),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
@@ -641,6 +642,7 @@ class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderSta
     final localizations = AppLocalizations.of(context);
     if (title == localizations.profile) return localizations.profileSubtitle;
     if (title == localizations.attendance) return localizations.attendanceSubtitle;
+    if (title == localizations.breakOrder) return localizations.breakOrderSubtitle;
     if (title == localizations.breakRecords) return localizations.breakRecordsSubtitle;
     if (title == localizations.history) return localizations.historySubtitle;
     if (title == localizations.lWallet) return localizations.lWalletSubtitle;
