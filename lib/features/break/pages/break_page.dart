@@ -10,6 +10,8 @@ import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/cache/menu_cache_service.dart';
 import '../../../core/services/face_verification/face_verification_service.dart';
 import '../widgets/face_capture_dialog.dart';
+import '../widgets/change_item_dialog.dart';
+import '../widgets/cart_dialog.dart';
 
 class BreakPage extends StatefulWidget {
   const BreakPage({super.key});
@@ -18,7 +20,8 @@ class BreakPage extends StatefulWidget {
   State<BreakPage> createState() => _BreakPageState();
 }
 
-class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMixin {
+class _BreakPageState extends State<BreakPage>
+    with SingleTickerProviderStateMixin {
   final AuthManager _authManager = AuthManager();
   final MenuCacheService _cacheService = MenuCacheService();
   bool _isLoading = true;
@@ -27,6 +30,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
   List<PosActiveCategory> _categories = [];
   int? _selectedCategoryId;
   Map<int, int> _cart = {};
+  Map<int, ChangeableItem?> _itemChanges = {};
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
   bool _isSubmittingOrder = false;
@@ -38,15 +42,11 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     )..repeat(reverse: true);
-    
-    _shimmerAnimation = Tween<double>(
-      begin: 0.3,
-      end: 0.7,
-    ).animate(CurvedAnimation(
-      parent: _shimmerController,
-      curve: Curves.easeInOut,
-    ));
-    
+
+    _shimmerAnimation = Tween<double>(begin: 0.3, end: 0.7).animate(
+      CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
+    );
+
     _fetchMenuItems();
   }
 
@@ -58,33 +58,48 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
 
   Future<void> _fetchMenuItems() async {
     final startTime = DateTime.now();
-    print('⏱️ [BREAK PAGE] Starting to fetch menu items at ${startTime.toIso8601String()}');
-    
+    print(
+      '⏱️ [BREAK PAGE] Starting to fetch menu items at ${startTime.toIso8601String()}',
+    );
+
     if (!mounted) return;
-    
+
     setState(() {
       _isLoading = true;
       _errorMessage = null;
     });
 
     try {
+      // Clear cache to force fresh fetch with new expand parameters
+      // _cacheService.clearCache();
+
       // Check cache first
       final cacheCheckStart = DateTime.now();
       final cachedData = _cacheService.getCachedData();
       final cacheCheckDuration = DateTime.now().difference(cacheCheckStart);
-      print('⏱️ [BREAK PAGE] Cache check took: ${cacheCheckDuration.inMilliseconds}ms');
-      
+      print(
+        '⏱️ [BREAK PAGE] Cache check took: ${cacheCheckDuration.inMilliseconds}ms',
+      );
+
       if (cachedData != null) {
-        print('📦 [BREAK PAGE] Using cached menu data (${cachedData.menuItems.length} items, ${cachedData.categories.length} categories)');
+        print(
+          '📦 [BREAK PAGE] Using cached menu data (${cachedData.menuItems.length} items, ${cachedData.categories.length} categories)',
+        );
         if (!mounted) return;
-        
+
         final sortStart = DateTime.now();
         // Sort categories alphabetically
-        final sortedCategories = List<PosActiveCategory>.from(cachedData.categories)
-          ..sort((a, b) => (a.posCategory?.name ?? '').compareTo(b.posCategory?.name ?? ''));
+        final sortedCategories =
+            List<PosActiveCategory>.from(cachedData.categories)..sort(
+              (a, b) => (a.posCategory?.name ?? '').compareTo(
+                b.posCategory?.name ?? '',
+              ),
+            );
         final sortDuration = DateTime.now().difference(sortStart);
-        print('⏱️ [BREAK PAGE] Sorting categories took: ${sortDuration.inMilliseconds}ms');
-        
+        print(
+          '⏱️ [BREAK PAGE] Sorting categories took: ${sortDuration.inMilliseconds}ms',
+        );
+
         final setStateStart = DateTime.now();
         setState(() {
           _menuItems = cachedData.menuItems;
@@ -96,15 +111,19 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
           _isLoading = false;
         });
         final setStateDuration = DateTime.now().difference(setStateStart);
-        print('⏱️ [BREAK PAGE] setState took: ${setStateDuration.inMilliseconds}ms');
-        
+        print(
+          '⏱️ [BREAK PAGE] setState took: ${setStateDuration.inMilliseconds}ms',
+        );
+
         final totalDuration = DateTime.now().difference(startTime);
-        print('✅ [BREAK PAGE] Total load time (from cache): ${totalDuration.inMilliseconds}ms');
+        print(
+          '✅ [BREAK PAGE] Total load time (from cache): ${totalDuration.inMilliseconds}ms',
+        );
         return;
       }
-      
+
       print('🌐 [BREAK PAGE] No cache found, fetching from API...');
-      
+
       // Fetch both menu items and categories in parallel
       final apiStartTime = DateTime.now();
       print('📡 [BREAK PAGE] Starting parallel API calls...');
@@ -113,28 +132,39 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
         _authManager.apiService.getPosCategories(),
       ]);
       final apiDuration = DateTime.now().difference(apiStartTime);
-      print('⏱️ [BREAK PAGE] Both API calls completed in: ${apiDuration.inMilliseconds}ms');
-      
+      print(
+        '⏱️ [BREAK PAGE] Both API calls completed in: ${apiDuration.inMilliseconds}ms',
+      );
+
       if (!mounted) return;
-      
+
       final processingStart = DateTime.now();
       final items = results[0] as List<InventoryItem>;
       final categories = results[1] as List<PosActiveCategory>;
-      print('⏱️ [BREAK PAGE] Received ${items.length} items and ${categories.length} categories');
-      
+      print(
+        '⏱️ [BREAK PAGE] Received ${items.length} items and ${categories.length} categories',
+      );
+
       // Sort categories alphabetically
       final sortStart = DateTime.now();
       final sortedCategories = List<PosActiveCategory>.from(categories)
-        ..sort((a, b) => (a.posCategory?.name ?? '').compareTo(b.posCategory?.name ?? ''));
+        ..sort(
+          (a, b) =>
+              (a.posCategory?.name ?? '').compareTo(b.posCategory?.name ?? ''),
+        );
       final sortDuration = DateTime.now().difference(sortStart);
-      print('⏱️ [BREAK PAGE] Sorting categories took: ${sortDuration.inMilliseconds}ms');
-      
+      print(
+        '⏱️ [BREAK PAGE] Sorting categories took: ${sortDuration.inMilliseconds}ms',
+      );
+
       // Cache the data
       final cacheStart = DateTime.now();
       _cacheService.cacheData(items, sortedCategories);
       final cacheDuration = DateTime.now().difference(cacheStart);
-      print('⏱️ [BREAK PAGE] Caching data took: ${cacheDuration.inMilliseconds}ms');
-      
+      print(
+        '⏱️ [BREAK PAGE] Caching data took: ${cacheDuration.inMilliseconds}ms',
+      );
+
       final setStateStart = DateTime.now();
       setState(() {
         _menuItems = items;
@@ -146,21 +176,31 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
         _isLoading = false;
       });
       final setStateDuration = DateTime.now().difference(setStateStart);
-      print('⏱️ [BREAK PAGE] setState took: ${setStateDuration.inMilliseconds}ms');
-      
+      print(
+        '⏱️ [BREAK PAGE] setState took: ${setStateDuration.inMilliseconds}ms',
+      );
+
       final processingDuration = DateTime.now().difference(processingStart);
-      print('⏱️ [BREAK PAGE] Data processing took: ${processingDuration.inMilliseconds}ms');
+      print(
+        '⏱️ [BREAK PAGE] Data processing took: ${processingDuration.inMilliseconds}ms',
+      );
 
       final totalDuration = DateTime.now().difference(startTime);
-      print('✅ [BREAK PAGE] Total load time (from API): ${totalDuration.inMilliseconds}ms');
-      print('   - API calls: ${apiDuration.inMilliseconds}ms (${(apiDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)');
-      print('   - Processing: ${processingDuration.inMilliseconds}ms (${(processingDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)');
+      print(
+        '✅ [BREAK PAGE] Total load time (from API): ${totalDuration.inMilliseconds}ms',
+      );
+      print(
+        '   - API calls: ${apiDuration.inMilliseconds}ms (${(apiDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+      );
+      print(
+        '   - Processing: ${processingDuration.inMilliseconds}ms (${(processingDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+      );
     } catch (e) {
       final totalDuration = DateTime.now().difference(startTime);
       print('❌ [BREAK PAGE] Error after ${totalDuration.inMilliseconds}ms: $e');
-      
+
       if (!mounted) return;
-      
+
       setState(() {
         _errorMessage = 'Failed to load menu. Please try again.';
         _isLoading = false;
@@ -168,10 +208,45 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
     }
   }
 
-  void _addToCart(InventoryItem item) {
+  void _addToCart(InventoryItem item, {ChangeableItem? changedItem}) {
     setState(() {
       _cart[item.id] = (_cart[item.id] ?? 0) + 1;
+      if (changedItem != null) {
+        _itemChanges[item.id] = changedItem;
+      }
     });
+  }
+
+  void _showChangeItemDialog(InventoryItem item) {
+    showDialog(
+      context: context,
+      builder: (context) => ChangeItemDialog(
+        item: item,
+        onItemSelected: (changedItem) {
+          _addToCart(item, changedItem: changedItem);
+        },
+        allMenuItems: _menuItems,
+      ),
+    );
+  }
+
+  void _showCartDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => CartDialog(
+        cart: _cart,
+        itemChanges: _itemChanges,
+        menuItems: _menuItems,
+        onRemoveItem: _removeFromCart,
+        onAddItem: (item) => _addToCart(item),
+        onClearCart: () {
+          setState(() {
+            _cart.clear();
+            _itemChanges.clear();
+          });
+        },
+      ),
+    );
   }
 
   void _removeFromCart(InventoryItem item) {
@@ -180,6 +255,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
         _cart[item.id] = _cart[item.id]! - 1;
         if (_cart[item.id] == 0) {
           _cart.remove(item.id);
+          _itemChanges.remove(item.id);
         }
       }
     });
@@ -190,9 +266,47 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
     for (var item in _menuItems) {
       final quantity = _cart[item.id] ?? 0;
       if (quantity > 0 && item.inventoryPriceList != null) {
-        total += item.inventoryPriceList!.price * quantity;
+        int itemPrice = item.inventoryPriceList!.price;
+
+        // If item has changeable items and user made changes, calculate price difference
+        final changedItem = _itemChanges[item.id];
+        if (changedItem != null && item.hasChangeableItems) {
+          itemPrice = _calculateItemPriceWithChanges(item, changedItem);
+        }
+
+        total += itemPrice * quantity;
       }
     }
+    return total;
+  }
+
+  int _calculateItemPriceWithChanges(
+    InventoryItem item,
+    ChangeableItem changedItem,
+  ) {
+    // Start with base product price
+    int total = item.inventoryPriceList?.price ?? 0;
+
+    // Get default items
+    final defaultItems = item.changeableContains?.defaultItems ?? [];
+
+    // Find which default item was changed and calculate price difference
+    // In sieves-app, it adds the difference if the changed item is more expensive
+    for (int i = 0; i < defaultItems.length; i++) {
+      final defaultItem = defaultItems[i];
+      // If this is the changed item
+      if (changedItem.id != defaultItem.id) {
+        final defaultPrice = defaultItem.inventoryPriceList?.price ?? 0;
+        final changedPrice = changedItem.inventoryPriceList?.price ?? 0;
+
+        // Only add difference if changed item is more expensive
+        if (changedPrice > defaultPrice) {
+          total += (changedPrice - defaultPrice);
+        }
+        break; // Only one item can be changed per cart entry
+      }
+    }
+
     return total;
   }
 
@@ -210,7 +324,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
     print('📦 Cart items: ${_cart.length}');
     print('💰 Cart total: ${_getCartTotal()} UZS');
     print('');
-    
+
     try {
       setState(() {
         _isSubmittingOrder = true;
@@ -222,16 +336,20 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('┌─────────────────────────────────────────────────────────────┐');
       print('│ STEP 1: Getting profile photo URL                          │');
       print('└─────────────────────────────────────────────────────────────┘');
-      
+
       final step1Start = DateTime.now();
       final profilePhotoUrl = await _authManager.getProfilePhotoUrl();
       final step1Duration = DateTime.now().difference(step1Start);
-      
+
       if (profilePhotoUrl == null) {
         print('❌ Profile photo URL is null');
-        throw Exception('Profile photo not found. Please update your profile picture in the app settings.');
+        throw Exception(
+          'Profile photo not found. Please update your profile picture in the app settings.',
+        );
       }
-      print('✅ Profile photo URL obtained in ${step1Duration.inMilliseconds}ms');
+      print(
+        '✅ Profile photo URL obtained in ${step1Duration.inMilliseconds}ms',
+      );
       print('   URL: $profilePhotoUrl');
       print('');
 
@@ -241,21 +359,23 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('┌─────────────────────────────────────────────────────────────┐');
       print('│ STEP 2: Downloading profile photo                          │');
       print('└─────────────────────────────────────────────────────────────┘');
-      
+
       final step2Start = DateTime.now();
       final profileImageResponse = await http.get(Uri.parse(profilePhotoUrl));
       final step2Duration = DateTime.now().difference(step2Start);
-      
+
       print('   HTTP Status: ${profileImageResponse.statusCode}');
       print('   Response size: ${profileImageResponse.bodyBytes.length} bytes');
-      
+
       if (profileImageResponse.statusCode != 200) {
         print('❌ Failed to download profile photo');
         throw Exception('Failed to download profile photo');
       }
 
       final tempDir = Directory.systemTemp;
-      final profileImageFile = File('${tempDir.path}/profile_image_${DateTime.now().millisecondsSinceEpoch}.jpg');
+      final profileImageFile = File(
+        '${tempDir.path}/profile_image_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
       await profileImageFile.writeAsBytes(profileImageResponse.bodyBytes);
       print('✅ Profile photo downloaded in ${step2Duration.inMilliseconds}ms');
       print('   Saved to: ${profileImageFile.path}');
@@ -267,7 +387,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('┌─────────────────────────────────────────────────────────────┐');
       print('│ STEP 3: Opening face capture dialog                        │');
       print('└─────────────────────────────────────────────────────────────┘');
-      
+
       final step3Start = DateTime.now();
       final capturedImage = await showDialog<File>(
         context: context,
@@ -277,7 +397,9 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       final step3Duration = DateTime.now().difference(step3Start);
 
       if (capturedImage == null) {
-        print('❌ User cancelled face capture after ${step3Duration.inMilliseconds}ms');
+        print(
+          '❌ User cancelled face capture after ${step3Duration.inMilliseconds}ms',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -299,7 +421,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('┌─────────────────────────────────────────────────────────────┐');
       print('│ STEP 4: Verifying face                                     │');
       print('└─────────────────────────────────────────────────────────────┘');
-      
+
       final step4Start = DateTime.now();
       final verificationService = FaceVerificationService();
       final result = await verificationService.verifyFace(
@@ -347,11 +469,13 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('│ STEP 5: Uploading break photo                              │');
       print('└─────────────────────────────────────────────────────────────┘');
       print('   Endpoint: POST /v1/photo?belongs_to=employee_break');
-      
+
       final step5Start = DateTime.now();
-      final photoId = await _authManager.apiService.uploadBreakPhoto(capturedImage);
+      final photoId = await _authManager.apiService.uploadBreakPhoto(
+        capturedImage,
+      );
       final step5Duration = DateTime.now().difference(step5Start);
-      
+
       // Clean up captured image after upload
       try {
         await capturedImage.delete();
@@ -359,7 +483,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       } catch (e) {
         print('   ⚠️ Failed to clean up captured image: $e');
       }
-      
+
       if (photoId == null) {
         print('❌ Photo upload failed');
         throw Exception('Failed to upload break photo');
@@ -374,7 +498,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('┌─────────────────────────────────────────────────────────────┐');
       print('│ STEP 6: Preparing order data                               │');
       print('└─────────────────────────────────────────────────────────────┘');
-      
+
       final orderItems = <Map<String, dynamic>>[];
       print('   Order items:');
       for (var entry in _cart.entries) {
@@ -382,26 +506,39 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
         final quantity = entry.value;
         final item = _menuItems.firstWhere((i) => i.id == itemId);
         final price = item.inventoryPriceList?.price ?? 0;
-        
-        print('   - ${item.name}: qty=$quantity, actual_price=$price UZS');
-        
-        orderItems.add({
+        final changedItem = _itemChanges[itemId];
+
+        if (changedItem != null) {
+          print(
+            '   - ${item.name} (changed to: ${changedItem.name}): qty=$quantity, actual_price=$price UZS',
+          );
+        } else {
+          print('   - ${item.name}: qty=$quantity, actual_price=$price UZS');
+        }
+
+        final orderItem = {
           'product_id': item.id.toString(),
           'quantity': quantity,
           'actual_price': price.toString(),
-        });
+        };
+
+        if (changedItem != null) {
+          orderItem['changed_inventory_id'] = changedItem.id.toString();
+        }
+
+        orderItems.add(orderItem);
       }
 
       final employeeId = _authManager.currentEmployeeId;
       final branchId = _authManager.currentIdentity?.employee?.branchId;
       final totalValue = _getCartTotal();
-      
+
       print('');
       print('   Employee ID: $employeeId');
       print('   Branch ID: $branchId');
       print('   Break Photo ID: $photoId');
       print('   Total Value: $totalValue UZS');
-      
+
       if (employeeId == null || branchId == null) {
         print('❌ Missing employee or branch information');
         throw Exception('Employee or branch information not available');
@@ -416,7 +553,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('│ STEP 7: Creating break order                               │');
       print('└─────────────────────────────────────────────────────────────┘');
       print('   Endpoint: POST /v1/order');
-      
+
       final step7Start = DateTime.now();
       final orderResult = await _authManager.apiService.createBreakOrder(
         branchId: branchId,
@@ -432,7 +569,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
         print('❌ Order creation failed');
         throw Exception('Failed to create break order');
       }
-      
+
       print('✅ Order created in ${step7Duration.inMilliseconds}ms');
       print('   Order response: $orderResult');
       print('');
@@ -459,8 +596,8 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       // Clear cart after successful order
       setState(() {
         _cart.clear();
+        _itemChanges.clear();
       });
-
     } catch (e, stackTrace) {
       final totalDuration = DateTime.now().difference(startTime);
       print('');
@@ -472,7 +609,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       print('📋 Stack trace:');
       print(stackTrace);
       print('');
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -493,11 +630,13 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
   @override
   Widget build(BuildContext context) {
     final buildStart = DateTime.now();
-    print('🎨 [BREAK PAGE] Build started - isLoading: $_isLoading, items: ${_menuItems.length}, categories: ${_categories.length}');
-    
+    print(
+      '🎨 [BREAK PAGE] Build started - isLoading: $_isLoading, items: ${_menuItems.length}, categories: ${_categories.length}',
+    );
+
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     final widget = Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
@@ -508,19 +647,22 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
               child: _isLoading
                   ? _buildSkeletonLoader(theme, isDark)
                   : _errorMessage != null
-                      ? _buildErrorState(theme)
-                      : _buildMenuGrid(theme, isDark),
+                  ? _buildErrorState(theme)
+                  : _buildMenuGrid(theme, isDark),
             ),
-            if (!_isLoading && _categories.isNotEmpty) _buildCategoryFooter(theme, isDark),
+            if (!_isLoading && _categories.isNotEmpty)
+              _buildCategoryFooter(theme, isDark),
             if (_cart.isNotEmpty) _buildCartFooter(theme, isDark),
           ],
         ),
       ),
     );
-    
+
     final buildDuration = DateTime.now().difference(buildStart);
-    print('🎨 [BREAK PAGE] Build completed in ${buildDuration.inMilliseconds}ms');
-    
+    print(
+      '🎨 [BREAK PAGE] Build completed in ${buildDuration.inMilliseconds}ms',
+    );
+
     return widget;
   }
 
@@ -528,7 +670,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
     final headerColors = isDark
         ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)] // Indigo to Purple
         : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)]; // Blue to Indigo
-    
+
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
@@ -596,6 +738,62 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                   ],
                 ),
               ),
+              if (_cart.isNotEmpty)
+                GestureDetector(
+                  onTap: _showCartDialog,
+                  child: Container(
+                    padding: EdgeInsets.all(12.w),
+                    margin: EdgeInsets.only(right: 12.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.cxWhite.withOpacity(0.25),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: AppColors.cxWhite.withOpacity(0.3),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.shopping_cart_rounded,
+                          color: AppColors.cxWhite,
+                          size: 24.sp,
+                        ),
+                        Positioned(
+                          top: -6.h,
+                          right: -6.w,
+                          child: Container(
+                            padding: EdgeInsets.all(4.w),
+                            decoration: BoxDecoration(
+                              color: AppColors.cxWarning,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: AppColors.cxWhite,
+                                width: 2,
+                              ),
+                            ),
+                            constraints: BoxConstraints(
+                              minWidth: 20.w,
+                              minHeight: 20.w,
+                            ),
+                            child: Center(
+                              child: Text(
+                                '${_getCartItemCount()}',
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.cxWhite,
+                                  height: 1,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
@@ -622,10 +820,14 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
   Widget _buildMenuGrid(ThemeData theme, bool isDark) {
     final filterStart = DateTime.now();
     final categoryItems = _selectedCategoryId != null
-        ? _menuItems.where((item) => item.posCategoryId == _selectedCategoryId).toList()
+        ? _menuItems
+              .where((item) => item.posCategoryId == _selectedCategoryId)
+              .toList()
         : [];
     final filterDuration = DateTime.now().difference(filterStart);
-    print('🔍 [BREAK PAGE] Filtering items for category $_selectedCategoryId took: ${filterDuration.inMilliseconds}ms (found ${categoryItems.length} items)');
+    print(
+      '🔍 [BREAK PAGE] Filtering items for category $_selectedCategoryId took: ${filterDuration.inMilliseconds}ms (found ${categoryItems.length} items)',
+    );
 
     if (categoryItems.isEmpty) {
       return Center(
@@ -651,7 +853,9 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       );
     }
 
-    print('📋 [BREAK PAGE] Building GridView with ${categoryItems.length} items');
+    print(
+      '📋 [BREAK PAGE] Building GridView with ${categoryItems.length} items',
+    );
     return GridView.builder(
       padding: EdgeInsets.all(20.w),
       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -671,6 +875,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
     final quantity = _cart[item.id] ?? 0;
     final price = item.inventoryPriceList?.price ?? 0;
     final imageUrl = item.photo?.url;
+    final changedItem = _itemChanges[item.id];
 
     return Container(
       decoration: BoxDecoration(
@@ -741,33 +946,54 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                         ),
                       ),
               ),
-              // if (item.inventoryGroup != null)
-              //   Positioned(
-              //     top: 8.h,
-              //     right: 8.w,
-              //     child: Container(
-              //       padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
-              //       decoration: BoxDecoration(
-              //         color: AppColors.cxWarning,
-              //         borderRadius: BorderRadius.circular(8.r),
-              //         boxShadow: [
-              //           BoxShadow(
-              //             color: AppColors.cxBlack.withOpacity(0.2),
-              //             blurRadius: 4,
-              //             offset: const Offset(0, 2),
-              //           ),
-              //         ],
-              //       ),
-              //       child: Text(
-              //         item.inventoryGroup!.name,
-              //         style: TextStyle(
-              //           fontSize: 10.sp,
-              //           fontWeight: FontWeight.w700,
-              //           color: AppColors.cxWhite,
-              //         ),
-              //       ),
-              //     ),
-              //   ),
+              if (item.hasChangeableItems)
+                Positioned(
+                  top: 8.h,
+                  right: 8.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(0xFF6366F1),
+                          const Color(0xFF8B5CF6),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(8.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.cxBlack.withOpacity(0.2),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.swap_horiz_rounded,
+                          size: 12.sp,
+                          color: AppColors.cxWhite,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          'Change',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cxWhite,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
           Expanded(
@@ -783,9 +1009,47 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                     ),
-                    maxLines: 2,
+                    maxLines: changedItem != null ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                   ),
+                  if (changedItem != null)
+                    Container(
+                      margin: EdgeInsets.only(top: 4.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 6.w,
+                        vertical: 2.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(6.r),
+                        border: Border.all(
+                          color: const Color(0xFF6366F1).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.swap_horiz_rounded,
+                            size: 10.sp,
+                            color: const Color(0xFF6366F1),
+                          ),
+                          SizedBox(width: 3.w),
+                          Flexible(
+                            child: Text(
+                              changedItem.name,
+                              style: TextStyle(
+                                fontSize: 9.sp,
+                                fontWeight: FontWeight.w600,
+                                color: const Color(0xFF6366F1),
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   const Spacer(),
                   Row(
                     children: [
@@ -801,12 +1065,17 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                       ),
                       if (quantity == 0)
                         GestureDetector(
-                          onTap: () => _addToCart(item),
+                          onTap: () => item.hasChangeableItems
+                              ? _showChangeItemDialog(item)
+                              : _addToCart(item),
                           child: Container(
                             padding: EdgeInsets.all(8.w),
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
-                                colors: [AppColors.cxWarning, AppColors.cxFEDA84],
+                                colors: [
+                                  AppColors.cxWarning,
+                                  AppColors.cxFEDA84,
+                                ],
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
                               ),
@@ -864,7 +1133,10 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                                 padding: EdgeInsets.all(6.w),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [AppColors.cxWarning, AppColors.cxFEDA84],
+                                    colors: [
+                                      AppColors.cxWarning,
+                                      AppColors.cxFEDA84,
+                                    ],
                                     begin: Alignment.topLeft,
                                     end: Alignment.bottomRight,
                                   ),
@@ -928,20 +1200,28 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
               margin: EdgeInsets.only(right: 12.w),
               padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
               decoration: BoxDecoration(
-                color: isSelected 
-                    ? (isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3))
+                color: isSelected
+                    ? (isDark
+                          ? const Color(0xFF6366F1)
+                          : const Color(0xFF0071E3))
                     : theme.colorScheme.surfaceVariant.withOpacity(0.5),
                 borderRadius: BorderRadius.circular(12.r),
                 border: Border.all(
                   color: isSelected
-                      ? (isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3))
+                      ? (isDark
+                            ? const Color(0xFF6366F1)
+                            : const Color(0xFF0071E3))
                       : theme.colorScheme.outline.withOpacity(0.2),
                   width: isSelected ? 1.5 : 1,
                 ),
                 boxShadow: isSelected
                     ? [
                         BoxShadow(
-                          color: (isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3)).withOpacity(0.3),
+                          color:
+                              (isDark
+                                      ? const Color(0xFF6366F1)
+                                      : const Color(0xFF0071E3))
+                                  .withOpacity(0.3),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -967,11 +1247,17 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                   ),
                   SizedBox(height: 2.h),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 6.w, vertical: 1.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 6.w,
+                      vertical: 1.h,
+                    ),
                     decoration: BoxDecoration(
                       color: isSelected
                           ? AppColors.cxWhite.withOpacity(0.3)
-                          : (isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3)).withOpacity(0.2),
+                          : (isDark
+                                    ? const Color(0xFF6366F1)
+                                    : const Color(0xFF0071E3))
+                                .withOpacity(0.2),
                       borderRadius: BorderRadius.circular(6.r),
                     ),
                     child: Text(
@@ -981,7 +1267,9 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                         fontWeight: FontWeight.w700,
                         color: isSelected
                             ? AppColors.cxWhite
-                            : (isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3)),
+                            : (isDark
+                                  ? const Color(0xFF6366F1)
+                                  : const Color(0xFF0071E3)),
                         height: 1.2,
                       ),
                     ),
@@ -1036,7 +1324,9 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                   style: TextStyle(
                     fontSize: 24.sp,
                     fontWeight: FontWeight.w800,
-                    color: isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3),
+                    color: isDark
+                        ? const Color(0xFF6366F1)
+                        : const Color(0xFF0071E3),
                   ),
                 ),
               ],
@@ -1059,7 +1349,11 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                   borderRadius: BorderRadius.circular(16.r),
                   boxShadow: [
                     BoxShadow(
-                      color: (isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3)).withOpacity(0.4),
+                      color:
+                          (isDark
+                                  ? const Color(0xFF6366F1)
+                                  : const Color(0xFF0071E3))
+                              .withOpacity(0.4),
                       blurRadius: 12,
                       offset: const Offset(0, 6),
                     ),
@@ -1149,8 +1443,12 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                   ),
                   gradient: LinearGradient(
                     colors: [
-                      AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
-                      AppColors.cxSilverTint.withOpacity(_shimmerAnimation.value * 0.5),
+                      AppColors.cxPlatinumGray.withOpacity(
+                        _shimmerAnimation.value,
+                      ),
+                      AppColors.cxSilverTint.withOpacity(
+                        _shimmerAnimation.value * 0.5,
+                      ),
                     ],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
@@ -1166,7 +1464,9 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                       width: 100.w,
                       height: 14.h,
                       decoration: BoxDecoration(
-                        color: AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                        color: AppColors.cxPlatinumGray.withOpacity(
+                          _shimmerAnimation.value,
+                        ),
                         borderRadius: BorderRadius.circular(4.r),
                       ),
                     ),
@@ -1175,7 +1475,9 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
                       width: 60.w,
                       height: 12.h,
                       decoration: BoxDecoration(
-                        color: AppColors.cxPlatinumGray.withOpacity(_shimmerAnimation.value),
+                        color: AppColors.cxPlatinumGray.withOpacity(
+                          _shimmerAnimation.value,
+                        ),
                         borderRadius: BorderRadius.circular(4.r),
                       ),
                     ),
@@ -1194,11 +1496,7 @@ class _BreakPageState extends State<BreakPage> with SingleTickerProviderStateMix
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64.sp,
-            color: AppColors.cxWarning,
-          ),
+          Icon(Icons.error_outline, size: 64.sp, color: AppColors.cxWarning),
           SizedBox(height: 16.h),
           Text(
             _errorMessage ?? 'An error occurred',

@@ -746,7 +746,7 @@ class ApiService {
       final queryParams = {
         'is_active': '1',
         'is_pos': '1',
-        'expand': 'inventoryPriceList,photo',
+        'expand': 'inventoryPriceList,photo,changeableContains.default.photo,changeableContains.default.inventoryPriceList,changeableCategories.posCategory',
         'limit': '100',
       };
 
@@ -873,17 +873,14 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('$baseUrl/order');
+      final uri = Uri.parse('$baseUrl/order?isMobile=1');
 
       final body = {
         'delivery_employee_id': null,
         'isSynchronous': 'sync',
         'is_fast': 0,
         'queue_type': 'sync',
-        'day_session_id': 26705,
         'employee_id': employeeId,
-        'pos_id': 42,
-        'pos_session_id': 127262,
         'order_type_id': 5,
         'customer_id': null,
         'start_time': 'now',

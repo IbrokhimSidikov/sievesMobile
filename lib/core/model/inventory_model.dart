@@ -7,6 +7,8 @@ class InventoryItem {
   final InventoryGroup? inventoryGroup;
   final InventoryPhoto? photo;
   final InventoryPriceItem? inventoryPriceList;
+  final ChangeableContains? changeableContains;
+  final List<ChangeableCategory> changeableCategories;
 
   InventoryItem({
     required this.id,
@@ -17,9 +19,15 @@ class InventoryItem {
     this.inventoryGroup,
     this.photo,
     this.inventoryPriceList,
+    this.changeableContains,
+    this.changeableCategories = const [],
   });
 
+  bool get hasChangeableItems =>
+      changeableContains != null && changeableContains!.defaultItems.isNotEmpty;
+
   factory InventoryItem.fromJson(Map<String, dynamic> json) {
+    final categoriesList = json['changeableCategories'] as List<dynamic>? ?? [];
     return InventoryItem(
       id: json['id'] ?? 0,
       name: json['name'] ?? '',
@@ -35,6 +43,12 @@ class InventoryItem {
       inventoryPriceList: json['inventoryPriceList'] != null
           ? InventoryPriceItem.fromJson(json['inventoryPriceList'])
           : null,
+      changeableContains: json['changeableContains'] != null
+          ? ChangeableContains.fromJson(json['changeableContains'])
+          : null,
+      changeableCategories: categoriesList
+          .map((item) => ChangeableCategory.fromJson(item))
+          .toList(),
     );
   }
 
@@ -48,6 +62,148 @@ class InventoryItem {
       'inventoryGroup': inventoryGroup?.toJson(),
       'photo': photo?.toJson(),
       'inventoryPriceList': inventoryPriceList?.toJson(),
+      'changeableContains': changeableContains?.toJson(),
+      'changeableCategories': changeableCategories
+          .map((item) => item.toJson())
+          .toList(),
+    };
+  }
+}
+
+class ChangeableContains {
+  final List<ChangeableItem> defaultItems;
+  final List<ChangeableCategory> changeableCategories;
+
+  ChangeableContains({
+    required this.defaultItems,
+    required this.changeableCategories,
+  });
+
+  factory ChangeableContains.fromJson(Map<String, dynamic> json) {
+    print('🔍 [MODEL] ChangeableContains.fromJson keys: ${json.keys.toList()}');
+    final defaultList = json['default'] as List<dynamic>? ?? [];
+    final categoriesList = json['changeableCategories'] as List<dynamic>? ?? [];
+    print(
+      '🔍 [MODEL] default items: ${defaultList.length}, changeableCategories: ${categoriesList.length}',
+    );
+    return ChangeableContains(
+      defaultItems: defaultList
+          .map((item) => ChangeableItem.fromJson(item))
+          .toList(),
+      changeableCategories: categoriesList
+          .map((item) => ChangeableCategory.fromJson(item))
+          .toList(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'default': defaultItems.map((item) => item.toJson()).toList(),
+      'changeableCategories': changeableCategories
+          .map((item) => item.toJson())
+          .toList(),
+    };
+  }
+}
+
+class ChangeableCategory {
+  final int id;
+  final int inventoryId;
+  final int posCategoryId;
+  final String? createdAt;
+  final PosCategory? posCategory;
+
+  ChangeableCategory({
+    required this.id,
+    required this.inventoryId,
+    required this.posCategoryId,
+    this.createdAt,
+    this.posCategory,
+  });
+
+  factory ChangeableCategory.fromJson(Map<String, dynamic> json) {
+    return ChangeableCategory(
+      id: json['id'] ?? 0,
+      inventoryId: json['inventory_id'] ?? 0,
+      posCategoryId: json['pos_category_id'] ?? 0,
+      createdAt: json['created_at'],
+      posCategory: json['posCategory'] != null
+          ? PosCategory.fromJson(json['posCategory'])
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'inventory_id': inventoryId,
+      'pos_category_id': posCategoryId,
+      'created_at': createdAt,
+      'posCategory': posCategory?.toJson(),
+    };
+  }
+}
+
+class ChangeableItem {
+  final int id;
+  final String name;
+  final int? photoId;
+  final int? posCategoryId;
+  final InventoryPhoto? photo;
+  final InventoryPriceItem? inventoryPriceList;
+  final String? description;
+  final List<ChangeableCategory> changeableCategories;
+
+  ChangeableItem({
+    required this.id,
+    required this.name,
+    this.photoId,
+    this.posCategoryId,
+    this.photo,
+    this.inventoryPriceList,
+    this.description,
+    this.changeableCategories = const [],
+  });
+
+  factory ChangeableItem.fromJson(Map<String, dynamic> json) {
+    final categoriesList = json['changeableCategories'] as List<dynamic>? ?? [];
+    return ChangeableItem(
+      id: json['id'] ?? 0,
+      name: json['name'] ?? '',
+      photoId: json['photo_id'],
+      posCategoryId: json['pos_category_id'],
+      photo: json['photo'] != null
+          ? InventoryPhoto.fromJson(json['photo'])
+          : null,
+      inventoryPriceList: json['inventoryPriceList'] != null
+          ? InventoryPriceItem.fromJson(json['inventoryPriceList'])
+          : null,
+      description: json['description'],
+      changeableCategories: categoriesList
+          .map((item) => ChangeableCategory.fromJson(item))
+          .toList(),
+    );
+  }
+
+  String? get imageUrl {
+    if (photo != null) {
+      return photo!.url;
+    }
+    return null;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'photo_id': photoId,
+      'pos_category_id': posCategoryId,
+      'photo': photo?.toJson(),
+      'inventoryPriceList': inventoryPriceList?.toJson(),
+      'description': description,
+      'changeableCategories': changeableCategories
+          .map((item) => item.toJson())
+          .toList(),
     };
   }
 }
@@ -72,11 +228,7 @@ class InventoryGroup {
   }
 
   Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'name': name,
-      'created_at': createdAt,
-    };
+    return {'id': id, 'name': name, 'created_at': createdAt};
   }
 }
 
