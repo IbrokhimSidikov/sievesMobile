@@ -337,7 +337,15 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
         final currentTabIndex = _tabController.index;
         final isSelected =
             _selectedItems[currentTabIndex]?.id == changeableItem.id;
-        final price = changeableItem.inventoryPriceList?.price ?? 0;
+
+        // Calculate price difference like website does
+        final defaultItem =
+            widget.item.changeableContains?.defaultItems[currentTabIndex];
+        final defaultPrice = defaultItem?.inventoryPriceList?.price ?? 0;
+        final changeablePrice = changeableItem.inventoryPriceList?.price ?? 0;
+        final priceDifference = changeablePrice > defaultPrice
+            ? changeablePrice - defaultPrice
+            : 0;
 
         return GestureDetector(
           onTap: () {
@@ -432,14 +440,27 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      if (price > 0) ...[
+                      if (priceDifference > 0) ...[
                         SizedBox(height: 4.h),
-                        Text(
-                          '$price UZS',
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.cxWarning,
+                        Container(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 8.w,
+                            vertical: 4.h,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxWarning.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6.r),
+                            border: Border.all(
+                              color: AppColors.cxWarning.withOpacity(0.3),
+                            ),
+                          ),
+                          child: Text(
+                            '+ $priceDifference UZS',
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.cxWarning,
+                            ),
                           ),
                         ),
                       ],

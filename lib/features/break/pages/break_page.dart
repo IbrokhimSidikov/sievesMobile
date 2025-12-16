@@ -12,6 +12,7 @@ import '../../../core/services/face_verification/face_verification_service.dart'
 import '../widgets/face_capture_dialog.dart';
 import '../widgets/change_item_dialog.dart';
 import '../widgets/cart_dialog.dart';
+import '../widgets/success_dialog.dart';
 
 // Helper class to track changed item with its tab index
 class ItemChange {
@@ -647,15 +648,6 @@ class _BreakPageState extends State<BreakPage>
       print('⏱️ Total duration: ${totalDuration.inMilliseconds}ms');
       print('');
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Order placed successfully!'),
-            backgroundColor: Colors.green,
-          ),
-        );
-      }
-
       // Clear cart after successful order
       setState(() {
         _cart.clear();
@@ -663,6 +655,21 @@ class _BreakPageState extends State<BreakPage>
         _itemPrices.clear();
         _itemComments.clear();
       });
+
+      // Show success dialog
+      if (mounted) {
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => SuccessDialog(
+            title: 'Order Placed Successfully!',
+            message:
+                'Your break order has been submitted and is being processed.',
+            totalAmount: totalValue,
+            itemCount: _getCartItemCount(),
+          ),
+        );
+      }
     } catch (e, stackTrace) {
       final totalDuration = DateTime.now().difference(startTime);
       print('');
