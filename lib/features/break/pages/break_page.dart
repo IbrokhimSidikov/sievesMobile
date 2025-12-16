@@ -13,6 +13,7 @@ import '../widgets/face_capture_dialog.dart';
 import '../widgets/change_item_dialog.dart';
 import '../widgets/cart_dialog.dart';
 import '../widgets/success_dialog.dart';
+import '../widgets/pizza_selection_dialog.dart';
 
 // Helper class to track changed item with its tab index
 class ItemChange {
@@ -47,6 +48,21 @@ class _BreakPageState extends State<BreakPage>
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
   bool _isSubmittingOrder = false;
+
+  // Pizza product IDs (matching website logic)
+  final List<int> _pizzaIds = [227, 228, 229, 230, 231, 234, 235, 724];
+
+  // Mapping for Americano product IDs
+  final Map<int, int> _pizzaAmericanoMap = {
+    227: 1011,
+    228: 1012,
+    229: 1013,
+    230: 1014,
+    231: 1015,
+    234: 1016,
+    235: 1017,
+    724: 1018,
+  };
 
   @override
   void initState() {
@@ -266,6 +282,48 @@ class _BreakPageState extends State<BreakPage>
         allMenuItems: _menuItems,
       ),
     );
+  }
+
+  void _showPizzaSelectionDialog(InventoryItem pizzaItem) {
+    showDialog(
+      context: context,
+      builder: (context) => PizzaSelectionDialog(
+        selectedPizza: pizzaItem,
+        onPizzaTypeSelected: (pizzaType) {
+          _handlePizzaSelection(pizzaItem, pizzaType);
+        },
+      ),
+    );
+  }
+
+  void _handlePizzaSelection(InventoryItem pizzaItem, String pizzaType) {
+    InventoryItem productToAdd = pizzaItem;
+
+    // If Americano is selected and there's a mapping, use the Americano version
+    if (pizzaType == 'americano' &&
+        _pizzaAmericanoMap.containsKey(pizzaItem.id)) {
+      final americanoId = _pizzaAmericanoMap[pizzaItem.id];
+      final americanoProduct = _menuItems.firstWhere(
+        (item) => item.id == americanoId,
+        orElse: () => pizzaItem,
+      );
+      productToAdd = americanoProduct;
+    }
+    // If Italiano is selected, use the original pizza product
+
+    // Add the selected pizza to cart
+    _addToCart(productToAdd);
+  }
+
+  void _handleProductClick(InventoryItem item) {
+    // Check if it's a pizza product
+    if (_pizzaIds.contains(item.id)) {
+      _showPizzaSelectionDialog(item);
+    } else if (item.hasChangeableItems) {
+      _showChangeItemDialog(item);
+    } else {
+      _addToCart(item);
+    }
   }
 
   void _showCartDialog() {
@@ -575,6 +633,10 @@ class _BreakPageState extends State<BreakPage>
           }
           productData['changeableContains']['actual'] = actualArray;
           productData['changeableContains']['status'] = 1;
+        } else {
+          // Remove changeableContains for items without changes (like pizza products)
+          // to prevent API error about missing 'status' field
+          productData.remove('changeableContains');
         }
 
         final orderItem = {
@@ -1143,9 +1205,7 @@ class _BreakPageState extends State<BreakPage>
                       ),
                       if (quantity == 0)
                         GestureDetector(
-                          onTap: () => item.hasChangeableItems
-                              ? _showChangeItemDialog(item)
-                              : _addToCart(item),
+                          onTap: () => _handleProductClick(item),
                           child: Container(
                             padding: EdgeInsets.all(8.w),
                             decoration: BoxDecoration(
