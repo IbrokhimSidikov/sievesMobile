@@ -13,6 +13,14 @@ import '../widgets/face_capture_dialog.dart';
 import '../widgets/change_item_dialog.dart';
 import '../widgets/cart_dialog.dart';
 
+// Helper class to track changed item with its tab index
+class ItemChange {
+  final ChangeableItem changedItem;
+  final int tabIndex; // Which tab (0, 1, 2) the item was selected from
+
+  ItemChange(this.changedItem, this.tabIndex);
+}
+
 class BreakPage extends StatefulWidget {
   const BreakPage({super.key});
 
@@ -30,7 +38,11 @@ class _BreakPageState extends State<BreakPage>
   List<PosActiveCategory> _categories = [];
   int? _selectedCategoryId;
   Map<int, int> _cart = {};
-  Map<int, ChangeableItem?> _itemChanges = {};
+  Map<int, List<ItemChange>> _itemChanges =
+      {}; // Changed to store List of ItemChange objects
+  Map<int, int> _itemPrices =
+      {}; // Stores calculated price for items with changes
+  Map<int, String> _itemComments = {}; // Stores comments/notes for cart items
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
   bool _isSubmittingOrder = false;
@@ -208,11 +220,36 @@ class _BreakPageState extends State<BreakPage>
     }
   }
 
-  void _addToCart(InventoryItem item, {ChangeableItem? changedItem}) {
+  void _addToCart(
+    InventoryItem item, {
+    Map<int, ChangeableItem?>? changedItems,
+  }) {
     setState(() {
       _cart[item.id] = (_cart[item.id] ?? 0) + 1;
-      if (changedItem != null) {
-        _itemChanges[item.id] = changedItem;
+      if (changedItems != null && changedItems.isNotEmpty) {
+        // Store all changed items as List of ItemChange
+        List<ItemChange> changes = [];
+        int totalPriceDifference = 0;
+
+        changedItems.forEach((tabIndex, changedItem) {
+          if (changedItem != null) {
+            changes.add(ItemChange(changedItem, tabIndex));
+            // Calculate price difference for this change
+            final defaultItem = item.changeableContains?.defaultItems[tabIndex];
+            if (defaultItem != null) {
+              final defaultPrice = defaultItem.inventoryPriceList?.price ?? 0;
+              final changedPrice = changedItem.inventoryPriceList?.price ?? 0;
+              if (changedPrice > defaultPrice) {
+                totalPriceDifference += (changedPrice - defaultPrice);
+              }
+            }
+          }
+        });
+
+        _itemChanges[item.id] = changes;
+        // Store total price including all differences
+        final basePrice = item.inventoryPriceList?.price ?? 0;
+        _itemPrices[item.id] = basePrice + totalPriceDifference;
       }
     });
   }
@@ -222,8 +259,8 @@ class _BreakPageState extends State<BreakPage>
       context: context,
       builder: (context) => ChangeItemDialog(
         item: item,
-        onItemSelected: (changedItem) {
-          _addToCart(item, changedItem: changedItem);
+        onItemSelected: (selectedItems) {
+          _addToCart(item, changedItems: selectedItems);
         },
         allMenuItems: _menuItems,
       ),
@@ -236,13 +273,26 @@ class _BreakPageState extends State<BreakPage>
       builder: (context) => CartDialog(
         cart: _cart,
         itemChanges: _itemChanges,
+        itemPrices: _itemPrices,
+        itemComments: _itemComments,
         menuItems: _menuItems,
         onRemoveItem: _removeFromCart,
         onAddItem: (item) => _addToCart(item),
+        onAddComment: (item, comment) {
+          setState(() {
+            if (comment.isEmpty) {
+              _itemComments.remove(item.id);
+            } else {
+              _itemComments[item.id] = comment;
+            }
+          });
+        },
         onClearCart: () {
           setState(() {
             _cart.clear();
             _itemChanges.clear();
+            _itemPrices.clear();
+            _itemComments.clear();
           });
         },
       ),
@@ -256,6 +306,8 @@ class _BreakPageState extends State<BreakPage>
         if (_cart[item.id] == 0) {
           _cart.remove(item.id);
           _itemChanges.remove(item.id);
+          _itemPrices.remove(item.id);
+          _itemComments.remove(item.id);
         }
       }
     });
@@ -266,47 +318,11 @@ class _BreakPageState extends State<BreakPage>
     for (var item in _menuItems) {
       final quantity = _cart[item.id] ?? 0;
       if (quantity > 0 && item.inventoryPriceList != null) {
-        int itemPrice = item.inventoryPriceList!.price;
-
-        // If item has changeable items and user made changes, calculate price difference
-        final changedItem = _itemChanges[item.id];
-        if (changedItem != null && item.hasChangeableItems) {
-          itemPrice = _calculateItemPriceWithChanges(item, changedItem);
-        }
-
+        // Use stored calculated price if item was changed, otherwise use base price
+        int itemPrice = _itemPrices[item.id] ?? item.inventoryPriceList!.price;
         total += itemPrice * quantity;
       }
     }
-    return total;
-  }
-
-  int _calculateItemPriceWithChanges(
-    InventoryItem item,
-    ChangeableItem changedItem,
-  ) {
-    // Start with base product price
-    int total = item.inventoryPriceList?.price ?? 0;
-
-    // Get default items
-    final defaultItems = item.changeableContains?.defaultItems ?? [];
-
-    // Find which default item was changed and calculate price difference
-    // In sieves-app, it adds the difference if the changed item is more expensive
-    for (int i = 0; i < defaultItems.length; i++) {
-      final defaultItem = defaultItems[i];
-      // If this is the changed item
-      if (changedItem.id != defaultItem.id) {
-        final defaultPrice = defaultItem.inventoryPriceList?.price ?? 0;
-        final changedPrice = changedItem.inventoryPriceList?.price ?? 0;
-
-        // Only add difference if changed item is more expensive
-        if (changedPrice > defaultPrice) {
-          total += (changedPrice - defaultPrice);
-        }
-        break; // Only one item can be changed per cart entry
-      }
-    }
-
     return total;
   }
 
@@ -505,25 +521,72 @@ class _BreakPageState extends State<BreakPage>
         final itemId = entry.key;
         final quantity = entry.value;
         final item = _menuItems.firstWhere((i) => i.id == itemId);
-        final price = item.inventoryPriceList?.price ?? 0;
-        final changedItem = _itemChanges[itemId];
+        final itemChangesList = _itemChanges[itemId];
 
-        if (changedItem != null) {
+        // Use calculated price if item was changed (base price + difference)
+        // Otherwise use base price
+        final actualPrice =
+            _itemPrices[itemId] ?? (item.inventoryPriceList?.price ?? 0);
+
+        if (itemChangesList != null && itemChangesList.isNotEmpty) {
+          final changedNames = itemChangesList
+              .map((c) => c.changedItem.name)
+              .join(', ');
           print(
-            '   - ${item.name} (changed to: ${changedItem.name}): qty=$quantity, actual_price=$price UZS',
+            '   - ${item.name} (changed to: $changedNames): qty=$quantity, actual_price=$actualPrice UZS (base: ${item.inventoryPriceList?.price ?? 0} + difference)',
           );
         } else {
-          print('   - ${item.name}: qty=$quantity, actual_price=$price UZS');
+          print(
+            '   - ${item.name}: qty=$quantity, actual_price=$actualPrice UZS',
+          );
+        }
+
+        // Build product object with changeableContains.actual if item was changed
+        Map<String, dynamic> productData = item.toJson();
+
+        if (itemChangesList != null &&
+            itemChangesList.isNotEmpty &&
+            item.hasChangeableItems) {
+          // Update product price to include all differences
+          if (productData['inventoryPriceList'] != null) {
+            productData['inventoryPriceList']['price'] = actualPrice;
+          }
+
+          // Build changeableContains.actual array matching website structure
+          // Populate all tab indices where items were selected
+          final defaultItems = item.changeableContains?.defaultItems ?? [];
+          Map<String, dynamic> actualArray = {};
+
+          // Initialize all indices as null
+          for (int i = 0; i < defaultItems.length; i++) {
+            actualArray[i.toString()] = null;
+          }
+
+          // Populate changed items at their respective tab indices
+          for (var change in itemChangesList) {
+            actualArray[change.tabIndex.toString()] = change.changedItem
+                .toJson();
+          }
+
+          // Update changeableContains structure
+          if (productData['changeableContains'] == null) {
+            productData['changeableContains'] = {};
+          }
+          productData['changeableContains']['actual'] = actualArray;
+          productData['changeableContains']['status'] = 1;
         }
 
         final orderItem = {
           'product_id': item.id.toString(),
+          'product': productData,
           'quantity': quantity,
-          'actual_price': price.toString(),
+          'actual_price': actualPrice.toString(),
         };
 
-        if (changedItem != null) {
-          orderItem['changed_inventory_id'] = changedItem.id.toString();
+        // Add comment/note if exists (matching website behavior)
+        final comment = _itemComments[itemId];
+        if (comment != null && comment.isNotEmpty) {
+          orderItem['note'] = comment;
         }
 
         orderItems.add(orderItem);
@@ -597,6 +660,8 @@ class _BreakPageState extends State<BreakPage>
       setState(() {
         _cart.clear();
         _itemChanges.clear();
+        _itemPrices.clear();
+        _itemComments.clear();
       });
     } catch (e, stackTrace) {
       final totalDuration = DateTime.now().difference(startTime);
@@ -875,7 +940,8 @@ class _BreakPageState extends State<BreakPage>
     final quantity = _cart[item.id] ?? 0;
     final price = item.inventoryPriceList?.price ?? 0;
     final imageUrl = item.photo?.url;
-    final changedItem = _itemChanges[item.id];
+    final itemChangesList = _itemChanges[item.id];
+    final hasChanges = itemChangesList != null && itemChangesList.isNotEmpty;
 
     return Container(
       decoration: BoxDecoration(
@@ -1009,47 +1075,52 @@ class _BreakPageState extends State<BreakPage>
                       fontWeight: FontWeight.w700,
                       color: theme.colorScheme.onSurface,
                     ),
-                    maxLines: changedItem != null ? 1 : 2,
+                    maxLines: hasChanges ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  if (changedItem != null)
-                    Container(
-                      margin: EdgeInsets.only(top: 4.h),
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 6.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF6366F1).withOpacity(0.15),
-                        borderRadius: BorderRadius.circular(6.r),
-                        border: Border.all(
-                          color: const Color(0xFF6366F1).withOpacity(0.3),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.swap_horiz_rounded,
-                            size: 10.sp,
-                            color: const Color(0xFF6366F1),
-                          ),
-                          SizedBox(width: 3.w),
-                          Flexible(
-                            child: Text(
-                              changedItem.name,
-                              style: TextStyle(
-                                fontSize: 9.sp,
-                                fontWeight: FontWeight.w600,
-                                color: const Color(0xFF6366F1),
+                  if (hasChanges) ...[
+                    ...itemChangesList
+                        .map(
+                          (change) => Container(
+                            margin: EdgeInsets.only(top: 4.h),
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 6.w,
+                              vertical: 2.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF6366F1).withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(6.r),
+                              border: Border.all(
+                                color: const Color(0xFF6366F1).withOpacity(0.3),
                               ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.swap_horiz_rounded,
+                                  size: 10.sp,
+                                  color: const Color(0xFF6366F1),
+                                ),
+                                SizedBox(width: 3.w),
+                                Flexible(
+                                  child: Text(
+                                    change.changedItem.name,
+                                    style: TextStyle(
+                                      fontSize: 9.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: const Color(0xFF6366F1),
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                        ],
-                      ),
-                    ),
+                        )
+                        .toList(),
+                  ],
                   const Spacer(),
                   Row(
                     children: [

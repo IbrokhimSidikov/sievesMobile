@@ -6,7 +6,8 @@ import '../../../core/services/auth/auth_manager.dart';
 
 class ChangeItemDialog extends StatefulWidget {
   final InventoryItem item;
-  final Function(ChangeableItem?) onItemSelected;
+  final Function(Map<int, ChangeableItem?>)
+  onItemSelected; // Map of tab index to selected item
   final List<InventoryItem> allMenuItems;
 
   const ChangeItemDialog({
@@ -22,7 +23,8 @@ class ChangeItemDialog extends StatefulWidget {
 
 class _ChangeItemDialogState extends State<ChangeItemDialog>
     with SingleTickerProviderStateMixin {
-  ChangeableItem? _selectedItem;
+  Map<int, ChangeableItem?> _selectedItems =
+      {}; // Track selection per tab index
   late TabController _tabController;
   final AuthManager _authManager = AuthManager();
 
@@ -118,12 +120,8 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
   }
 
   void _onTabChanged() {
-    // Reset selection when changing tabs
-    if (_tabController.indexIsChanging) {
-      setState(() {
-        _selectedItem = null;
-      });
-    }
+    // No need to reset selection when changing tabs anymore
+    // Each tab maintains its own selection
   }
 
   @override
@@ -336,16 +334,18 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
       separatorBuilder: (context, index) => SizedBox(height: 12.h),
       itemBuilder: (context, index) {
         final changeableItem = items[index];
-        final isSelected = _selectedItem?.id == changeableItem.id;
+        final currentTabIndex = _tabController.index;
+        final isSelected =
+            _selectedItems[currentTabIndex]?.id == changeableItem.id;
         final price = changeableItem.inventoryPriceList?.price ?? 0;
 
         return GestureDetector(
           onTap: () {
             setState(() {
-              if (_selectedItem?.id == changeableItem.id) {
-                _selectedItem = null;
+              if (_selectedItems[currentTabIndex]?.id == changeableItem.id) {
+                _selectedItems.remove(currentTabIndex);
               } else {
-                _selectedItem = changeableItem;
+                _selectedItems[currentTabIndex] = changeableItem;
               }
             });
           },
@@ -504,7 +504,8 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
           Expanded(
             child: GestureDetector(
               onTap: () {
-                widget.onItemSelected(null);
+                // Return empty map to indicate no changes
+                widget.onItemSelected({});
                 Navigator.of(context).pop();
               },
               child: Container(
@@ -515,7 +516,12 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
                       : AppColors.cxF5F7F9,
                   borderRadius: BorderRadius.circular(12.r),
                   border: Border.all(
-                    color: theme.colorScheme.outline.withOpacity(0.2),
+                    color:
+                        _selectedItems[_tabController.index]?.id ==
+                            widget.item.id
+                        ? const Color(0xFF6366F1)
+                        : Colors.transparent,
+                    width: 2,
                   ),
                 ),
                 child: Center(
@@ -534,9 +540,10 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
           SizedBox(width: 12.w),
           Expanded(
             child: GestureDetector(
-              onTap: _selectedItem != null
+              onTap: _selectedItems.isNotEmpty
                   ? () {
-                      widget.onItemSelected(_selectedItem);
+                      // Pass all selected items with their tab indices
+                      widget.onItemSelected(_selectedItems);
                       Navigator.of(context).pop();
                     }
                   : null,
@@ -544,7 +551,7 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
                 duration: const Duration(milliseconds: 200),
                 padding: EdgeInsets.symmetric(vertical: 14.h),
                 decoration: BoxDecoration(
-                  gradient: _selectedItem != null
+                  gradient: _selectedItems.isNotEmpty
                       ? LinearGradient(
                           colors: isDark
                               ? [
@@ -559,11 +566,11 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
                           end: Alignment.bottomRight,
                         )
                       : null,
-                  color: _selectedItem == null
+                  color: _selectedItems.isEmpty
                       ? theme.colorScheme.outline.withOpacity(0.2)
                       : null,
                   borderRadius: BorderRadius.circular(12.r),
-                  boxShadow: _selectedItem != null
+                  boxShadow: _selectedItems.isNotEmpty
                       ? [
                           BoxShadow(
                             color:
@@ -583,7 +590,7 @@ class _ChangeItemDialogState extends State<ChangeItemDialog>
                     style: TextStyle(
                       fontSize: 14.sp,
                       fontWeight: FontWeight.w600,
-                      color: _selectedItem != null
+                      color: _selectedItems.isNotEmpty
                           ? AppColors.cxWhite
                           : theme.colorScheme.onSurfaceVariant,
                     ),
