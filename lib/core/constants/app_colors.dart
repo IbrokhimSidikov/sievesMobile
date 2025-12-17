@@ -47,6 +47,7 @@ abstract class AppColors{
   static const Color cxWarning = Color(0xFFFF9500); // Orange (break records, caution)
   static const Color cxBlue    = Color(0xFF007AFF); // Bright iOS blue (history)
   static const Color cxPurple  = Color(0xFFAF52DE); // Purple (achievements)
+  static const Color cxFF9800 = Color(0xFFFF9800);
 }
 
 class AppTheme {

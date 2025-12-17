@@ -14,6 +14,7 @@ import '../widgets/change_item_dialog.dart';
 import '../widgets/cart_dialog.dart';
 import '../widgets/success_dialog.dart';
 import '../widgets/pizza_selection_dialog.dart';
+import '../widgets/combo_selection_dialog.dart';
 
 // Helper class to track changed item with its tab index
 class ItemChange {
@@ -48,6 +49,8 @@ class _BreakPageState extends State<BreakPage>
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
   bool _isSubmittingOrder = false;
+  bool _hasOrderedToday = false;
+  bool _isCheckingDailyOrder = true;
 
   // Pizza product IDs (matching website logic)
   final List<int> _pizzaIds = [227, 228, 229, 230, 231, 234, 235, 724];
@@ -64,6 +67,13 @@ class _BreakPageState extends State<BreakPage>
     724: 1018,
   };
 
+  // Combo product IDs (matching website logic)
+  final List<int> _comboProductIds = [985, 986, 990, 992, 993, 994, 995];
+
+  // Track selected combo for multi-step selection
+  InventoryItem? _selectedComboProduct;
+  bool _pizzaOptionOpened = false;
+
   @override
   void initState() {
     super.initState();
@@ -77,6 +87,79 @@ class _BreakPageState extends State<BreakPage>
     );
 
     _fetchMenuItems();
+    _checkDailyOrderStatus();
+  }
+
+  // Check if current time is within allowed order windows
+  // Window 1: 12:00 - 12:30
+  // Window 2: 13:30 - 14:00
+  // Bypass: Department IDs 16 and 28 can order anytime
+  bool _isWithinOrderTime() {
+    // Bypass time restriction for department IDs 16 and 28
+    final departmentId = _authManager.currentIdentity?.employee?.departmentId;
+    if (departmentId == 16 || departmentId == 28) {
+      return true;
+    }
+    
+    final now = DateTime.now();
+    final hour = now.hour;
+    final minute = now.minute;
+    
+    // Window 1: 12:00 - 12:30
+    if (hour == 12 && minute >= 0 && minute <= 30) {
+      return true;
+    }
+    
+    // Window 2: 13:30 - 14:00
+    if ((hour == 13 && minute >= 30) || (hour == 14 && minute == 0)) {
+      return true;
+    }
+    
+    return false;
+  }
+
+  // Get next available order window message
+  String _getNextOrderWindowMessage() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final minute = now.minute;
+    
+    if (hour < 12) {
+      return 'Orders available at 12:00 - 12:30';
+    } else if (hour == 12 && minute > 30) {
+      return 'Orders available at 13:30 - 14:00';
+    } else if (hour >= 13 && hour < 13 || (hour == 13 && minute < 30)) {
+      return 'Orders available at 13:30 - 14:00';
+    } else {
+      return 'Orders available tomorrow at 12:00 - 12:30';
+    }
+  }
+
+  Future<void> _checkDailyOrderStatus() async {
+    final employeeId = _authManager.currentEmployeeId;
+    if (employeeId == null) {
+      setState(() {
+        _isCheckingDailyOrder = false;
+      });
+      return;
+    }
+
+    try {
+      final hasOrdered = await _authManager.apiService.hasOrderedToday(employeeId);
+      if (mounted) {
+        setState(() {
+          _hasOrderedToday = hasOrdered;
+          _isCheckingDailyOrder = false;
+        });
+      }
+    } catch (e) {
+      print('❌ Error checking daily order status: $e');
+      if (mounted) {
+        setState(() {
+          _isCheckingDailyOrder = false;
+        });
+      }
+    }
   }
 
   @override
@@ -311,13 +394,89 @@ class _BreakPageState extends State<BreakPage>
     }
     // If Italiano is selected, use the original pizza product
 
+    // If this pizza is part of a combo selection, add combo first
+    if (_pizzaOptionOpened && _selectedComboProduct != null) {
+      _addToCart(_selectedComboProduct!);
+      setState(() {
+        _selectedComboProduct = null;
+        _pizzaOptionOpened = false;
+      });
+    }
+
     // Add the selected pizza to cart
     _addToCart(productToAdd);
   }
 
+  List<InventoryItem> _filterComboProducts(int posCategoryId) {
+    List<int> categories = [];
+    bool isBurger = true;
+
+    // Match website logic for category filtering
+    if (posCategoryId == 9) {
+      categories = [9];
+      isBurger = false;
+    } else {
+      categories = [2, 10];
+      isBurger = true;
+    }
+
+    if (isBurger) {
+      return _menuItems
+          .where((item) => categories.contains(item.posCategoryId))
+          .toList();
+    } else {
+      // For non-burger combos, exclude inventoryGroup.id == 1
+      return _menuItems
+          .where(
+            (item) =>
+                categories.contains(item.posCategoryId) &&
+                item.inventoryGroup?.id != 1,
+          )
+          .toList();
+    }
+  }
+
+  void _showComboSelectionDialog(InventoryItem comboItem) {
+    final filteredProducts = _filterComboProducts(comboItem.posCategoryId ?? 0);
+
+    showDialog(
+      context: context,
+      builder: (context) => ComboSelectionDialog(
+        selectedCombo: comboItem,
+        filteredProducts: filteredProducts,
+        onProductSelected: (selectedProduct) {
+          _handleComboProductSelection(comboItem, selectedProduct);
+        },
+      ),
+    );
+  }
+
+  void _handleComboProductSelection(
+    InventoryItem comboItem,
+    InventoryItem selectedProduct,
+  ) {
+    // If the selected product is a pizza (part of a combo)
+    if (_pizzaIds.contains(selectedProduct.id)) {
+      // Store the combo as the selected combo product
+      setState(() {
+        _selectedComboProduct = comboItem;
+        _pizzaOptionOpened = true;
+      });
+      // Show pizza selection dialog
+      _showPizzaSelectionDialog(selectedProduct);
+    } else {
+      // Add combo first, then the selected product
+      _addToCart(comboItem);
+      _addToCart(selectedProduct);
+    }
+  }
+
   void _handleProductClick(InventoryItem item) {
-    // Check if it's a pizza product
-    if (_pizzaIds.contains(item.id)) {
+    // Check if it's a combo product
+    if (_comboProductIds.contains(item.id)) {
+      _showComboSelectionDialog(item);
+    } else if (_pizzaIds.contains(item.id)) {
+      // Check if it's a pizza product
       _showPizzaSelectionDialog(item);
     } else if (item.hasChangeableItems) {
       _showChangeItemDialog(item);
@@ -345,6 +504,10 @@ class _BreakPageState extends State<BreakPage>
               _itemComments[item.id] = comment;
             }
           });
+        },
+        onChangeItem: (item) {
+          // Show change item dialog for the selected item
+          _showChangeItemDialog(item);
         },
         onClearCart: () {
           setState(() {
@@ -390,6 +553,34 @@ class _BreakPageState extends State<BreakPage>
   }
 
   Future<void> _handleOrderSubmission() async {
+    // Check time restriction first
+    if (!_isWithinOrderTime()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(_getNextOrderWindowMessage()),
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
+    // Check if already ordered today
+    if (_hasOrderedToday) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have already placed an order today. One order per day allowed.'),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     final startTime = DateTime.now();
     print('');
     print('╔══════════════════════════════════════════════════════════════╗');
@@ -460,7 +651,7 @@ class _BreakPageState extends State<BreakPage>
       // STEP 3: CAPTURE FACE FROM CAMERA
       // ═══════════════════════════════════════════════════════════════
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 3: Opening face capture dialog                        │');
+      print('│ STEP 3: Opening face capture dialog                         │');
       print('└─────────────────────────────────────────────────────────────┘');
 
       final step3Start = DateTime.now();
@@ -505,7 +696,6 @@ class _BreakPageState extends State<BreakPage>
       );
       final step4Duration = DateTime.now().difference(step4Start);
 
-      // Clean up profile image file (keep captured image for upload)
       try {
         await profileImageFile.delete();
         print('   🗑️ Profile image file cleaned up');
@@ -536,7 +726,6 @@ class _BreakPageState extends State<BreakPage>
       }
       print('✅ Face verification passed in ${step4Duration.inMilliseconds}ms');
       print('');
-
       // ═══════════════════════════════════════════════════════════════
       // STEP 5: UPLOAD BREAK PHOTO
       // ═══════════════════════════════════════════════════════════════
@@ -710,15 +899,14 @@ class _BreakPageState extends State<BreakPage>
       print('⏱️ Total duration: ${totalDuration.inMilliseconds}ms');
       print('');
 
-      // Clear cart after successful order
       setState(() {
         _cart.clear();
         _itemChanges.clear();
         _itemPrices.clear();
         _itemComments.clear();
+        _hasOrderedToday = true; // Mark as ordered today to prevent duplicate orders
       });
 
-      // Show success dialog
       if (mounted) {
         showDialog(
           context: context,
@@ -1424,6 +1612,17 @@ class _BreakPageState extends State<BreakPage>
   Widget _buildCartFooter(ThemeData theme, bool isDark) {
     final total = _getCartTotal();
     final itemCount = _getCartItemCount();
+    final canOrder = _isWithinOrderTime() && !_hasOrderedToday && !_isCheckingDailyOrder;
+    
+    // Determine restriction message
+    String? restrictionMessage;
+    if (_isCheckingDailyOrder) {
+      restrictionMessage = null; // Still checking
+    } else if (_hasOrderedToday) {
+      restrictionMessage = 'Already ordered today';
+    } else if (!_isWithinOrderTime()) {
+      restrictionMessage = 'Outside order hours';
+    }
 
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -1441,96 +1640,139 @@ class _BreakPageState extends State<BreakPage>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
+          if (restrictionMessage != null)
+            Container(
+              width: double.infinity,
+              margin: EdgeInsets.only(bottom: 12.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: Colors.orange.withOpacity(0.15),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: Colors.orange.withOpacity(0.3),
+                  width: 1,
                 ),
-                SizedBox(height: 4.h),
-                Text(
-                  '$total UZS',
-                  style: TextStyle(
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.w800,
-                    color: isDark
-                        ? const Color(0xFF6366F1)
-                        : const Color(0xFF0071E3),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.access_time_rounded,
+                    color: Colors.orange,
+                    size: 18.sp,
                   ),
-                ),
-              ],
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      restrictionMessage,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange.shade800,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          SizedBox(width: 16.w),
-          Expanded(
-            child: GestureDetector(
-              onTap: _isSubmittingOrder ? null : _handleOrderSubmission,
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 16.h),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: isDark
-                        ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                        : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(16.r),
-                  boxShadow: [
-                    BoxShadow(
-                      color:
-                          (isDark
-                                  ? const Color(0xFF6366F1)
-                                  : const Color(0xFF0071E3))
-                              .withOpacity(0.4),
-                      blurRadius: 12,
-                      offset: const Offset(0, 6),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      '$total UZS',
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.w800,
+                        color: isDark
+                            ? const Color(0xFF6366F1)
+                            : const Color(0xFF0071E3),
+                      ),
                     ),
                   ],
                 ),
-                child: _isSubmittingOrder
-                    ? Center(
-                        child: SizedBox(
-                          height: 24.h,
-                          width: 24.w,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.cxWhite,
-                            ),
-                          ),
-                        ),
-                      )
-                    : Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.shopping_cart_checkout_rounded,
-                            color: AppColors.cxWhite,
-                            size: 24.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            AppLocalizations.of(context).placeOrder,
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.cxWhite,
-                            ),
-                          ),
-                        ],
-                      ),
               ),
-            ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: GestureDetector(
+                  onTap: (_isSubmittingOrder || !canOrder) ? null : _handleOrderSubmission,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 16.h),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: canOrder
+                            ? (isDark
+                                ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                                : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)])
+                            : [Colors.grey.shade400, Colors.grey.shade500],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: canOrder
+                          ? [
+                              BoxShadow(
+                                color:
+                                    (isDark
+                                            ? const Color(0xFF6366F1)
+                                            : const Color(0xFF0071E3))
+                                        .withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 6),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: _isSubmittingOrder
+                        ? Center(
+                            child: SizedBox(
+                              height: 24.h,
+                              width: 24.w,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  AppColors.cxWhite,
+                                ),
+                              ),
+                            ),
+                          )
+                        : Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                canOrder ? Icons.shopping_cart_checkout_rounded : Icons.lock_outline_rounded,
+                                color: AppColors.cxWhite,
+                                size: 24.sp,
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                AppLocalizations.of(context).placeOrder,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.cxWhite,
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ),

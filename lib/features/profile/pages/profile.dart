@@ -1606,6 +1606,9 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildErrorState() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32.w),
@@ -1651,6 +1654,57 @@ class _ProfileState extends State<Profile> {
                   color: AppColors.cxPureWhite,
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+            SizedBox(height: 16.h),
+            // Logout button - always visible even on error
+            Container(
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    Color(0xFFEF4444),
+                    Color(0xFFDC2626),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(16.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFFEF4444).withOpacity(0.3),
+                    blurRadius: 12,
+                    offset: const Offset(0, 6),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: _handleLogout,
+                  borderRadius: BorderRadius.circular(16.r),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.logout_rounded,
+                          color: Colors.white,
+                          size: 20.sp,
+                        ),
+                        SizedBox(width: 8.w),
+                        Text(
+                          AppLocalizations.of(context).logoutButton,
+                          style: TextStyle(
+                            color: AppColors.cxPureWhite,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),

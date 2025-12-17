@@ -13,6 +13,7 @@ class CartDialog extends StatelessWidget {
   final Function(InventoryItem) onRemoveItem;
   final Function(InventoryItem) onAddItem;
   final Function(InventoryItem, String) onAddComment; // Callback to add comment
+  final Function(InventoryItem)? onChangeItem; // Callback to change modifiers
   final VoidCallback onClearCart;
 
   const CartDialog({
@@ -25,6 +26,7 @@ class CartDialog extends StatelessWidget {
     required this.onRemoveItem,
     required this.onAddItem,
     required this.onAddComment,
+    this.onChangeItem,
     required this.onClearCart,
   });
 
@@ -552,6 +554,33 @@ class CartDialog extends StatelessWidget {
                 children: [
                   Row(
                     children: [
+                      // Change item button (only for items with modifiers)
+                      if (item.hasChangeableItems && onChangeItem != null) ...[
+                        GestureDetector(
+                          onTap: () {
+                            Navigator.of(context).pop();
+                            onChangeItem!(item);
+                          },
+                          child: Container(
+                            padding: EdgeInsets.all(6.w),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF10B981).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8.r),
+                              border: Border.all(
+                                color: const Color(0xFF10B981),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.swap_horiz_rounded,
+                              color: const Color(0xFF10B981),
+                              size: 16.sp,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                      ],
+                      // Comment button
                       GestureDetector(
                         onTap: () =>
                             _showCommentDialog(context, item, theme, isDark),

@@ -35,6 +35,9 @@ class _ProductivityTimerState extends State<ProductivityTimer> {
     {'id': '2', 'name': 'Burger'},
     {'id': '3', 'name': 'Pizza'},
     {'id': '4', 'name': 'Chicken'},
+    {'id': '5', 'name': 'Coffee'},
+    {'id': '6', 'name': 'IceCream'},
+    {'id': '7', 'name': 'Waffle'},
   ];
 
   @override

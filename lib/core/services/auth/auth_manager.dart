@@ -53,6 +53,12 @@ class AuthManager {
            role == 'superadmin';
   }
   
+  // Check if user has access to break order (branch == 2)
+  bool get hasBreakAccess {
+    if (_currentIdentity == null) return false;
+    return _currentIdentity!.employee?.branchId == 2;
+  }
+  
   // Callback for when session expires (refresh token failed)
   Function()? onSessionExpired;
 

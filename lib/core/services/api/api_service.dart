@@ -415,6 +415,52 @@ class ApiService {
     return '${endOfWeek.year}-${endOfWeek.month.toString().padLeft(2, '0')}-${endOfWeek.day.toString().padLeft(2, '0')}';
   }
 
+  // Check if employee has already ordered today
+  Future<bool> hasOrderedToday(int breakEmployeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final now = DateTime.now();
+      final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+      
+      final queryParams = {
+        'orderType': 'break',
+        'break_employee_id': breakEmployeeId.toString(),
+        'dateRange': '$today,$today',
+      };
+
+      final uri = Uri.parse('$baseUrl/order').replace(
+        queryParameters: queryParams,
+      );
+
+      print('🔍 Checking if employee $breakEmployeeId has ordered today: $uri');
+
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        
+        List<dynamic> ordersList;
+        if (jsonData is List) {
+          ordersList = jsonData;
+        } else if (jsonData is Map && jsonData.containsKey('models')) {
+          ordersList = jsonData['models'] as List;
+        } else if (jsonData is Map && jsonData.containsKey('data')) {
+          ordersList = jsonData['data'] as List;
+        } else {
+          ordersList = [];
+        }
+        
+        final hasOrdered = ordersList.isNotEmpty;
+        print('📊 Has ordered today: $hasOrdered (found ${ordersList.length} orders)');
+        return hasOrdered;
+      }
+      return false;
+    } catch (e) {
+      print('❌ Exception checking today\'s orders: $e');
+      return false;
+    }
+  }
+
   // Get break orders for an employee within a date range
   Future<List<BreakOrder>> getBreakOrders(int breakEmployeeId, {String? startDate, String? endDate}) async {
     try {
@@ -899,7 +945,7 @@ class ApiService {
         'break_photo_id': breakPhotoId,
         'note': null,
         'customer_quantity': 1,
-        'branch_id': branchId,
+        'branch_id': 14,
         'paid': totalValue,
       };
 
