@@ -91,7 +91,7 @@ class _BreakPageState extends State<BreakPage>
 
     _fetchMenuItems();
     _checkDailyOrderStatus();
-    
+
     // Show notice dialog after frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showNoticeDialog();
@@ -108,21 +108,21 @@ class _BreakPageState extends State<BreakPage>
     if (departmentId == 16 || departmentId == 28) {
       return true;
     }
-    
+
     final now = DateTime.now();
     final hour = now.hour;
     final minute = now.minute;
-    
+
     // Window 1: 12:00 - 12:30
     if (hour == 12 && minute >= 0 && minute <= 30) {
       return true;
     }
-    
+
     // Window 2: 13:30 - 14:00
     if ((hour == 13 && minute >= 30) || (hour == 14 && minute == 0)) {
       return true;
     }
-    
+
     return false;
   }
 
@@ -131,7 +131,7 @@ class _BreakPageState extends State<BreakPage>
     final now = DateTime.now();
     final hour = now.hour;
     final minute = now.minute;
-    
+
     if (hour < 12) {
       return 'Orders available at 12:00 - 12:30';
     } else if (hour == 12 && minute > 30) {
@@ -153,7 +153,9 @@ class _BreakPageState extends State<BreakPage>
     }
 
     try {
-      final hasOrdered = await _authManager.apiService.hasOrderedToday(employeeId);
+      final hasOrdered = await _authManager.apiService.hasOrderedToday(
+        employeeId,
+      );
       if (mounted) {
         setState(() {
           _hasOrderedToday = hasOrdered;
@@ -182,7 +184,8 @@ class _BreakPageState extends State<BreakPage>
       barrierDismissible: true,
       builder: (context) => const NoticeDialog(
         title: 'Diqqat',
-        message: '''Ushbu urilgan BREAK buyurtmalar faqatgina CITY BOULEVARD filialiga chiqadi. Boshqa filialda bolsangiz Planshetdan foydalaning''',
+        message:
+            '''Ushbu urilgan BREAK buyurtmalar faqatgina CITY BOULEVARD filialiga chiqadi. Boshqa filialda bolsangiz Planshetdan foydalaning''',
       ),
     );
   }
@@ -217,7 +220,7 @@ class _BreakPageState extends State<BreakPage>
         print(
           '📦 [BREAK PAGE] Displaying cached data immediately (${cachedData.menuItems.length} items, valid: $hasValidCache)',
         );
-        
+
         final sortedCategories =
             List<PosActiveCategory>.from(cachedData.categories)..sort(
               (a, b) => (a.posCategory?.name ?? '').compareTo(
@@ -264,12 +267,12 @@ class _BreakPageState extends State<BreakPage>
       // Fetch fresh data from API
       final apiStartTime = DateTime.now();
       print('📡 [BREAK PAGE] Starting parallel API calls...');
-      
+
       if (!mounted) return;
       setState(() {
         _loadingMessage = 'Downloading menu items...';
       });
-      
+
       final results = await Future.wait([
         _authManager.apiService.getInventoryMenu(),
         _authManager.apiService.getPosCategories(),
@@ -578,7 +581,9 @@ class _BreakPageState extends State<BreakPage>
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('You have already placed an order today. One order per day allowed.'),
+            content: Text(
+              'You have already placed an order today. One order per day allowed.',
+            ),
             backgroundColor: Colors.orange,
             duration: Duration(seconds: 3),
           ),
@@ -910,7 +915,8 @@ class _BreakPageState extends State<BreakPage>
         _itemChanges.clear();
         _itemPrices.clear();
         _itemComments.clear();
-        _hasOrderedToday = true; // Mark as ordered today to prevent duplicate orders
+        _hasOrderedToday =
+            true; // Mark as ordered today to prevent duplicate orders
       });
 
       if (mounted) {
@@ -1090,7 +1096,9 @@ class _BreakPageState extends State<BreakPage>
                   ),
                 ),
                 child: IconButton(
-                  onPressed: _isLoading ? null : () => _fetchMenuItems(forceRefresh: true),
+                  onPressed: _isLoading
+                      ? null
+                      : () => _fetchMenuItems(forceRefresh: true),
                   icon: _isLoading
                       ? SizedBox(
                           width: 24.sp,
@@ -1302,6 +1310,22 @@ class _BreakPageState extends State<BreakPage>
                           width: double.infinity,
                           height: 120.h,
                           fit: BoxFit.cover,
+                          cacheWidth:
+                              300, // Cache smaller version for better performance
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Center(
+                              child: CircularProgressIndicator(
+                                value:
+                                    loadingProgress.expectedTotalBytes != null
+                                    ? loadingProgress.cumulativeBytesLoaded /
+                                          loadingProgress.expectedTotalBytes!
+                                    : null,
+                                strokeWidth: 2,
+                                color: AppColors.cxWarning,
+                              ),
+                            );
+                          },
                           errorBuilder: (context, error, stackTrace) {
                             return Center(
                               child: Icon(
@@ -1664,8 +1688,9 @@ class _BreakPageState extends State<BreakPage>
   Widget _buildCartFooter(ThemeData theme, bool isDark) {
     final total = _getCartTotal();
     final itemCount = _getCartItemCount();
-    final canOrder = _isWithinOrderTime() && !_hasOrderedToday && !_isCheckingDailyOrder;
-    
+    final canOrder =
+        _isWithinOrderTime() && !_hasOrderedToday && !_isCheckingDailyOrder;
+
     // Determine restriction message
     String? restrictionMessage;
     if (_isCheckingDailyOrder) {
@@ -1761,15 +1786,23 @@ class _BreakPageState extends State<BreakPage>
               SizedBox(width: 16.w),
               Expanded(
                 child: GestureDetector(
-                  onTap: (_isSubmittingOrder || !canOrder) ? null : _handleOrderSubmission,
+                  onTap: (_isSubmittingOrder || !canOrder)
+                      ? null
+                      : _handleOrderSubmission,
                   child: Container(
                     padding: EdgeInsets.symmetric(vertical: 16.h),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         colors: canOrder
                             ? (isDark
-                                ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                                : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)])
+                                  ? [
+                                      const Color(0xFF6366F1),
+                                      const Color(0xFF8B5CF6),
+                                    ]
+                                  : [
+                                      const Color(0xFF0071E3),
+                                      const Color(0xFF5E5CE6),
+                                    ])
                             : [Colors.grey.shade400, Colors.grey.shade500],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
@@ -1806,7 +1839,9 @@ class _BreakPageState extends State<BreakPage>
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                canOrder ? Icons.shopping_cart_checkout_rounded : Icons.lock_outline_rounded,
+                                canOrder
+                                    ? Icons.shopping_cart_checkout_rounded
+                                    : Icons.lock_outline_rounded,
                                 color: AppColors.cxWhite,
                                 size: 24.sp,
                               ),
@@ -1992,7 +2027,10 @@ class _BreakPageState extends State<BreakPage>
                       gradient: LinearGradient(
                         colors: isDark
                             ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
-                            : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)],
+                            : [
+                                const Color(0xFF0071E3),
+                                const Color(0xFF5E5CE6),
+                              ],
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -2011,7 +2049,9 @@ class _BreakPageState extends State<BreakPage>
                     child: CircularProgressIndicator(
                       strokeWidth: 3,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3),
+                        isDark
+                            ? const Color(0xFF6366F1)
+                            : const Color(0xFF0071E3),
                       ),
                     ),
                   ),

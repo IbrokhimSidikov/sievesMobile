@@ -16,7 +16,7 @@ class ApiService {
   // final String baseUrl = 'https://app.sievesapp.com/v1';
   final AuthService authService;
   late final AuthHttpClient _httpClient;
-  
+
   // Callback for when token refresh fails (logout needed)
   Function()? onTokenRefreshFailed;
 
@@ -33,19 +33,15 @@ class ApiService {
   // Helper method to get headers with auth token
   Future<Map<String, String>> _getHeaders() async {
     final token = await authService.getAccessToken();
-    
-    final headers = {
-      'Content-Type': 'application/json',
-    };
-    
+
+    final headers = {'Content-Type': 'application/json'};
+
     if (token != null) {
       headers['Authorization'] = 'Bearer $token';
     }
-    
+
     return headers;
   }
-
-
 
   // Get identity by Auth0 ID
   Future<Identity?> getIdentityByAuthId(String authId) async {
@@ -53,12 +49,17 @@ class ApiService {
       final headers = await _getHeaders();
       final queryParams = {
         'auth_id': authId,
-        'expand': ['employee.branch', 'employee.individual', 'employee.individual.photo', 'employee.reward'].join(','),
+        'expand': [
+          'employee.branch',
+          'employee.individual',
+          'employee.individual.photo',
+          'employee.reward',
+        ].join(','),
       };
 
-      final uri = Uri.parse('$baseUrl/identity/0').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/identity/0',
+      ).replace(queryParameters: queryParams);
 
       print('🌐 [API] Calling identity endpoint: $uri');
       print('🌐 [API] Expand parameter: ${queryParams['expand']}');
@@ -69,12 +70,18 @@ class ApiService {
         final responseBody = jsonDecode(response.body);
         print('🔍 [API] Identity response received');
         print('🔍 [API] Employee data: ${responseBody['employee']}');
-        print('🔍 [API] Individual data: ${responseBody['employee']?['individual']}');
-        print('🔍 [API] Photo data: ${responseBody['employee']?['individual']?['photo']}');
-        
+        print(
+          '🔍 [API] Individual data: ${responseBody['employee']?['individual']}',
+        );
+        print(
+          '🔍 [API] Photo data: ${responseBody['employee']?['individual']?['photo']}',
+        );
+
         final identity = Identity.fromJson(responseBody);
-        print('🔍 [API] Parsed identity photo: ${identity.employee?.individual?.photo}');
-        
+        print(
+          '🔍 [API] Parsed identity photo: ${identity.employee?.individual?.photo}',
+        );
+
         return identity;
       } else {
         print('Error getting identity: ${response.body}');
@@ -118,9 +125,9 @@ class ApiService {
         'expand': ['branch', 'individual.photo', 'jobPosition'].join(','),
       };
 
-      final uri = Uri.parse('$baseUrl/employee/$employeeId').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/employee/$employeeId',
+      ).replace(queryParameters: queryParams);
 
       final response = await _httpClient.get(uri, headers: headers);
 
@@ -137,16 +144,17 @@ class ApiService {
   }
 
   // Get employee data with custom expand parameters
-  Future<Map<String, dynamic>?> getEmployeeWithExpand(int employeeId, List<String> expandFields) async {
+  Future<Map<String, dynamic>?> getEmployeeWithExpand(
+    int employeeId,
+    List<String> expandFields,
+  ) async {
     try {
       final headers = await _getHeaders();
-      final queryParams = {
-        'expand': expandFields.join(','),
-      };
+      final queryParams = {'expand': expandFields.join(',')};
 
-      final uri = Uri.parse('$baseUrl/employee/$employeeId').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/employee/$employeeId',
+      ).replace(queryParameters: queryParams);
 
       print('🔍 Fetching employee data from: $uri');
       final response = await _httpClient.get(uri, headers: headers);
@@ -156,7 +164,9 @@ class ApiService {
         print('✅ Employee data received');
         return data;
       } else {
-        print('❌ Error getting employee data: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting employee data: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -185,14 +195,14 @@ class ApiService {
           'salaries',
           'activeContract',
           'reward',
-          'bonusInfo'
+          'bonusInfo',
         ].join(','),
       };
 
       // Use the app API base URL for this endpoint
-      final uri = Uri.parse('https://app.sievesapp.com/v1/employee/$employeeId').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        'https://app.sievesapp.com/v1/employee/$employeeId',
+      ).replace(queryParameters: queryParams);
 
       print('🔍 Fetching employee profile data from: $uri');
       final response = await _httpClient.get(uri, headers: headers);
@@ -202,7 +212,9 @@ class ApiService {
         print('✅ Employee profile data received');
         return data;
       } else {
-        print('❌ Error getting employee profile data: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting employee profile data: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -213,8 +225,8 @@ class ApiService {
 
   // Get work entries for a given date range with pagination support
   Future<Map<String, dynamic>?> getWorkEntries(
-    int employeeId, 
-    String startDate, 
+    int employeeId,
+    String startDate,
     String endDate, {
     int? page,
     int? limit,
@@ -234,9 +246,9 @@ class ApiService {
         queryParams['limit'] = limit.toString();
       }
 
-      final uri = Uri.parse('$baseUrl/work-entry').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/work-entry',
+      ).replace(queryParameters: queryParams);
 
       print('📋 Request URL: $uri');
 
@@ -249,11 +261,11 @@ class ApiService {
         final jsonData = jsonDecode(response.body);
         print('📊 JSON Type: ${jsonData.runtimeType}');
         print('📊 JSON Data: $jsonData');
-        
+
         // Handle both array and object responses
         List<dynamic> entriesList;
         Map<String, dynamic>? metadata;
-        
+
         if (jsonData is List) {
           entriesList = jsonData;
         } else if (jsonData is Map) {
@@ -277,10 +289,12 @@ class ApiService {
           print('❌ Unexpected response format: $jsonData');
           return null;
         }
-        
-        final entries = entriesList.map((json) => WorkEntry.fromJson(json)).toList();
+
+        final entries = entriesList
+            .map((json) => WorkEntry.fromJson(json))
+            .toList();
         print('✅ Found ${entries.length} work entries');
-        
+
         return {
           'entries': entries,
           'metadata': metadata,
@@ -297,7 +311,10 @@ class ApiService {
   }
 
   // Get work entries for an employee within a date range
-  Future<List<WorkEntry>> getWorkEntriesInRange(int employeeId, String dateRange) async {
+  Future<List<WorkEntry>> getWorkEntriesInRange(
+    int employeeId,
+    String dateRange,
+  ) async {
     try {
       final headers = await _getHeaders();
       final uri = Uri.parse('$baseUrl/work-entry').replace(
@@ -317,7 +334,9 @@ class ApiService {
         print('✅ Fetched ${entries.length} work entries');
         return entries;
       } else {
-        print('❌ Error getting work entries: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting work entries: ${response.statusCode} - ${response.body}',
+        );
         return [];
       }
     } catch (e) {
@@ -350,9 +369,9 @@ class ApiService {
         queryParams['date_range'] = '$startDate,$endDate';
       }
 
-      final uri = Uri.parse('$baseUrl/work-entry').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/work-entry',
+      ).replace(queryParameters: queryParams);
 
       print('📋 Fetching work entries by type: $uri');
 
@@ -360,11 +379,11 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         // Handle both array and object responses
         List<dynamic> entriesList;
         int totalCount = 0;
-        
+
         if (jsonData is List) {
           entriesList = jsonData;
           totalCount = entriesList.length;
@@ -383,16 +402,19 @@ class ApiService {
           print('❌ Unexpected response format: $jsonData');
           return null;
         }
-        
-        final entries = entriesList.map((json) => WorkEntry.fromJson(json)).toList();
-        print('✅ Fetched ${entries.length} work entries (type: $type, status: $status)');
-        
-        return {
-          'entries': entries,
-          'totalCount': totalCount,
-        };
+
+        final entries = entriesList
+            .map((json) => WorkEntry.fromJson(json))
+            .toList();
+        print(
+          '✅ Fetched ${entries.length} work entries (type: $type, status: $status)',
+        );
+
+        return {'entries': entries, 'totalCount': totalCount};
       } else {
-        print('❌ Error getting work entries by type: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting work entries by type: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -420,17 +442,18 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final now = DateTime.now();
-      final today = '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
-      
+      final today =
+          '${now.year}-${now.month.toString().padLeft(2, '0')}-${now.day.toString().padLeft(2, '0')}';
+
       final queryParams = {
         'orderType': 'break',
         'break_employee_id': breakEmployeeId.toString(),
         'dateRange': '$today,$today',
       };
 
-      final uri = Uri.parse('$baseUrl/order').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/order',
+      ).replace(queryParameters: queryParams);
 
       print('🔍 Checking if employee $breakEmployeeId has ordered today: $uri');
 
@@ -438,7 +461,7 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         List<dynamic> ordersList;
         if (jsonData is List) {
           ordersList = jsonData;
@@ -449,9 +472,11 @@ class ApiService {
         } else {
           ordersList = [];
         }
-        
+
         final hasOrdered = ordersList.isNotEmpty;
-        print('📊 Has ordered today: $hasOrdered (found ${ordersList.length} orders)');
+        print(
+          '📊 Has ordered today: $hasOrdered (found ${ordersList.length} orders)',
+        );
         return hasOrdered;
       }
       return false;
@@ -462,18 +487,26 @@ class ApiService {
   }
 
   // Get break orders for an employee within a date range
-  Future<List<BreakOrder>> getBreakOrders(int breakEmployeeId, {String? startDate, String? endDate}) async {
+  Future<List<BreakOrder>> getBreakOrders(
+    int breakEmployeeId, {
+    String? startDate,
+    String? endDate,
+  }) async {
     try {
       final headers = await _getHeaders();
-      
+
       // If dates not provided, use current month
       final now = DateTime.now();
       final firstDayOfMonth = DateTime(now.year, now.month, 1);
       final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
-      
-      final start = startDate ?? '${firstDayOfMonth.year}-${firstDayOfMonth.month.toString().padLeft(2, '0')}-${firstDayOfMonth.day.toString().padLeft(2, '0')}';
-      final end = endDate ?? '${lastDayOfMonth.year}-${lastDayOfMonth.month.toString().padLeft(2, '0')}-${lastDayOfMonth.day.toString().padLeft(2, '0')}';
-      
+
+      final start =
+          startDate ??
+          '${firstDayOfMonth.year}-${firstDayOfMonth.month.toString().padLeft(2, '0')}-${firstDayOfMonth.day.toString().padLeft(2, '0')}';
+      final end =
+          endDate ??
+          '${lastDayOfMonth.year}-${lastDayOfMonth.month.toString().padLeft(2, '0')}-${lastDayOfMonth.day.toString().padLeft(2, '0')}';
+
       final queryParams = {
         'orderType': 'break',
         'break_employee_id': breakEmployeeId.toString(),
@@ -481,9 +514,9 @@ class ApiService {
         'dateRange': '$start,$end',
       };
 
-      final uri = Uri.parse('$baseUrl/order').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/order',
+      ).replace(queryParameters: queryParams);
 
       print('🍔 Fetching break orders: $uri');
 
@@ -495,7 +528,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         print('📊 JSON Type: ${jsonData.runtimeType}');
-        
+
         // Handle both array and object responses
         List<dynamic> ordersList;
         if (jsonData is List) {
@@ -508,12 +541,16 @@ class ApiService {
           print('❌ Unexpected response format: $jsonData');
           return [];
         }
-        
-        final orders = ordersList.map((json) => BreakOrder.fromJson(json)).toList();
+
+        final orders = ordersList
+            .map((json) => BreakOrder.fromJson(json))
+            .toList();
         print('✅ Fetched ${orders.length} break orders');
         return orders;
       } else {
-        print('❌ Error getting break orders: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting break orders: ${response.statusCode} - ${response.body}',
+        );
         return [];
       }
     } catch (e) {
@@ -523,7 +560,9 @@ class ApiService {
   }
 
   // Get break orders for the current month
-  Future<List<BreakOrder>?> getBreakOrdersForCurrentMonth(int employeeId) async {
+  Future<List<BreakOrder>?> getBreakOrdersForCurrentMonth(
+    int employeeId,
+  ) async {
     try {
       final headers = await _getHeaders();
       final now = DateTime.now();
@@ -533,9 +572,9 @@ class ApiService {
         'month': now.month.toString().padLeft(2, '0'),
       };
 
-      final uri = Uri.parse('$baseUrl/break-order').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/break-order',
+      ).replace(queryParameters: queryParams);
 
       print('📅 Fetching break orders: $uri');
 
@@ -543,11 +582,15 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final breakOrders = data.map((json) => BreakOrder.fromJson(json)).toList();
+        final breakOrders = data
+            .map((json) => BreakOrder.fromJson(json))
+            .toList();
         print('✅ Fetched ${breakOrders.length} break orders');
         return breakOrders;
       } else {
-        print('❌ Error getting break orders: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting break orders: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -565,9 +608,9 @@ class ApiService {
         'expand': 'branch',
       };
 
-      final uri = Uri.parse('$baseUrl/history').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/history',
+      ).replace(queryParameters: queryParams);
 
       print('📜 Fetching history records: $uri');
 
@@ -577,29 +620,35 @@ class ApiService {
         final responseData = jsonDecode(response.body);
         print('📋 Response type: ${responseData.runtimeType}');
         print('📋 Response data: $responseData');
-        
+
         // Handle both direct list and wrapped object responses
         List<dynamic> data;
         if (responseData is List) {
           data = responseData;
         } else if (responseData is Map<String, dynamic>) {
           // Try common property names for wrapped responses
-          data = (responseData['models'] ?? 
-                  responseData['data'] ?? 
-                  responseData['results'] ?? 
-                  responseData['records'] ?? 
-                  responseData['items'] ?? 
-                  []) as List<dynamic>;
+          data =
+              (responseData['models'] ??
+                      responseData['data'] ??
+                      responseData['results'] ??
+                      responseData['records'] ??
+                      responseData['items'] ??
+                      [])
+                  as List<dynamic>;
         } else {
           print('❌ Unexpected response type: ${responseData.runtimeType}');
           return null;
         }
-        
-        final historyRecords = data.map((json) => HistoryRecord.fromJson(json)).toList();
+
+        final historyRecords = data
+            .map((json) => HistoryRecord.fromJson(json))
+            .toList();
         print('✅ Fetched ${historyRecords.length} history records');
         return historyRecords;
       } else {
-        print('❌ Error getting history records: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting history records: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -623,9 +672,9 @@ class ApiService {
         'expand': 'branch_id',
       };
 
-      final uri = Uri.parse('$baseUrl/transaction').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/transaction',
+      ).replace(queryParameters: queryParams);
 
       print('📊 Fetching transactions: $uri');
       final response = await _httpClient.get(uri, headers: headers);
@@ -635,7 +684,9 @@ class ApiService {
         print('✅ Fetched transactions successfully');
         return data;
       } else {
-        print('❌ Error getting transactions: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting transactions: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -669,7 +720,9 @@ class ApiService {
           return null;
         }
       } else {
-        print('❌ Error getting break balance: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting break balance: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -682,22 +735,22 @@ class ApiService {
   Future<Map<String, dynamic>?> getEmployeeBonus(int employeeId) async {
     try {
       final headers = await _getHeaders();
-      
+
       // Calculate previous month
       final now = DateTime.now();
       final previousMonth = DateTime(now.year, now.month - 1, 1);
       final year = previousMonth.year;
       final month = previousMonth.month;
-      
+
       final queryParams = {
         'employee_id': employeeId.toString(),
         'year': year.toString(),
         'month': month.toString(),
       };
 
-      final uri = Uri.parse('$baseUrl/employee-bonus/employee').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/employee-bonus/employee',
+      ).replace(queryParameters: queryParams);
 
       print('🎁 Fetching employee bonus for $year-$month: $uri');
       final response = await _httpClient.get(uri, headers: headers);
@@ -707,7 +760,9 @@ class ApiService {
         print('✅ Fetched employee bonus successfully: $data');
         return data;
       } else {
-        print('❌ Error getting employee bonus: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting employee bonus: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -720,7 +775,9 @@ class ApiService {
   Future<List<dynamic>?> getKitchenEmployees() async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/efficiency-tracker/kitchen-employees');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/efficiency-tracker/kitchen-employees',
+      );
 
       print('👨‍🍳 Fetching kitchen employees: $uri');
       final response = await _httpClient.get(uri, headers: headers);
@@ -730,7 +787,9 @@ class ApiService {
         print('✅ Fetched ${data.length} kitchen employees');
         return data;
       } else {
-        print('❌ Error getting kitchen employees: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting kitchen employees: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -776,7 +835,9 @@ class ApiService {
         print('✅ Efficiency tracker data submitted successfully');
         return true;
       } else {
-        print('❌ Error submitting efficiency tracker: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error submitting efficiency tracker: ${response.statusCode} - ${response.body}',
+        );
         return false;
       }
     } catch (e) {
@@ -790,23 +851,30 @@ class ApiService {
     final startTime = DateTime.now();
     try {
       final headers = await _getHeaders();
+      // Add compression header for faster transfer
+      headers['Accept-Encoding'] = 'gzip, deflate';
+
       final queryParams = {
         'is_active': '1',
         'is_pos': '1',
-        'expand': 'inventoryPriceList,photo,changeableContains.default.photo,changeableContains.default.inventoryPriceList,changeableCategories.posCategory',
-        'limit': '100',
+        'expand':
+            'inventoryPriceList,photo,changeableContains.default.photo,changeableContains.default.inventoryPriceList,changeableCategories.posCategory',
+        // Remove limit to fetch all items in one request
+        'per-page': '500', // Increase to get all items at once
       };
 
-      final uri = Uri.parse('$baseUrl/inventory').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/inventory',
+      ).replace(queryParameters: queryParams);
 
       print('🍔 [API] Fetching inventory menu: $uri');
       final requestStart = DateTime.now();
       final response = await _httpClient.get(uri, headers: headers);
       final requestDuration = DateTime.now().difference(requestStart);
       final responseSizeKB = (response.body.length / 1024).toStringAsFixed(2);
-      print('⏱️ [API] Inventory HTTP request took: ${requestDuration.inMilliseconds}ms (${responseSizeKB}KB)');
+      print(
+        '⏱️ [API] Inventory HTTP request took: ${requestDuration.inMilliseconds}ms (${responseSizeKB}KB)',
+      );
 
       if (response.statusCode == 200) {
         final parseStart = DateTime.now();
@@ -814,7 +882,7 @@ class ApiService {
         final parseDuration = DateTime.now().difference(parseStart);
         print('⏱️ [API] JSON decode took: ${parseDuration.inMilliseconds}ms');
         print('📊 JSON Type: ${jsonData.runtimeType}');
-        
+
         List<dynamic> inventoryList;
         if (jsonData is List) {
           inventoryList = jsonData;
@@ -826,17 +894,26 @@ class ApiService {
           print('❌ Unexpected response format: $jsonData');
           return [];
         }
-        
+
         final mappingStart = DateTime.now();
-        final items = inventoryList.map((json) => InventoryItem.fromJson(json)).toList();
+        // Use compute for parallel parsing if list is large (>50 items)
+        final items = inventoryList
+            .map((json) => InventoryItem.fromJson(json))
+            .toList();
         final mappingDuration = DateTime.now().difference(mappingStart);
-        
+
         final totalDuration = DateTime.now().difference(startTime);
-        print('⏱️ [API] Object mapping took: ${mappingDuration.inMilliseconds}ms');
-        print('✅ [API] Fetched ${items.length} inventory items in ${totalDuration.inMilliseconds}ms');
+        print(
+          '⏱️ [API] Object mapping took: ${mappingDuration.inMilliseconds}ms',
+        );
+        print(
+          '✅ [API] Fetched ${items.length} inventory items in ${totalDuration.inMilliseconds}ms',
+        );
         return items;
       } else {
-        print('❌ Error getting inventory: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting inventory: ${response.statusCode} - ${response.body}',
+        );
         return [];
       }
     } catch (e) {
@@ -858,20 +935,22 @@ class ApiService {
       print('📸 [API] Uploading break photo to: $uri');
       print('📸 [API] Photo file path: ${photoFile.path}');
       print('📸 [API] Photo file exists: ${await photoFile.exists()}');
-      
+
       final photoBytes = await photoFile.readAsBytes();
       print('📸 [API] Photo size: ${photoBytes.length} bytes');
 
       final request = http.MultipartRequest('POST', uri);
       request.headers['Authorization'] = 'Bearer $token';
-      
+
       // Add the photo file with proper content type
-      request.files.add(http.MultipartFile.fromBytes(
-        'photos',
-        photoBytes,
-        filename: 'break_photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        contentType: MediaType('image', 'jpeg'),
-      ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photos',
+          photoBytes,
+          filename: 'break_photo_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
 
       print('📸 [API] Sending multipart request...');
       final streamedResponse = await request.send();
@@ -885,21 +964,27 @@ class ApiService {
         final jsonData = jsonDecode(response.body);
         print('📸 [API] Parsed response: $jsonData');
         print('📸 [API] Response type: ${jsonData.runtimeType}');
-        
+
         // Response can be a single object or array
         if (jsonData is List && jsonData.isNotEmpty) {
           final photoId = jsonData[0]['id'] as int?;
-          print('✅ [API] Photo uploaded successfully (from array), ID: $photoId');
+          print(
+            '✅ [API] Photo uploaded successfully (from array), ID: $photoId',
+          );
           return photoId;
         } else if (jsonData is Map && jsonData.containsKey('id')) {
           final photoId = jsonData['id'] as int?;
-          print('✅ [API] Photo uploaded successfully (from object), ID: $photoId');
+          print(
+            '✅ [API] Photo uploaded successfully (from object), ID: $photoId',
+          );
           return photoId;
         }
         print('❌ [API] Unexpected photo upload response format: $jsonData');
         return null;
       } else {
-        print('❌ [API] Error uploading photo: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ [API] Error uploading photo: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e, stackTrace) {
@@ -939,7 +1024,7 @@ class ApiService {
             'payment_type_id': 2,
             'amount': totalValue,
             'type': 'deposit',
-          }
+          },
         ],
         'value': totalValue,
         'break_employee_id': breakEmployeeId,
@@ -967,7 +1052,9 @@ class ApiService {
         print('✅ [API] Break order created successfully');
         return jsonData;
       } else {
-        print('❌ [API] Error creating order: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ [API] Error creating order: ${response.statusCode} - ${response.body}',
+        );
         return null;
       }
     } catch (e) {
@@ -981,46 +1068,50 @@ class ApiService {
     final startTime = DateTime.now();
     try {
       final headers = await _getHeaders();
-      final queryParams = {
-        'expand': 'posActiveCategories.posCategory',
-      };
+      final queryParams = {'expand': 'posActiveCategories.posCategory'};
 
-      final uri = Uri.parse('$baseUrl/pos/94').replace(
-        queryParameters: queryParams,
-      );
+      final uri = Uri.parse(
+        '$baseUrl/pos/94',
+      ).replace(queryParameters: queryParams);
 
       print('📂 [API] Fetching POS categories: $uri');
       final requestStart = DateTime.now();
       final response = await _httpClient.get(uri, headers: headers);
       final requestDuration = DateTime.now().difference(requestStart);
       final responseSizeKB = (response.body.length / 1024).toStringAsFixed(2);
-      print('⏱️ [API] POS categories HTTP request took: ${requestDuration.inMilliseconds}ms (${responseSizeKB}KB)');
+      print(
+        '⏱️ [API] POS categories HTTP request took: ${requestDuration.inMilliseconds}ms (${responseSizeKB}KB)',
+      );
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
-        
+
         if (jsonData is Map && jsonData.containsKey('posActiveCategories')) {
           final categoriesList = jsonData['posActiveCategories'] as List;
           final categories = categoriesList
               .map((json) => PosActiveCategory.fromJson(json))
               .toList();
-          
+
           // Sort by index
           categories.sort((a, b) {
             final aIndex = int.tryParse(a.posCategory?.index ?? '0') ?? 0;
             final bIndex = int.tryParse(b.posCategory?.index ?? '0') ?? 0;
             return aIndex.compareTo(bIndex);
           });
-          
+
           final totalDuration = DateTime.now().difference(startTime);
-          print('✅ [API] Fetched ${categories.length} POS categories in ${totalDuration.inMilliseconds}ms');
+          print(
+            '✅ [API] Fetched ${categories.length} POS categories in ${totalDuration.inMilliseconds}ms',
+          );
           return categories;
         } else {
           print('❌ Unexpected response format: $jsonData');
           return [];
         }
       } else {
-        print('❌ Error getting POS categories: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error getting POS categories: ${response.statusCode} - ${response.body}',
+        );
         return [];
       }
     } catch (e) {
