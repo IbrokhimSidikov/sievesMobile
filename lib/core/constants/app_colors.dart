@@ -48,6 +48,7 @@ abstract class AppColors{
   static const Color cxBlue    = Color(0xFF007AFF); // Bright iOS blue (history)
   static const Color cxPurple  = Color(0xFFAF52DE); // Purple (achievements)
   static const Color cxFF9800 = Color(0xFFFF9800);
+  static const Color cx1C1C1E = Color(0xFF1C1C1E);
 }
 
 class AppTheme {

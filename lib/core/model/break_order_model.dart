@@ -197,6 +197,6 @@ class BreakPhoto {
     };
   }
 
-  String get fullUrl => 'https://app.sievesapp.com/$path/$name.$format';
-  String get thumbnailUrl => 'https://app.sievesapp.com/$thumbnail/$name.$format';
+  String get fullUrl => 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
+  String get thumbnailUrl => 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$thumbnail/$name.$format';
 }

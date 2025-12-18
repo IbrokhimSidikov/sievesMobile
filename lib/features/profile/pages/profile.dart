@@ -1043,6 +1043,8 @@ class _ProfileState extends State<Profile> {
                       final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
                       final description = transaction['description'] as String? ?? 'No description';
                       final dateStr = transaction['date'] as String?;
+                      final branchData = transaction['branch'] as Map<String, dynamic>?;
+                      final branchName = branchData?['name'] as String?;
                       
                       String formattedDate = 'N/A';
                       if (dateStr != null) {
@@ -1104,6 +1106,31 @@ class _ProfileState extends State<Profile> {
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                   SizedBox(height: 4.h),
+                                  if (branchName != null) ...[
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.location_on_outlined,
+                                          size: 12.sp,
+                                          color: secondaryText.withOpacity(0.6),
+                                        ),
+                                        SizedBox(width: 4.w),
+                                        Expanded(
+                                          child: Text(
+                                            branchName,
+                                            style: TextStyle(
+                                              fontSize: 11.sp,
+                                              color: secondaryText.withOpacity(0.6),
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    SizedBox(height: 2.h),
+                                  ],
                                   Text(
                                     formattedDate,
                                     style: TextStyle(

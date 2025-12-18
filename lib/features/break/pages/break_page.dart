@@ -15,6 +15,7 @@ import '../widgets/cart_dialog.dart';
 import '../widgets/success_dialog.dart';
 import '../widgets/pizza_selection_dialog.dart';
 import '../widgets/combo_selection_dialog.dart';
+import '../widgets/notice_dialog.dart';
 
 // Helper class to track changed item with its tab index
 class ItemChange {
@@ -36,7 +37,9 @@ class _BreakPageState extends State<BreakPage>
   final AuthManager _authManager = AuthManager();
   final MenuCacheService _cacheService = MenuCacheService();
   bool _isLoading = true;
+  bool _isRefreshing = false;
   String? _errorMessage;
+  String _loadingMessage = 'Loading menu...';
   List<InventoryItem> _menuItems = [];
   List<PosActiveCategory> _categories = [];
   int? _selectedCategoryId;
@@ -88,6 +91,11 @@ class _BreakPageState extends State<BreakPage>
 
     _fetchMenuItems();
     _checkDailyOrderStatus();
+    
+    // Show notice dialog after frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _showNoticeDialog();
+    });
   }
 
   // Check if current time is within allowed order windows
@@ -168,77 +176,100 @@ class _BreakPageState extends State<BreakPage>
     super.dispose();
   }
 
-  Future<void> _fetchMenuItems() async {
+  void _showNoticeDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) => const NoticeDialog(
+        title: 'Diqqat',
+        message: '''Ushbu urilgan BREAK buyurtmalar faqatgina CITY BOULEVARD filialiga chiqadi. Boshqa filialda bolsangiz Planshetdan foydalaning''',
+      ),
+    );
+  }
+
+  Future<void> _fetchMenuItems({bool forceRefresh = false}) async {
     final startTime = DateTime.now();
     print(
-      '⏱️ [BREAK PAGE] Starting to fetch menu items at ${startTime.toIso8601String()}',
+      '⏱️ [BREAK PAGE] Starting to fetch menu items at ${startTime.toIso8601String()} (forceRefresh: $forceRefresh)',
     );
 
     if (!mounted) return;
 
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
-
     try {
-      // Clear cache to force fresh fetch with new expand parameters
-      // _cacheService.clearCache();
+      // If force refresh, clear the cache first
+      if (forceRefresh) {
+        print('🔄 [BREAK PAGE] Force refresh - clearing cache');
+        await _cacheService.clearCache();
+      }
 
-      // Check cache first
-      final cacheCheckStart = DateTime.now();
-      final cachedData = _cacheService.getCachedData();
-      final cacheCheckDuration = DateTime.now().difference(cacheCheckStart);
-      print(
-        '⏱️ [BREAK PAGE] Cache check took: ${cacheCheckDuration.inMilliseconds}ms',
-      );
+      // Initialize cache from persistent storage first
+      setState(() {
+        _loadingMessage = 'Loading cached menu...';
+      });
+      await _cacheService.initialize();
+
+      // Check if we have ANY cached data (even if expired)
+      final cachedData = _cacheService.getCachedDataEvenIfExpired();
+      final hasValidCache = _cacheService.isCacheValid;
 
       if (cachedData != null) {
+        // Show cached data immediately
         print(
-          '📦 [BREAK PAGE] Using cached menu data (${cachedData.menuItems.length} items, ${cachedData.categories.length} categories)',
+          '📦 [BREAK PAGE] Displaying cached data immediately (${cachedData.menuItems.length} items, valid: $hasValidCache)',
         );
-        if (!mounted) return;
-
-        final sortStart = DateTime.now();
-        // Sort categories alphabetically
+        
         final sortedCategories =
             List<PosActiveCategory>.from(cachedData.categories)..sort(
               (a, b) => (a.posCategory?.name ?? '').compareTo(
                 b.posCategory?.name ?? '',
               ),
             );
-        final sortDuration = DateTime.now().difference(sortStart);
-        print(
-          '⏱️ [BREAK PAGE] Sorting categories took: ${sortDuration.inMilliseconds}ms',
-        );
 
-        final setStateStart = DateTime.now();
+        if (!mounted) return;
         setState(() {
           _menuItems = cachedData.menuItems;
           _categories = sortedCategories;
-          // Select first category by default
           if (sortedCategories.isNotEmpty) {
             _selectedCategoryId = sortedCategories.first.posCategoryId;
           }
           _isLoading = false;
         });
-        final setStateDuration = DateTime.now().difference(setStateStart);
-        print(
-          '⏱️ [BREAK PAGE] setState took: ${setStateDuration.inMilliseconds}ms',
-        );
 
-        final totalDuration = DateTime.now().difference(startTime);
-        print(
-          '✅ [BREAK PAGE] Total load time (from cache): ${totalDuration.inMilliseconds}ms',
-        );
-        return;
+        // If cache is valid, we're done
+        if (hasValidCache) {
+          final totalDuration = DateTime.now().difference(startTime);
+          print(
+            '✅ [BREAK PAGE] Loaded from valid cache in ${totalDuration.inMilliseconds}ms',
+          );
+          return;
+        }
+
+        // Cache is expired, refresh in background
+        print('🔄 [BREAK PAGE] Cache expired, refreshing in background...');
+        if (!mounted) return;
+        setState(() {
+          _isRefreshing = true;
+        });
+      } else {
+        // No cache at all, show loading state
+        print('🌐 [BREAK PAGE] No cache found, fetching from API...');
+        if (!mounted) return;
+        setState(() {
+          _isLoading = true;
+          _loadingMessage = 'Fetching menu from server...';
+          _errorMessage = null;
+        });
       }
 
-      print('🌐 [BREAK PAGE] No cache found, fetching from API...');
-
-      // Fetch both menu items and categories in parallel
+      // Fetch fresh data from API
       final apiStartTime = DateTime.now();
       print('📡 [BREAK PAGE] Starting parallel API calls...');
+      
+      if (!mounted) return;
+      setState(() {
+        _loadingMessage = 'Downloading menu items...';
+      });
+      
       final results = await Future.wait([
         _authManager.apiService.getInventoryMenu(),
         _authManager.apiService.getPosCategories(),
@@ -250,7 +281,6 @@ class _BreakPageState extends State<BreakPage>
 
       if (!mounted) return;
 
-      final processingStart = DateTime.now();
       final items = results[0] as List<InventoryItem>;
       final categories = results[1] as List<PosActiveCategory>;
       print(
@@ -258,54 +288,29 @@ class _BreakPageState extends State<BreakPage>
       );
 
       // Sort categories alphabetically
-      final sortStart = DateTime.now();
       final sortedCategories = List<PosActiveCategory>.from(categories)
         ..sort(
           (a, b) =>
               (a.posCategory?.name ?? '').compareTo(b.posCategory?.name ?? ''),
         );
-      final sortDuration = DateTime.now().difference(sortStart);
-      print(
-        '⏱️ [BREAK PAGE] Sorting categories took: ${sortDuration.inMilliseconds}ms',
-      );
 
-      // Cache the data
-      final cacheStart = DateTime.now();
+      // Cache the fresh data
       _cacheService.cacheData(items, sortedCategories);
-      final cacheDuration = DateTime.now().difference(cacheStart);
-      print(
-        '⏱️ [BREAK PAGE] Caching data took: ${cacheDuration.inMilliseconds}ms',
-      );
 
-      final setStateStart = DateTime.now();
+      if (!mounted) return;
       setState(() {
         _menuItems = items;
         _categories = sortedCategories;
-        // Select first category by default
         if (sortedCategories.isNotEmpty) {
           _selectedCategoryId = sortedCategories.first.posCategoryId;
         }
         _isLoading = false;
+        _isRefreshing = false;
       });
-      final setStateDuration = DateTime.now().difference(setStateStart);
-      print(
-        '⏱️ [BREAK PAGE] setState took: ${setStateDuration.inMilliseconds}ms',
-      );
-
-      final processingDuration = DateTime.now().difference(processingStart);
-      print(
-        '⏱️ [BREAK PAGE] Data processing took: ${processingDuration.inMilliseconds}ms',
-      );
 
       final totalDuration = DateTime.now().difference(startTime);
       print(
-        '✅ [BREAK PAGE] Total load time (from API): ${totalDuration.inMilliseconds}ms',
-      );
-      print(
-        '   - API calls: ${apiDuration.inMilliseconds}ms (${(apiDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
-      );
-      print(
-        '   - Processing: ${processingDuration.inMilliseconds}ms (${(processingDuration.inMilliseconds / totalDuration.inMilliseconds * 100).toStringAsFixed(1)}%)',
+        '✅ [BREAK PAGE] Total load time: ${totalDuration.inMilliseconds}ms (API: ${apiDuration.inMilliseconds}ms)',
       );
     } catch (e) {
       final totalDuration = DateTime.now().difference(startTime);
@@ -316,6 +321,7 @@ class _BreakPageState extends State<BreakPage>
       setState(() {
         _errorMessage = 'Failed to load menu. Please try again.';
         _isLoading = false;
+        _isRefreshing = false;
       });
     }
   }
@@ -962,19 +968,33 @@ class _BreakPageState extends State<BreakPage>
     final widget = Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            _buildHeader(theme, isDark),
-            Expanded(
-              child: _isLoading
-                  ? _buildSkeletonLoader(theme, isDark)
-                  : _errorMessage != null
-                  ? _buildErrorState(theme)
-                  : _buildMenuGrid(theme, isDark),
+            Column(
+              children: [
+                _buildHeader(theme, isDark),
+                Expanded(
+                  child: _isLoading
+                      ? _buildSkeletonLoader(theme, isDark)
+                      : _errorMessage != null
+                      ? _buildErrorState(theme)
+                      : _buildMenuGrid(theme, isDark),
+                ),
+                if (!_isLoading && _categories.isNotEmpty)
+                  _buildCategoryFooter(theme, isDark),
+                if (_cart.isNotEmpty) _buildCartFooter(theme, isDark),
+              ],
             ),
-            if (!_isLoading && _categories.isNotEmpty)
-              _buildCategoryFooter(theme, isDark),
-            if (_cart.isNotEmpty) _buildCartFooter(theme, isDark),
+            // Show subtle refresh indicator when updating in background
+            if (_isRefreshing)
+              Positioned(
+                top: 80.h,
+                right: 20.w,
+                child: _buildRefreshIndicator(theme),
+              ),
+            // Show loading overlay for first-time load
+            if (_isLoading && _menuItems.isEmpty)
+              _buildLoadingOverlay(theme, isDark),
           ],
         ),
       ),
@@ -1060,12 +1080,42 @@ class _BreakPageState extends State<BreakPage>
                   ],
                 ),
               ),
-              if (_cart.isNotEmpty)
+              Container(
+                decoration: BoxDecoration(
+                  color: AppColors.cxWhite.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.cxWhite.withOpacity(0.3),
+                    width: 1.5,
+                  ),
+                ),
+                child: IconButton(
+                  onPressed: _isLoading ? null : () => _fetchMenuItems(forceRefresh: true),
+                  icon: _isLoading
+                      ? SizedBox(
+                          width: 24.sp,
+                          height: 24.sp,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.5,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              AppColors.cxWhite,
+                            ),
+                          ),
+                        )
+                      : Icon(
+                          Icons.refresh_rounded,
+                          color: AppColors.cxWhite,
+                          size: 24.sp,
+                        ),
+                  tooltip: 'Refresh Menu',
+                ),
+              ),
+              if (_cart.isNotEmpty) ...[
+                SizedBox(width: 8.w),
                 GestureDetector(
                   onTap: _showCartDialog,
                   child: Container(
                     padding: EdgeInsets.all(12.w),
-                    margin: EdgeInsets.only(right: 12.w),
                     decoration: BoxDecoration(
                       color: AppColors.cxWhite.withOpacity(0.25),
                       borderRadius: BorderRadius.circular(12.r),
@@ -1116,6 +1166,8 @@ class _BreakPageState extends State<BreakPage>
                     ),
                   ),
                 ),
+              ],
+              SizedBox(width: 8.w),
               Container(
                 padding: EdgeInsets.all(12.w),
                 decoration: BoxDecoration(
@@ -1904,6 +1956,128 @@ class _BreakPageState extends State<BreakPage>
                 fontWeight: FontWeight.w600,
                 color: AppColors.cxWhite,
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingOverlay(ThemeData theme, bool isDark) {
+    return Container(
+      color: theme.scaffoldBackgroundColor.withOpacity(0.95),
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: EdgeInsets.all(32.w),
+              decoration: BoxDecoration(
+                color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
+                    blurRadius: 30,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(20.w),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)]
+                            : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.restaurant_menu_rounded,
+                      size: 48.sp,
+                      color: AppColors.cxWhite,
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  SizedBox(
+                    width: 40.w,
+                    height: 40.w,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 3,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 24.h),
+                  Text(
+                    _loadingMessage,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  SizedBox(height: 8.h),
+                  Text(
+                    'This may take up to a minute',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w500,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRefreshIndicator(ThemeData theme) {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 16.w,
+            height: 16.w,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                const Color(0xFF0071E3),
+              ),
+            ),
+          ),
+          SizedBox(width: 10.w),
+          Text(
+            'Updating menu...',
+            style: TextStyle(
+              fontSize: 13.sp,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF0071E3),
             ),
           ),
         ],

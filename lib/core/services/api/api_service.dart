@@ -620,6 +620,7 @@ class ApiService {
         'vendor_type': vendorType,
         'source': source,
         'vendor_id': vendorId.toString(),
+        'expand': 'branch_id',
       };
 
       final uri = Uri.parse('$baseUrl/transaction').replace(
