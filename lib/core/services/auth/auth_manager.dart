@@ -56,7 +56,7 @@ class AuthManager {
   // Check if user has access to break order (branch == 2)
   bool get hasBreakAccess {
     if (_currentIdentity == null) return false;
-    return _currentIdentity!.employee?.branchId == 2;
+    return _currentIdentity!.employee?.branchId == 2 || _currentIdentity!.employee?.branchId == 6;
   }
   
   // Callback for when session expires (refresh token failed)

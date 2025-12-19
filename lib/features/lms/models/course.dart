@@ -8,7 +8,7 @@ class Course {
   final String name;
   final String description;
   final String? category;
-  final String pdfUrl;
+  final String? pdfUrl;
   final int sortOrder;
   final bool isActive;
   final DateTime createdAt;
@@ -25,7 +25,7 @@ class Course {
     required this.name,
     required this.description,
     this.category,
-    required this.pdfUrl,
+    this.pdfUrl,
     required this.sortOrder,
     required this.isActive,
     required this.createdAt,
@@ -48,10 +48,10 @@ class Course {
       companyId: json['company_id'] as int,
       createdBy: json['created_by'] as int,
       updatedBy: json['updated_by'] as int,
-      name: json['name'] as String,
-      description: json['description'] as String,
+      name: (json['name'] as String?) ?? 'Untitled Course',
+      description: (json['description'] as String?) ?? 'No description available',
       category: json['category'] as String?,
-      pdfUrl: json['pdf_url'] as String,
+      pdfUrl: json['pdf_url'] as String?,
       sortOrder: json['sort_order'] as int,
       isActive: json['is_active'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),

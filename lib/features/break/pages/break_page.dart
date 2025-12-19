@@ -99,8 +99,8 @@ class _BreakPageState extends State<BreakPage>
   }
 
   // Check if current time is within allowed order windows
-  // Window 1: 12:00 - 12:30
-  // Window 2: 13:30 - 14:00
+  // Friday (day 5): 12:45 - 14:30
+  // Other days - Window 1: 12:00 - 12:30, Window 2: 13:30 - 14:00
   // Bypass: Department IDs 16 and 28 can order anytime
   bool _isWithinOrderTime() {
     // Bypass time restriction for department IDs 16 and 28
@@ -108,19 +108,31 @@ class _BreakPageState extends State<BreakPage>
     if (departmentId == 16 || departmentId == 28) {
       return true;
     }
-
-    final now = DateTime.now();
-    final hour = now.hour;
-    final minute = now.minute;
-
-    // Window 1: 12:00 - 12:30
-    if (hour == 12 && minute >= 0 && minute <= 30) {
+    if (_authManager.currentIdentity?.employee?.branchId == 6) {
       return true;
     }
 
-    // Window 2: 13:30 - 14:00
-    if ((hour == 13 && minute >= 30) || (hour == 14 && minute == 0)) {
-      return true;
+    final now = DateTime.now();
+    final day = now.weekday; // Monday = 1, Friday = 5
+    final hour = now.hour;
+    final minute = now.minute;
+
+    if (day == 5) {
+      // Friday: 12:45 - 14:30
+      return (hour == 12 && minute >= 45) ||
+          hour == 13 ||
+          (hour == 14 && minute <= 30);
+    } else {
+      // Other days
+      // Window 1: 12:00 - 12:30
+      if (hour == 12 && minute >= 0 && minute <= 30) {
+        return true;
+      }
+
+      // Window 2: 13:30 - 14:00
+      if ((hour == 13 && minute >= 30) || (hour == 14 && minute == 0)) {
+        return true;
+      }
     }
 
     return false;
@@ -129,17 +141,28 @@ class _BreakPageState extends State<BreakPage>
   // Get next available order window message
   String _getNextOrderWindowMessage() {
     final now = DateTime.now();
+    final day = now.weekday; // Monday = 1, Friday = 5
     final hour = now.hour;
     final minute = now.minute;
 
-    if (hour < 12) {
-      return 'Orders available at 12:00 - 12:30';
-    } else if (hour == 12 && minute > 30) {
-      return 'Orders available at 13:30 - 14:00';
-    } else if (hour >= 13 && hour < 13 || (hour == 13 && minute < 30)) {
-      return 'Orders available at 13:30 - 14:00';
+    if (day == 5) {
+      // Friday
+      if (hour < 12 || (hour == 12 && minute < 45)) {
+        return 'Orders available at 12:45 - 14:30 (Friday)';
+      } else {
+        return 'Orders available tomorrow at 12:00 - 12:30';
+      }
     } else {
-      return 'Orders available tomorrow at 12:00 - 12:30';
+      // Other days
+      if (hour < 12) {
+        return 'Orders available at 12:00 - 12:30';
+      } else if (hour == 12 && minute > 30) {
+        return 'Orders available at 13:30 - 14:00';
+      } else if (hour >= 13 && hour < 13 || (hour == 13 && minute < 30)) {
+        return 'Orders available at 13:30 - 14:00';
+      } else {
+        return 'Orders available tomorrow at 12:00 - 12:30';
+      }
     }
   }
 
@@ -363,6 +386,43 @@ class _BreakPageState extends State<BreakPage>
     });
   }
 
+  void _updateItemModifiers(
+    InventoryItem item,
+    Map<int, ChangeableItem?>? changedItems,
+  ) {
+    setState(() {
+      if (changedItems != null && changedItems.isNotEmpty) {
+        // Store all changed items as List of ItemChange
+        List<ItemChange> changes = [];
+        int totalPriceDifference = 0;
+
+        changedItems.forEach((tabIndex, changedItem) {
+          if (changedItem != null) {
+            changes.add(ItemChange(changedItem, tabIndex));
+            // Calculate price difference for this change
+            final defaultItem = item.changeableContains?.defaultItems[tabIndex];
+            if (defaultItem != null) {
+              final defaultPrice = defaultItem.inventoryPriceList?.price ?? 0;
+              final changedPrice = changedItem.inventoryPriceList?.price ?? 0;
+              if (changedPrice > defaultPrice) {
+                totalPriceDifference += (changedPrice - defaultPrice);
+              }
+            }
+          }
+        });
+
+        _itemChanges[item.id] = changes;
+        // Store total price including all differences
+        final basePrice = item.inventoryPriceList?.price ?? 0;
+        _itemPrices[item.id] = basePrice + totalPriceDifference;
+      } else {
+        // If no changes, remove the modifications and reset to base price
+        _itemChanges.remove(item.id);
+        _itemPrices.remove(item.id);
+      }
+    });
+  }
+
   void _showChangeItemDialog(InventoryItem item) {
     showDialog(
       context: context,
@@ -515,8 +575,17 @@ class _BreakPageState extends State<BreakPage>
           });
         },
         onChangeItem: (item) {
-          // Show change item dialog for the selected item
-          _showChangeItemDialog(item);
+          // Show change item dialog to update modifiers (not add to cart)
+          showDialog(
+            context: context,
+            builder: (context) => ChangeItemDialog(
+              item: item,
+              onItemSelected: (selectedItems) {
+                _updateItemModifiers(item, selectedItems);
+              },
+              allMenuItems: _menuItems,
+            ),
+          );
         },
         onClearCart: () {
           setState(() {

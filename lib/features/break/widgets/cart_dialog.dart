@@ -4,7 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/model/inventory_model.dart';
 import '../pages/break_page.dart'; // Import for ItemChange class
 
-class CartDialog extends StatelessWidget {
+class CartDialog extends StatefulWidget {
   final Map<int, int> cart;
   final Map<int, List<ItemChange>> itemChanges; // Changed to List of ItemChange
   final Map<int, int> itemPrices; // Calculated prices for items with changes
@@ -30,15 +30,21 @@ class CartDialog extends StatelessWidget {
     required this.onClearCart,
   });
 
+  @override
+  State<CartDialog> createState() => _CartDialogState();
+}
+
+class _CartDialogState extends State<CartDialog> {
+
   int _getItemPrice(InventoryItem item) {
     // Use stored calculated price if item was changed, otherwise use base price
-    return itemPrices[item.id] ?? (item.inventoryPriceList?.price ?? 0);
+    return widget.itemPrices[item.id] ?? (item.inventoryPriceList?.price ?? 0);
   }
 
   int _getCartTotal() {
     int total = 0;
-    for (var item in menuItems) {
-      final quantity = cart[item.id] ?? 0;
+    for (var item in widget.menuItems) {
+      final quantity = widget.cart[item.id] ?? 0;
       if (quantity > 0) {
         total += _getItemPrice(item) * quantity;
       }
@@ -53,7 +59,7 @@ class CartDialog extends StatelessWidget {
     bool isDark,
   ) {
     final TextEditingController commentController = TextEditingController(
-      text: itemComments[item.id] ?? '',
+      text: widget.itemComments[item.id] ?? '',
     );
 
     showDialog(
@@ -176,7 +182,8 @@ class CartDialog extends StatelessWidget {
                           child: GestureDetector(
                             onTap: () {
                               final comment = commentController.text.trim();
-                              onAddComment(item, comment);
+                              widget.onAddComment(item, comment);
+                              setState(() {}); // Trigger rebuild
                               Navigator.of(context).pop();
                             },
                             child: Container(
@@ -227,8 +234,8 @@ class CartDialog extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    final cartItems = menuItems
-        .where((item) => (cart[item.id] ?? 0) > 0)
+    final cartItems = widget.menuItems
+        .where((item) => (widget.cart[item.id] ?? 0) > 0)
         .toList();
 
     return Dialog(
@@ -309,7 +316,7 @@ class CartDialog extends StatelessWidget {
                 ),
                 SizedBox(height: 4.h),
                 Text(
-                  '${cart.values.fold(0, (sum, qty) => sum + qty)} items',
+                  '${widget.cart.values.fold(0, (sum, qty) => sum + qty)} items',
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w500,
@@ -384,9 +391,9 @@ class CartDialog extends StatelessWidget {
       separatorBuilder: (context, index) => SizedBox(height: 12.h),
       itemBuilder: (context, index) {
         final item = cartItems[index];
-        final quantity = cart[item.id] ?? 0;
+        final quantity = widget.cart[item.id] ?? 0;
         final itemPrice = _getItemPrice(item);
-        final itemChangesList = itemChanges[item.id];
+        final itemChangesList = widget.itemChanges[item.id];
         final hasChanges =
             itemChangesList != null && itemChangesList.isNotEmpty;
         final imageUrl = item.photo?.url;
@@ -402,255 +409,277 @@ class CartDialog extends StatelessWidget {
               color: theme.colorScheme.outline.withOpacity(0.1),
             ),
           ),
-          child: Row(
+          child: Column(
             children: [
-              Container(
-                width: 60.w,
-                height: 60.w,
-                decoration: BoxDecoration(
-                  color: AppColors.cxWarning.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(12.r),
-                        child: Image.network(
-                          imageUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Icon(
-                                Icons.fastfood_rounded,
-                                size: 28.sp,
-                                color: AppColors.cxWarning,
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Icon(
-                          Icons.fastfood_rounded,
-                          size: 28.sp,
-                          color: AppColors.cxWarning,
-                        ),
-                      ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.name,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurface,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+              Row(
+                children: [
+                  Container(
+                    width: 60.w,
+                    height: 60.w,
+                    decoration: BoxDecoration(
+                      color: AppColors.cxWarning.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12.r),
                     ),
-                    if (hasChanges) ...[
-                      ...itemChangesList
-                          .map(
-                            (change) => Container(
-                              margin: EdgeInsets.only(bottom: 4.h),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 6.w,
-                                vertical: 2.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: const Color(
-                                  0xFF6366F1,
-                                ).withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(6.r),
-                                border: Border.all(
-                                  color: const Color(
-                                    0xFF6366F1,
-                                  ).withOpacity(0.3),
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.swap_horiz_rounded,
-                                    size: 10.sp,
-                                    color: const Color(0xFF6366F1),
+                    child: imageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(12.r),
+                            child: Image.network(
+                              imageUrl,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.fastfood_rounded,
+                                    size: 28.sp,
+                                    color: AppColors.cxWarning,
                                   ),
-                                  SizedBox(width: 3.w),
-                                  Flexible(
-                                    child: Text(
-                                      'Changed: ${change.changedItem.name}',
-                                      style: TextStyle(
-                                        fontSize: 9.sp,
-                                        fontWeight: FontWeight.w600,
-                                        color: const Color(0xFF6366F1),
-                                      ),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-                                  ),
-                                ],
-                              ),
+                                );
+                              },
                             ),
                           )
-                          .toList(),
-                    ],
-                    SizedBox(height: 4.h),
-                    Text(
-                      '$itemPrice UZS × $quantity',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.cxWarning,
+                        : Center(
+                            child: Icon(
+                              Icons.fastfood_rounded,
+                              size: 28.sp,
+                              color: AppColors.cxWarning,
+                            ),
+                          ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.name,
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: theme.colorScheme.onSurface,
+                          ),
+                        ),
+                        if (hasChanges) ...[
+                          SizedBox(height: 4.h),
+                          ...itemChangesList
+                              .map(
+                                (change) => Container(
+                                  margin: EdgeInsets.only(bottom: 4.h),
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6.w,
+                                    vertical: 2.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(
+                                      0xFF6366F1,
+                                    ).withOpacity(0.15),
+                                    borderRadius: BorderRadius.circular(6.r),
+                                    border: Border.all(
+                                      color: const Color(
+                                        0xFF6366F1,
+                                      ).withOpacity(0.3),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.swap_horiz_rounded,
+                                        size: 10.sp,
+                                        color: const Color(0xFF6366F1),
+                                      ),
+                                      SizedBox(width: 3.w),
+                                      Flexible(
+                                        child: Text(
+                                          'Changed: ${change.changedItem.name}',
+                                          style: TextStyle(
+                                            fontSize: 9.sp,
+                                            fontWeight: FontWeight.w600,
+                                            color: const Color(0xFF6366F1),
+                                          ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ],
+                        SizedBox(height: 4.h),
+                        Text(
+                          '$itemPrice UZS × $quantity',
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cxWarning,
+                          ),
+                        ),
+                        if (widget.itemComments[item.id] != null &&
+                            widget.itemComments[item.id]!.isNotEmpty) ...[
+                          SizedBox(height: 6.h),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 8.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceVariant.withOpacity(
+                                0.5,
+                              ),
+                              borderRadius: BorderRadius.circular(6.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.comment,
+                                  size: 10.sp,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                SizedBox(width: 4.w),
+                                Flexible(
+                                  child: Text(
+                                    widget.itemComments[item.id]!,
+                                    style: TextStyle(
+                                      fontSize: 10.sp,
+                                      color: theme.colorScheme.onSurfaceVariant,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 12.h),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  // Change item button (only for items with modifiers)
+                  if (item.hasChangeableItems && widget.onChangeItem != null) ...[
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        widget.onChangeItem!(item);
+                      },
+                      child: Container(
+                        padding: EdgeInsets.all(6.w),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8.r),
+                          border: Border.all(
+                            color: const Color(0xFF10B981),
+                            width: 1.5,
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.swap_horiz_rounded,
+                          color: const Color(0xFF10B981),
+                          size: 16.sp,
+                        ),
                       ),
                     ),
-                    if (itemComments[item.id] != null &&
-                        itemComments[item.id]!.isNotEmpty) ...[
-                      SizedBox(height: 6.h),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8.w,
-                          vertical: 4.h,
-                        ),
-                        decoration: BoxDecoration(
-                          color: theme.colorScheme.surfaceVariant.withOpacity(
-                            0.5,
-                          ),
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.comment,
-                              size: 10.sp,
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                            SizedBox(width: 4.w),
-                            Flexible(
-                              child: Text(
-                                itemComments[item.id]!,
-                                style: TextStyle(
-                                  fontSize: 10.sp,
-                                  color: theme.colorScheme.onSurfaceVariant,
-                                  fontStyle: FontStyle.italic,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+                    SizedBox(width: 8.w),
                   ],
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Column(
-                children: [
-                  Row(
-                    children: [
-                      // Change item button (only for items with modifiers)
-                      if (item.hasChangeableItems && onChangeItem != null) ...[
-                        GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            onChangeItem!(item);
-                          },
-                          child: Container(
-                            padding: EdgeInsets.all(6.w),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF10B981).withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(8.r),
-                              border: Border.all(
-                                color: const Color(0xFF10B981),
-                                width: 1.5,
-                              ),
-                            ),
-                            child: Icon(
-                              Icons.swap_horiz_rounded,
-                              color: const Color(0xFF10B981),
-                              size: 16.sp,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: 8.w),
-                      ],
-                      // Comment button
-                      GestureDetector(
-                        onTap: () =>
-                            _showCommentDialog(context, item, theme, isDark),
-                        child: Container(
-                          padding: EdgeInsets.all(6.w),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF6366F1).withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8.r),
-                            border: Border.all(
-                              color: const Color(0xFF6366F1),
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.comment_outlined,
-                            color: const Color(0xFF6366F1),
-                            size: 16.sp,
-                          ),
+                  // Comment button
+                  GestureDetector(
+                    onTap: () =>
+                        _showCommentDialog(context, item, theme, isDark),
+                    child: Container(
+                      padding: EdgeInsets.all(6.w),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF6366F1).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: const Color(0xFF6366F1),
+                          width: 1.5,
                         ),
                       ),
-                      SizedBox(width: 8.w),
-                      GestureDetector(
-                        onTap: () => onRemoveItem(item),
-                        child: Container(
-                          padding: EdgeInsets.all(6.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxWarning.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(8.r),
-                            border: Border.all(
-                              color: AppColors.cxWarning,
-                              width: 1.5,
-                            ),
-                          ),
-                          child: Icon(
-                            Icons.remove_rounded,
-                            color: AppColors.cxWarning,
-                            size: 16.sp,
-                          ),
+                      child: Icon(
+                        Icons.comment_outlined,
+                        color: const Color(0xFF6366F1),
+                        size: 16.sp,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  GestureDetector(
+                    onTap: () {
+                      widget.onRemoveItem(item);
+                      setState(() {}); // Trigger rebuild
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(6.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.cxWarning.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8.r),
+                        border: Border.all(
+                          color: AppColors.cxWarning,
+                          width: 1.5,
                         ),
                       ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        '$quantity',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w700,
-                          color: theme.colorScheme.onSurface,
-                        ),
+                      child: Icon(
+                        Icons.remove_rounded,
+                        color: AppColors.cxWarning,
+                        size: 16.sp,
                       ),
-                      SizedBox(width: 8.w),
-                      GestureDetector(
-                        onTap: () => onAddItem(item),
-                        child: Container(
-                          padding: EdgeInsets.all(6.w),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: [AppColors.cxWarning, AppColors.cxFEDA84],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(8.r),
-                          ),
-                          child: Icon(
-                            Icons.add_rounded,
-                            color: AppColors.cxWhite,
-                            size: 16.sp,
-                          ),
-                        ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? theme.colorScheme.surfaceVariant
+                          : AppColors.cxWhite,
+                      borderRadius: BorderRadius.circular(8.r),
+                      border: Border.all(
+                        color: theme.colorScheme.outline.withOpacity(0.3),
+                        width: 1.5,
                       ),
-                    ],
+                    ),
+                    child: Text(
+                      '$quantity',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 8.w),
+                  GestureDetector(
+                    onTap: () {
+                      widget.onAddItem(item);
+                      setState(() {}); // Trigger rebuild
+                    },
+                    child: Container(
+                      padding: EdgeInsets.all(6.w),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.cxWarning, AppColors.cxFEDA84],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Icon(
+                        Icons.add_rounded,
+                        color: AppColors.cxWhite,
+                        size: 16.sp,
+                      ),
+                    ),
                   ),
                 ],
               ),
@@ -709,7 +738,7 @@ class CartDialog extends StatelessWidget {
           SizedBox(height: 12.h),
           GestureDetector(
             onTap: () {
-              onClearCart();
+              widget.onClearCart();
               Navigator.of(context).pop();
             },
             child: Container(

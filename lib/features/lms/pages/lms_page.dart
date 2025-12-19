@@ -55,18 +55,37 @@ class _LmsPageState extends State<LmsPage> with SingleTickerProviderStateMixin {
     setState(() => _isLoading = true);
     
     try {
+      // Clear cache and fetch fresh data
+      print('🗑️ Clearing courses cache...');
+      await _cacheService.clearCoursesCache();
+      
       // Try to load from cache first
       final cachedCourses = await _cacheService.getCachedCourses();
       if (cachedCourses != null) {
-        final courses = cachedCourses
-            .map((json) => Course.fromJson(json))
-            .where((course) => course.isActive && !course.deleted)
-            .toList();
-        
-        _tests = courses.map((course) => Test.fromCourse(course)).toList();
-        setState(() => _isLoading = false);
-        print('📦 Loaded ${_tests.length} courses from cache');
-        return;
+        try {
+          final allCourses = cachedCourses
+              .map((json) => Course.fromJson(json))
+              .toList();
+          
+          print('📊 Total courses: ${allCourses.length}');
+          for (var course in allCourses) {
+            print('   - ${course.name}: isActive=${course.isActive}, deleted=${course.deleted}');
+          }
+          
+          final courses = allCourses
+              .where((course) => course.isActive && !course.deleted)
+              .toList();
+          
+          _tests = courses.map((course) => Test.fromCourse(course)).toList();
+          setState(() => _isLoading = false);
+          print('📦 Loaded ${_tests.length} active courses from cache');
+          return;
+        } catch (cacheError) {
+          print('❌ Error parsing cached data: $cacheError');
+          print('🗑️ Clearing corrupted cache...');
+          await _cacheService.clearCoursesCache();
+          print('✅ Cache cleared, fetching fresh data...');
+        }
       }
 
       // If no cache, fetch from API
@@ -280,6 +299,26 @@ class _LmsPageState extends State<LmsPage> with SingleTickerProviderStateMixin {
                   ),
                 ),
               ),
+              Container(
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surface,
+                  borderRadius: BorderRadius.circular(12.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: IconButton(
+                  onPressed: _isLoading ? null : _loadTests,
+                  icon: const Icon(Icons.refresh_rounded),
+                  color: const Color(0xFF6366F1),
+                  tooltip: 'Refresh Courses',
+                ),
+              ),
+              SizedBox(width: 8.w),
               Container(
                 decoration: BoxDecoration(
                   color: theme.colorScheme.surface,
