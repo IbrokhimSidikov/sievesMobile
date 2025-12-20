@@ -21,6 +21,7 @@ import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
 import '../../features/splash/pages/splash.dart';
+import '../../features/face-verification/pages/face_verification_page.dart';
 import '../services/auth/auth_manager.dart';
 
 class AppRoutes {
@@ -43,6 +44,7 @@ class AppRoutes {
   static const String testTaking = '/testTaking';
   static const String testResult = '/testResult';
   static const String testHistory = '/testHistory';
+  static const String faceVerification = '/faceVerification';
 
   static final GoRouter router = GoRouter(
       initialLocation: splash,
@@ -169,6 +171,12 @@ class AppRoutes {
               sessionData: data['sessionData'] as Map<String, dynamic>?,
             );
           }
+        ),
+
+        GoRoute(
+          path: '/faceVerification',
+          name: faceVerification,
+          builder: (context, state) => const FaceVerificationPage()
         ),
       ]);
 }

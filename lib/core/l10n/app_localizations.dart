@@ -139,7 +139,9 @@ class AppLocalizations {
       'errorLoadEmployees':'Failed to load employees. Please try again.',
       'errorSubmit':'Failed to submit data. Please try again.',
       'successSubmit':'Data submitted successfully!',
-      'ok':'OK'
+      'ok':'OK',
+      'faceVerification':'Face Verification',
+      'faceVerificationSubtitle':'Verify your face',
 
     },
     'uz': {
@@ -270,7 +272,9 @@ class AppLocalizations {
       'errorLoadEmployees':'Xodimlarni yuklashda xatolik. Qayta urinib ko\'ring.',
       'errorSubmit':'Ma\'lumotlarni yuborishda xatolik. Qayta urinib ko\'ring.',
       'successSubmit':'Qayd etildi!',
-      'ok':'OK'
+      'ok':'OK',
+      'faceVerification':'Face ID',
+      'faceVerificationSubtitle':'Face ID dan o\'ting',
 
 },
     'ru': {
@@ -402,7 +406,9 @@ class AppLocalizations {
       'errorLoadEmployees':'Не удалось загрузить сотрудников. Попробуйте снова.',
       'errorSubmit':'Не удалось отправить данные. Попробуйте снова.',
       'successSubmit':'Успешно отправлено!',
-      'ok':'ОК'
+      'ok':'ОК',
+      'faceVerification':'Face ID',
+      'faceVerificationSubtitle':'Face ID dan o\'ting',
 
 
     },
@@ -540,5 +546,9 @@ class AppLocalizations {
   String get errorSubmit => translate('errorSubmit');
   String get successSubmit => translate('successSubmit');
   String get ok => translate('ok');
+
+  String get faceVerification => translate('faceVerification');
+  String get faceVerificationSubtitle => translate('faceVerificationSubtitle');
+
 
 }
