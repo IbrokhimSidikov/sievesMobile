@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:http/http.dart' as http;
 
 class FaceVerificationService {
-  static const String _baseUrl = 'https://face-id.sievesapp.com';
+  static const String _baseUrl = 'https://faceid.sievesapp.com';
   static const String _bearerToken = '3BUpSfYms0Ne54kWY7267ODiw2u86ECl';
 
   Future<FaceVerificationResult> verifyFace({
