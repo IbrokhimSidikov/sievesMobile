@@ -64,7 +64,7 @@
 		<string>remote-notification</string>
 	</array>
 	<key>FirebaseAppDelegateProxyEnabled</key>
-	<false/>
+	<true/>
 	<key>NSFirebaseMessagingAutoInitEnabled</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>

@@ -23,28 +23,43 @@ import 'core/widgets/force_update_dialog.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   // Initialize Firebase
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  
+
+  FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+    print('📩 [FOREGROUND] Notification received');
+    print('🔔 Title: ${message.notification?.title}');
+    print('📝 Body: ${message.notification?.body}');
+    print('📦 Data: ${message.data}');
+  });
+  // 🔔 iOS foreground notification presentation
+  await FirebaseMessaging.instance
+      .setForegroundNotificationPresentationOptions(
+    alert: true,
+    badge: true,
+    sound: true,
+  );
+
   // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
-  
+  FirebaseMessaging.onBackgroundMessage(
+    firebaseMessagingBackgroundHandler,
+  );
+
   // Initialize notification service in background (don't await)
-  // This prevents blocking the app startup with FCM token delays
   print('🚀 Starting app - notification service will initialize in background');
   NotificationService().initialize().then((_) {
     print('✅ Notification service initialized');
-    // Run debug test after initialization (also in background)
     NotificationService().testNotificationSetup();
   }).catchError((e) {
     print('⚠️ Notification service initialization failed: $e');
   });
-  
+
   runApp(const MyApp());
 }
+
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});

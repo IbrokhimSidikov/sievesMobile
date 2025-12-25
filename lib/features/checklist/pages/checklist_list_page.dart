@@ -2,59 +2,31 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/services/auth/auth_manager.dart';
 import '../cubit/checklist_cubit.dart';
+import '../cubit/checklist_list_cubit.dart';
+import '../cubit/checklist_list_state.dart';
+import '../models/checklist_model.dart';
 import 'checklist_detail_page.dart';
 
-class ChecklistListPage extends StatelessWidget {
+class ChecklistListPage extends StatefulWidget {
   const ChecklistListPage({super.key});
+
+  @override
+  State<ChecklistListPage> createState() => _ChecklistListPageState();
+}
+
+class _ChecklistListPageState extends State<ChecklistListPage> {
+  @override
+  void initState() {
+    super.initState();
+    context.read<ChecklistListCubit>().loadChecklists();
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-
-    final fakeChecklists = [
-      {
-        'id': 1,
-        'title': 'Opening Shift Checklist',
-        'description': 'Complete all tasks before opening the store',
-        'dueDate': DateTime.now().add(const Duration(hours: 2)),
-        'sections': 4,
-        'completedSections': 0,
-        'icon': Icons.store_rounded,
-        'color': const Color(0xFF4ECDC4),
-      },
-      {
-        'id': 2,
-        'title': 'Closing Shift Checklist',
-        'description': 'Ensure all closing procedures are followed',
-        'dueDate': DateTime.now().add(const Duration(hours: 8)),
-        'sections': 5,
-        'completedSections': 2,
-        'icon': Icons.lock_clock_rounded,
-        'color': const Color(0xFFF59E0B),
-      },
-      {
-        'id': 3,
-        'title': 'Weekly Inventory Check',
-        'description': 'Verify stock levels and report discrepancies',
-        'dueDate': DateTime.now().add(const Duration(days: 2)),
-        'sections': 3,
-        'completedSections': 3,
-        'icon': Icons.inventory_2_rounded,
-        'color': const Color(0xFF8B5CF6),
-      },
-      {
-        'id': 4,
-        'title': 'Safety Inspection',
-        'description': 'Monthly safety and compliance check',
-        'dueDate': DateTime.now().add(const Duration(days: 7)),
-        'sections': 6,
-        'completedSections': 0,
-        'icon': Icons.security_rounded,
-        'color': const Color(0xFFEF4444),
-      },
-    ];
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -77,35 +49,177 @@ class ChecklistListPage extends StatelessWidget {
           ),
         ),
       ),
-      body: ListView.builder(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-        itemCount: fakeChecklists.length,
-        itemBuilder: (context, index) {
-          final checklist = fakeChecklists[index];
-          return _buildChecklistCard(
-            context,
-            checklist,
-            theme,
-            isDark,
-          );
+      body: BlocBuilder<ChecklistListCubit, ChecklistListState>(
+        builder: (context, state) {
+          if (state is ChecklistListLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: Color(0xFF4ECDC4),
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    'Loading checklists...',
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
+
+          if (state is ChecklistListError) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.w),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 64.sp,
+                      color: const Color(0xFFEF4444),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Error',
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 24.h),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<ChecklistListCubit>().loadChecklists();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4ECDC4),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 14.h),
+                      ),
+                      child: Text(
+                        'Retry',
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (state is ChecklistListLoaded) {
+            if (state.checklists.isEmpty) {
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.checklist_rounded,
+                      size: 64.sp,
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'No checklists found',
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      'There are no checklists for your branch',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
+                ),
+              );
+            }
+
+            return ListView.builder(
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+              itemCount: state.checklists.length,
+              itemBuilder: (context, index) {
+                final checklist = state.checklists[index];
+                return _buildChecklistCard(
+                  context,
+                  checklist,
+                  theme,
+                  isDark,
+                );
+              },
+            );
+          }
+
+          return const SizedBox.shrink();
         },
       ),
     );
   }
 
+  IconData _getIconForChecklist(String name) {
+    final lowerName = name.toLowerCase();
+    if (lowerName.contains('opening') || lowerName.contains('daily')) {
+      return Icons.store_rounded;
+    } else if (lowerName.contains('closing')) {
+      return Icons.lock_clock_rounded;
+    } else if (lowerName.contains('inventory')) {
+      return Icons.inventory_2_rounded;
+    } else if (lowerName.contains('safety') || lowerName.contains('security')) {
+      return Icons.security_rounded;
+    } else if (lowerName.contains('clean')) {
+      return Icons.cleaning_services_rounded;
+    }
+    return Icons.checklist_rounded;
+  }
+
+  Color _getColorForChecklist(int index) {
+    final colors = [
+      const Color(0xFF4ECDC4),
+      const Color(0xFFF59E0B),
+      const Color(0xFF8B5CF6),
+      const Color(0xFFEF4444),
+      const Color(0xFF10B981),
+      const Color(0xFF3B82F6),
+    ];
+    return colors[index % colors.length];
+  }
+
   Widget _buildChecklistCard(
     BuildContext context,
-    Map<String, dynamic> checklist,
+    Checklist checklist,
     ThemeData theme,
     bool isDark,
   ) {
-    final progress = checklist['completedSections'] / checklist['sections'];
-    final isCompleted = progress == 1.0;
-    final color = checklist['color'] as Color;
-    final dueDate = checklist['dueDate'] as DateTime;
-    final now = DateTime.now();
-    final hoursUntilDue = dueDate.difference(now).inHours;
-    final isUrgent = hoursUntilDue < 4 && !isCompleted;
+    final itemCount = checklist.items.length;
+    final color = _getColorForChecklist(checklist.id);
+    final icon = _getIconForChecklist(checklist.name);
 
     return GestureDetector(
       onTap: () {
@@ -114,7 +228,7 @@ class ChecklistListPage extends StatelessWidget {
             builder: (context) => BlocProvider(
               create: (context) => ChecklistCubit(),
               child: ChecklistDetailPage(
-                checklistId: checklist['id'] as int,
+                checklistId: checklist.id,
               ),
             ),
           ),
@@ -133,10 +247,8 @@ class ChecklistListPage extends StatelessWidget {
             end: Alignment.bottomRight,
           ),
           border: Border.all(
-            color: isUrgent
-                ? const Color(0xFFEF4444).withOpacity(0.5)
-                : color.withOpacity(0.3),
-            width: isUrgent ? 2 : 1.5,
+            color: color.withOpacity(0.3),
+            width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
@@ -169,7 +281,7 @@ class ChecklistListPage extends StatelessWidget {
                     ],
                   ),
                   child: Icon(
-                    checklist['icon'] as IconData,
+                    icon,
                     color: Colors.white,
                     size: 26.sp,
                   ),
@@ -180,7 +292,7 @@ class ChecklistListPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        checklist['title'] as String,
+                        checklist.name,
                         style: TextStyle(
                           fontSize: 17.sp,
                           fontWeight: FontWeight.bold,
@@ -189,7 +301,7 @@ class ChecklistListPage extends StatelessWidget {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        checklist['description'] as String,
+                        checklist.description ?? 'No description',
                         style: TextStyle(
                           fontSize: 13.sp,
                           color: theme.colorScheme.onSurfaceVariant,
@@ -200,17 +312,20 @@ class ChecklistListPage extends StatelessWidget {
                     ],
                   ),
                 ),
-                if (isCompleted)
+                if (checklist.isActive)
                   Container(
-                    padding: EdgeInsets.all(8.w),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                     decoration: BoxDecoration(
                       color: const Color(0xFF4ECDC4).withOpacity(0.2),
-                      shape: BoxShape.circle,
+                      borderRadius: BorderRadius.circular(6.r),
                     ),
-                    child: Icon(
-                      Icons.check_circle_rounded,
-                      color: const Color(0xFF4ECDC4),
-                      size: 24.sp,
+                    child: Text(
+                      'Active',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF4ECDC4),
+                      ),
                     ),
                   ),
               ],
@@ -219,25 +334,16 @@ class ChecklistListPage extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                  Icons.access_time_rounded,
+                  Icons.business_rounded,
                   size: 16.sp,
-                  color: isUrgent
-                      ? const Color(0xFFEF4444)
-                      : theme.colorScheme.onSurfaceVariant,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
                 SizedBox(width: 6.w),
                 Text(
-                  isUrgent
-                      ? 'Due in $hoursUntilDue hours'
-                      : hoursUntilDue < 24
-                          ? 'Due in $hoursUntilDue hours'
-                          : 'Due in ${(hoursUntilDue / 24).round()} days',
+                  checklist.branch.name,
                   style: TextStyle(
                     fontSize: 13.sp,
-                    fontWeight: isUrgent ? FontWeight.w600 : FontWeight.w500,
-                    color: isUrgent
-                        ? const Color(0xFFEF4444)
-                        : theme.colorScheme.onSurfaceVariant,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
                 const Spacer(),
@@ -248,7 +354,7 @@ class ChecklistListPage extends StatelessWidget {
                 ),
                 SizedBox(width: 6.w),
                 Text(
-                  '${checklist['sections']} sections',
+                  '$itemCount items',
                   style: TextStyle(
                     fontSize: 13.sp,
                     color: theme.colorScheme.onSurfaceVariant,
@@ -257,40 +363,19 @@ class ChecklistListPage extends StatelessWidget {
               ],
             ),
             SizedBox(height: 14.h),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Row(
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Progress',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                        color: theme.colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    Text(
-                      '${checklist['completedSections']}/${checklist['sections']}',
-                      style: TextStyle(
-                        fontSize: 12.sp,
-                        fontWeight: FontWeight.w600,
-                        color: color,
-                      ),
-                    ),
-                  ],
+                Icon(
+                  Icons.person_outline_rounded,
+                  size: 16.sp,
+                  color: theme.colorScheme.onSurfaceVariant,
                 ),
-                SizedBox(height: 8.h),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6.r),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 6.h,
-                    backgroundColor: isDark
-                        ? const Color(0xFF374151)
-                        : const Color(0xFFE5E5EA),
-                    valueColor: AlwaysStoppedAnimation<Color>(color),
+                SizedBox(width: 6.w),
+                Text(
+                  'Role: ${checklist.role}',
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

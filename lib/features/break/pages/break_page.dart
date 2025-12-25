@@ -99,13 +99,11 @@ class _BreakPageState extends State<BreakPage>
   }
 
   // Check if current time is within allowed order windows
-  // Friday (day 5): 12:45 - 14:30
-  // Other days - Window 1: 12:00 - 12:30, Window 2: 13:30 - 14:00
-  // Bypass: Department IDs 16 and 28 can order anytime
+
   bool _isWithinOrderTime() {
     // Bypass time restriction for department IDs 16 and 28
     final departmentId = _authManager.currentIdentity?.employee?.departmentId;
-    if (departmentId == 16 || departmentId == 28) {
+    if (departmentId == 16 || departmentId == 28 || departmentId == 20) {
       return true;
     }
     if (_authManager.currentIdentity?.employee?.branchId == 6) {

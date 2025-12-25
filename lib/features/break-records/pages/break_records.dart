@@ -345,7 +345,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
           
           // Info Icon
           Container(
-            padding: EdgeInsets.all(10.w),
+            padding: EdgeInsets.all(2.w),
             decoration: BoxDecoration(
               color: AppColors.cxWhite.withOpacity(0.2),
               borderRadius: BorderRadius.circular(12.r),
@@ -354,12 +354,18 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                 width: 1,
               ),
             ),
-            child: Icon(
-              Icons.info_outline_rounded,
-              color: AppColors.cxWhite,
-              size: 20.sp,
+            child: IconButton(
+              icon: Icon(
+                Icons.refresh,
+                color: AppColors.cxWhite,
+                size: 20.sp,
+              ),
+              onPressed: () async {
+                _fetchBreakOrders(forceRefresh: true);
+              },
             ),
-          ),
+          )
+
         ],
       ),
     );
