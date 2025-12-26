@@ -4,7 +4,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../cubit/checklist_cubit.dart';
 import '../cubit/checklist_state.dart';
-import '../widgets/checklist_field_widget.dart';
 
 class ChecklistDetailPage extends StatefulWidget {
   final int checklistId;
@@ -19,20 +18,10 @@ class ChecklistDetailPage extends StatefulWidget {
 }
 
 class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
-  late PageController _pageController;
-  int _currentPage = 0;
-
   @override
   void initState() {
     super.initState();
-    _pageController = PageController();
     context.read<ChecklistCubit>().loadChecklist(widget.checklistId);
-  }
-
-  @override
-  void dispose() {
-    _pageController.dispose();
-    super.dispose();
   }
 
   @override
@@ -56,7 +45,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
           builder: (context, state) {
             if (state is ChecklistLoaded) {
               return Text(
-                state.checklist.title,
+                state.checklist.name,
                 style: TextStyle(
                   fontSize: 20.sp,
                   fontWeight: FontWeight.w600,
@@ -198,28 +187,26 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
           }
 
           if (state is ChecklistLoaded) {
-            final sections = state.checklist.sections;
-            
             return Column(
               children: [
                 _buildProgressCard(state, theme, isDark),
-                _buildSectionIndicator(sections.length, theme, isDark),
                 Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    itemCount: sections.length,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                      });
-                    },
+                  child: ListView.builder(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                    itemCount: state.checklist.items.length,
                     itemBuilder: (context, index) {
-                      final section = sections[index];
-                      return _buildSectionPage(section, state, theme, isDark);
+                      final item = state.checklist.items[index];
+                      final isChecked = state.itemStates[item.id] ?? false;
+                      return _buildChecklistItem(
+                        item,
+                        isChecked,
+                        theme,
+                        isDark,
+                      );
                     },
                   ),
                 ),
-                _buildNavigationButtons(sections.length, state, theme, isDark),
+                _buildSubmitButton(state, theme, isDark),
               ],
             );
           }
@@ -230,16 +217,125 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
     );
   }
 
+  Widget _buildChecklistItem(
+    dynamic item,
+    bool isChecked,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    return BlocBuilder<ChecklistCubit, ChecklistState>(
+      builder: (context, state) {
+        final note = state is ChecklistLoaded ? (state.itemNotes[item.id] ?? '') : '';
+        
+        return Container(
+          margin: EdgeInsets.only(bottom: 12.h),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16.r),
+            color: isDark ? const Color(0xFF1A1A24) : Colors.white,
+            border: Border.all(
+              color: isChecked
+                  ? const Color(0xFF4ECDC4)
+                  : (isDark ? const Color(0xFF374151) : const Color(0xFFE5E5EA)),
+              width: isChecked ? 2 : 1.5,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.08),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Column(
+            children: [
+              CheckboxListTile(
+                value: isChecked,
+                onChanged: (value) {
+                  context.read<ChecklistCubit>().toggleItem(item.id);
+                },
+                title: Text(
+                  item.name,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                    decoration: isChecked ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+                subtitle: item.description != null
+                    ? Padding(
+                        padding: EdgeInsets.only(top: 4.h),
+                        child: Text(
+                          item.description!,
+                          style: TextStyle(
+                            fontSize: 13.sp,
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      )
+                    : null,
+                activeColor: const Color(0xFF4ECDC4),
+                checkColor: Colors.white,
+                contentPadding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(16.w, 0, 16.w, 12.h),
+                child: TextField(
+                  controller: TextEditingController(text: note)
+                    ..selection = TextSelection.fromPosition(
+                      TextPosition(offset: note.length),
+                    ),
+                  onChanged: (value) {
+                    context.read<ChecklistCubit>().updateItemNote(item.id, value);
+                  },
+                  decoration: InputDecoration(
+                    hintText: 'Add a note (optional)',
+                    hintStyle: TextStyle(
+                      fontSize: 13.sp,
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF252532)
+                        : const Color(0xFFF5F5F7),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: 12.w,
+                      vertical: 10.h,
+                    ),
+                    prefixIcon: Icon(
+                      Icons.note_outlined,
+                      size: 18.sp,
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.7),
+                    ),
+                  ),
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  maxLines: 2,
+                  textInputAction: TextInputAction.done,
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildProgressCard(ChecklistLoaded state, ThemeData theme, bool isDark) {
     final progress = state.progress;
-    final completedCount = (progress * state.checklist.sections.fold<int>(
-      0,
-      (sum, section) => sum + section.fields.where((f) => f.isRequired).length,
-    )).round();
-    final totalCount = state.checklist.sections.fold<int>(
-      0,
-      (sum, section) => sum + section.fields.where((f) => f.isRequired).length,
-    );
+    final completedCount = state.itemStates.values.where((v) => v).length;
+    final totalCount = state.checklist.items.length;
 
     return Container(
       margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
@@ -337,125 +433,11 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
     );
   }
 
-  Widget _buildSectionIndicator(int totalSections, ThemeData theme, bool isDark) {
-    return Container(
-      margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: List.generate(
-          totalSections,
-          (index) => Container(
-            margin: EdgeInsets.symmetric(horizontal: 4.w),
-            width: _currentPage == index ? 24.w : 8.w,
-            height: 8.h,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4.r),
-              color: _currentPage == index
-                  ? const Color(0xFF4ECDC4)
-                  : isDark
-                      ? const Color(0xFF374151)
-                      : const Color(0xFFE5E5EA),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSectionPage(
-    dynamic section,
+  Widget _buildSubmitButton(
     ChecklistLoaded state,
     ThemeData theme,
     bool isDark,
   ) {
-    return SingleChildScrollView(
-      padding: EdgeInsets.symmetric(horizontal: 20.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(height: 8.h),
-          Container(
-            padding: EdgeInsets.all(20.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16.r),
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF4ECDC4).withOpacity(0.1),
-                  const Color(0xFF44B3AA).withOpacity(0.05),
-                ],
-              ),
-              border: Border.all(
-                color: const Color(0xFF4ECDC4).withOpacity(0.3),
-                width: 1.5,
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(10.w),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF4ECDC4).withOpacity(0.2),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(
-                        Icons.list_alt_rounded,
-                        color: const Color(0xFF4ECDC4),
-                        size: 24.sp,
-                      ),
-                    ),
-                    SizedBox(width: 12.w),
-                    Expanded(
-                      child: Text(
-                        section.title,
-                        style: TextStyle(
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.bold,
-                          color: theme.colorScheme.onSurface,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                if (section.description != null) ...[
-                  SizedBox(height: 12.h),
-                  Text(
-                    section.description!,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-          SizedBox(height: 20.h),
-          ...section.fields.map<Widget>((field) {
-            return ChecklistFieldWidget(
-              field: field,
-              value: state.fieldValues[field.id],
-              onChanged: (value) {
-                context.read<ChecklistCubit>().updateField(field.id, value);
-              },
-            );
-          }).toList(),
-          SizedBox(height: 100.h),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildNavigationButtons(
-    int totalSections,
-    ChecklistLoaded state,
-    ThemeData theme,
-    bool isDark,
-  ) {
-    final isFirstPage = _currentPage == 0;
-    final isLastPage = _currentPage == totalSections - 1;
     final canSubmit = state.progress == 1.0;
 
     return Container(
@@ -473,97 +455,41 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
         ],
       ),
       child: SafeArea(
-        child: Row(
-          children: [
-            if (!isFirstPage)
-              Expanded(
-                child: OutlinedButton(
-                  onPressed: () {
-                    _pageController.previousPage(
-                      duration: const Duration(milliseconds: 300),
-                      curve: Curves.easeInOut,
-                    );
-                  },
-                  style: OutlinedButton.styleFrom(
-                    side: BorderSide(
-                      color: const Color(0xFF4ECDC4),
-                      width: 2,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    padding: EdgeInsets.symmetric(vertical: 14.h),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.arrow_back_rounded,
-                        color: const Color(0xFF4ECDC4),
-                        size: 20.sp,
-                      ),
-                      SizedBox(width: 8.w),
-                      Text(
-                        'Previous',
-                        style: TextStyle(
-                          fontSize: 16.sp,
-                          fontWeight: FontWeight.w600,
-                          color: const Color(0xFF4ECDC4),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            if (!isFirstPage) SizedBox(width: 12.w),
-            Expanded(
-              flex: isFirstPage ? 1 : 1,
-              child: ElevatedButton(
-                onPressed: isLastPage
-                    ? (canSubmit
-                        ? () {
-                            context.read<ChecklistCubit>().submitChecklist(1);
-                          }
-                        : null)
-                    : () {
-                        _pageController.nextPage(
-                          duration: const Duration(milliseconds: 300),
-                          curve: Curves.easeInOut,
-                        );
-                      },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: canSubmit || !isLastPage
-                      ? const Color(0xFF4ECDC4)
-                      : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  padding: EdgeInsets.symmetric(vertical: 14.h),
-                  elevation: 0,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      isLastPage ? 'Submit' : 'Next',
-                      style: TextStyle(
-                        fontSize: 16.sp,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    SizedBox(width: 8.w),
-                    Icon(
-                      isLastPage
-                          ? Icons.check_circle_rounded
-                          : Icons.arrow_forward_rounded,
-                      size: 20.sp,
-                    ),
-                  ],
-                ),
-              ),
+        child: ElevatedButton(
+          onPressed: canSubmit
+              ? () {
+                  context.read<ChecklistCubit>().submitChecklist();
+                }
+              : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: canSubmit
+                ? const Color(0xFF4ECDC4)
+                : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
             ),
-          ],
+            padding: EdgeInsets.symmetric(vertical: 16.h),
+            elevation: 0,
+            minimumSize: Size(double.infinity, 56.h),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                'Submit Checklist',
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              SizedBox(width: 8.w),
+              Icon(
+                Icons.check_circle_rounded,
+                size: 20.sp,
+              ),
+            ],
+          ),
         ),
       ),
     );

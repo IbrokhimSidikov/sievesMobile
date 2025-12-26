@@ -10,6 +10,8 @@ import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/theme/theme_cubit.dart';
 import '../../../core/services/notification/notification_storage_service.dart';
 import '../../../core/providers/locale_provider.dart';
+import '../../../core/services/api/api_service.dart';
+
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -23,6 +25,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   double _scrollOffset = 0;
   int _unreadNotificationCount = 0;
   Timer? _refreshTimer;
+  String? _currentEmployeeStatus;
+  bool _isLoadingStatus = true;
+  late final ApiService _apiService;
 
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
@@ -36,7 +41,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       if (_authManager.hasBreakAccess)
         _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, AppColors.cxFF9800, '/breakOrder'),
       if (_authManager.hasBreakAccess)
-      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, AppColors.cxWarning, null),
+      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, AppColors.cxWarning, '/faceVerification'),
       if (_authManager.hasStopwatchAccess)
         _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
       _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
@@ -94,9 +99,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   @override
   void initState() {
     super.initState();
+    _apiService = ApiService(_authManager.authService);
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addObserver(this);
     _loadUnreadCount();
+    _loadCurrentStatus();
     
     // Refresh badge every 5 seconds when on home page
     _startPeriodicRefresh();
@@ -116,6 +123,22 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     // Refresh when app comes to foreground
     if (state == AppLifecycleState.resumed) {
       _loadUnreadCount();
+      // Refresh employee status when returning to home
+      _loadCurrentStatus();
+    }
+  }
+  
+  Future<void> _loadCurrentStatus() async {
+    final employeeId = _authManager.currentEmployeeId;
+    if (employeeId != null) {
+      final status = await _apiService.getCurrentEmployeeStatus(employeeId);
+      if (mounted) {
+        setState(() {
+          _currentEmployeeStatus = status;
+          _isLoadingStatus = false;
+        });
+        print('🔄 [HOME] Status loaded from API: $status');
+      }
     }
   }
 
@@ -294,13 +317,20 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             //   ),
             // ),
             SizedBox(height: 4.sp),
-            Text(
-              _getUserDisplayName(),
-              style: TextStyle(
-                fontSize: 22.sp,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    _getUserDisplayName(),
+                    style: TextStyle(
+                      fontSize: 22.sp,
+                      fontWeight: FontWeight.w600,
+                      color: theme.colorScheme.onSurface,
+                    ),
+                  ),
+                ),
+                // _buildStatusBadge(theme),
+              ],
             ),
 
             SizedBox(height: 24.sp),
@@ -328,6 +358,54 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildStatusBadge(ThemeData theme) {
+    // Use real-time status from API, fallback to cached status if still loading
+    final status = (_currentEmployeeStatus ?? _authManager.currentEmployeeStatus)?.toLowerCase() ?? 'offline';
+    final isOnline = status == 'online';
+    
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isOnline
+              ? [AppColors.cxEmeraldGreen, AppColors.cxEmeraldGreen.withOpacity(0.8)]
+              : [AppColors.cxSilverTint, AppColors.cxSilverTint.withOpacity(0.8)],
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: (isOnline ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8.w,
+            height: 8.h,
+            decoration: const BoxDecoration(
+              color: AppColors.cxPureWhite,
+              shape: BoxShape.circle,
+            ),
+          ),
+          SizedBox(width: 6.w),
+          Text(
+            isOnline ? 'ONLINE' : 'OFFLINE',
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.bold,
+              color: AppColors.cxPureWhite,
+              letterSpacing: 0.5,
+            ),
+          ),
+        ],
       ),
     );
   }

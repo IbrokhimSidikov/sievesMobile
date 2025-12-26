@@ -1,6 +1,12 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../break/widgets/face_capture_dialog.dart';
+import '../services/work_entry_service.dart';
+import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/api/api_service.dart';
 
 class FaceVerificationPage extends StatefulWidget {
   const FaceVerificationPage({super.key});
@@ -17,13 +23,23 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
   String _statusMessage = 'Position your face in the frame';
   String? _employeeName;
   String? _employeePhoto;
+  File? _capturedPhoto;
+  Map<String, dynamic>? _workEntryResponse;
+  String? _currentEmployeeStatus;
+  bool _isLoadingStatus = true;
+  int? _selectedMood;
   
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
+  final WorkEntryService _workEntryService = WorkEntryService();
+  final AuthManager _authManager = AuthManager();
+  late final ApiService _apiService;
 
   @override
   void initState() {
     super.initState();
+    _apiService = ApiService(_authManager.authService);
+    
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -32,6 +48,24 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
     _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+    
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadCurrentStatus();
+      _openCameraDialog();
+    });
+  }
+  
+  Future<void> _loadCurrentStatus() async {
+    final employeeId = _authManager.currentEmployeeId;
+    if (employeeId != null) {
+      final status = await _apiService.getCurrentEmployeeStatus(employeeId);
+      if (mounted) {
+        setState(() {
+          _currentEmployeeStatus = status;
+          _isLoadingStatus = false;
+        });
+      }
+    }
   }
 
   @override
@@ -40,37 +74,483 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
     super.dispose();
   }
 
-  Future<void> _startVerification() async {
+  Future<void> _openCameraDialog() async {
+    final File? capturedImage = await showDialog<File>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const FaceCaptureDialog(),
+    );
+
+    if (capturedImage != null) {
+      _capturedPhoto = capturedImage;
+      await _processWorkEntry(capturedImage);
+    } else {
+      setState(() {
+        _statusMessage = 'Camera cancelled. Tap to try again.';
+      });
+    }
+  }
+
+  Future<void> _processWorkEntry(File capturedPhoto) async {
+    // Check if this is a check-in action (employee is offline)
+    final isOffline = _currentEmployeeStatus?.toLowerCase() != 'online';
+    
+    if (isOffline) {
+      // Show mood selection dialog for check-in
+      final mood = await _showMoodSelectionDialog();
+      if (mood == null) {
+        // User cancelled mood selection
+        setState(() {
+          _statusMessage = 'Check-in cancelled. Please select your mood.';
+        });
+        return;
+      }
+      _selectedMood = mood;
+    }
+    
     setState(() {
       _isVerifying = true;
       _isVerified = false;
       _verificationFailed = false;
-      _statusMessage = 'Verifying face...';
+      _statusMessage = 'Processing work entry...';
     });
 
-    // TODO: Implement actual face verification API call
-    await Future.delayed(const Duration(seconds: 2));
-
-    // Simulated response - replace with actual API call
-    final bool success = DateTime.now().second % 2 == 0;
-
-    if (success) {
-      setState(() {
-        _isVerified = true;
-        _isVerifying = false;
-        _verificationFailed = false;
-        _statusMessage = 'Verification successful!';
-        _employeeName = 'John Doe';
-        _employeePhoto = null; // Set from API response
-      });
-    } else {
+    try {
+      final result = await _workEntryService.performCompleteWorkEntry(
+        capturedPhoto,
+        mood: _selectedMood,
+      );
+      
+      if (result != null && result['success'] == true) {
+        // Identity has been refreshed in the service, get the updated data
+        final identity = _authManager.currentIdentity;
+        final employee = identity?.employee;
+        
+        // Reload current status from API to reflect the change
+        await _loadCurrentStatus();
+        
+        setState(() {
+          _isVerified = true;
+          _isVerifying = false;
+          _verificationFailed = false;
+          _statusMessage = 'Work entry successful!';
+          _employeeName = employee?.individual != null 
+              ? '${employee!.individual!.firstName} ${employee.individual!.lastName}'
+              : 'Employee';
+          _employeePhoto = employee?.individual?.photoUrl;
+          _workEntryResponse = result['data'];
+        });
+        
+        print('🔄 Status updated - UI rebuilt with new status from API');
+        
+        // Show success dialog
+        if (mounted) {
+          _showSuccessDialog(result['data'], _currentEmployeeStatus);
+        }
+      } else {
+        setState(() {
+          _isVerified = false;
+          _isVerifying = false;
+          _verificationFailed = true;
+          _statusMessage = result?['message'] ?? 'Work entry failed. Please try again.';
+        });
+      }
+    } catch (e) {
+      print('❌ Error processing work entry: $e');
       setState(() {
         _isVerified = false;
         _isVerifying = false;
         _verificationFailed = true;
-        _statusMessage = 'Verification failed. Please try again.';
+        _statusMessage = 'An error occurred. Please try again.';
       });
     }
+  }
+
+  Future<int?> _showMoodSelectionDialog() async {
+    int? selectedMood;
+    
+    return showDialog<int>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Container(
+                padding: EdgeInsets.all(24.w),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(20.r),
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      AppColors.cxPureWhite,
+                      AppColors.cxEmeraldGreen.withOpacity(0.1),
+                    ],
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.emoji_emotions,
+                      size: 48.sp,
+                      color: AppColors.cxEmeraldGreen,
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'How are you feeling?',
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.cxBlack,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      'Select your mood to check in',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: AppColors.cxBlack.withOpacity(0.6),
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    SizedBox(height: 24.h),
+                    Column(
+                      children: [
+                        _buildMoodOption(
+                          context,
+                          setDialogState,
+                          selectedMood,
+                          (value) => selectedMood = value,
+                          20,
+                          '😢',
+                          'Bad',
+                          Colors.red,
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildMoodOption(
+                          context,
+                          setDialogState,
+                          selectedMood,
+                          (value) => selectedMood = value,
+                          40,
+                          '😕',
+                          'Slightly Bad',
+                          Colors.orange,
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildMoodOption(
+                          context,
+                          setDialogState,
+                          selectedMood,
+                          (value) => selectedMood = value,
+                          60,
+                          '😐',
+                          'Normal',
+                          Colors.amber,
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildMoodOption(
+                          context,
+                          setDialogState,
+                          selectedMood,
+                          (value) => selectedMood = value,
+                          80,
+                          '😊',
+                          'Good',
+                          Colors.lightGreen,
+                        ),
+                        SizedBox(height: 12.h),
+                        _buildMoodOption(
+                          context,
+                          setDialogState,
+                          selectedMood,
+                          (value) => selectedMood = value,
+                          100,
+                          '😄',
+                          'Cheerful',
+                          Colors.green,
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 24.h),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: selectedMood != null
+                            ? () => Navigator.of(context).pop(selectedMood)
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.cxEmeraldGreen,
+                          disabledBackgroundColor: AppColors.cxSilverTint,
+                          padding: EdgeInsets.symmetric(vertical: 16.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                          elevation: 2,
+                        ),
+                        child: Text(
+                          'Continue',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.cxPureWhite,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  Widget _buildMoodOption(
+    BuildContext context,
+    StateSetter setDialogState,
+    int? selectedMood,
+    Function(int) onSelect,
+    int value,
+    String emoji,
+    String label,
+    Color color,
+  ) {
+    final isSelected = selectedMood == value;
+    
+    return InkWell(
+      onTap: () {
+        setDialogState(() {
+          onSelect(value);
+        });
+      },
+      borderRadius: BorderRadius.circular(12.r),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: isSelected ? color.withOpacity(0.2) : AppColors.cxPureWhite,
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: isSelected ? color : AppColors.cxSilverTint.withOpacity(0.3),
+            width: isSelected ? 2 : 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Radio<int>(
+              value: value,
+              groupValue: selectedMood,
+              onChanged: (val) {
+                if (val != null) {
+                  setDialogState(() {
+                    onSelect(val);
+                  });
+                }
+              },
+              activeColor: color,
+            ),
+            SizedBox(width: 12.w),
+            Text(
+              emoji,
+              style: TextStyle(fontSize: 32.sp),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                label,
+                style: TextStyle(
+                  fontSize: 16.sp,
+                  fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                  color: AppColors.cxBlack,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSuccessDialog(Map<String, dynamic>? workEntryData, String? currentStatus) {
+    final identity = _authManager.currentIdentity;
+    final employee = identity?.employee;
+    final employeeName = employee?.individual != null 
+        ? '${employee!.individual!.firstName} ${employee.individual!.lastName}'
+        : 'Employee';
+    
+    final entryType = workEntryData?['entry_type'] as String?;
+    final timeLog = workEntryData?['time_log'] as String?;
+    final isCheckOut = entryType?.toLowerCase() == 'stop';
+    final newStatus = currentStatus?.toLowerCase() ?? 'unknown';
+    
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20.r),
+          ),
+          child: Container(
+            padding: EdgeInsets.all(24.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20.r),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.cxPureWhite,
+                  isCheckOut 
+                      ? AppColors.cxSilverTint.withOpacity(0.1)
+                      : AppColors.cxEmeraldGreen.withOpacity(0.1),
+                ],
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  padding: EdgeInsets.all(16.r),
+                  decoration: BoxDecoration(
+                    color: isCheckOut 
+                        ? AppColors.cxSilverTint.withOpacity(0.2)
+                        : AppColors.cxEmeraldGreen.withOpacity(0.2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isCheckOut ? Icons.logout : Icons.login,
+                    size: 48.sp,
+                    color: isCheckOut ? AppColors.cxSilverTint : AppColors.cxBlack,
+                  ),
+                ),
+                SizedBox(height: 20.h),
+                Text(
+                  'Work Entry Successful!',
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.cxBlack,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 12.h),
+                Text(
+                  employeeName,
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cxBlack,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 24.h),
+                Container(
+                  padding: EdgeInsets.all(16.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxPureWhite,
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(
+                      color: AppColors.cxSilverTint.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDialogInfoRow(
+                        'Current Status',
+                        newStatus.toUpperCase(),
+                        Icons.circle,
+                        newStatus == 'online' ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint,
+                      ),
+                      if (timeLog != null) ...[
+                        SizedBox(height: 12.h),
+                        _buildDialogInfoRow(
+                          'Time',
+                          timeLog,
+                          Icons.access_time,
+                          AppColors.cxRoyalBlue,
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                SizedBox(height: 24.h),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      Future.delayed(const Duration(milliseconds: 100), () {
+                        if (context.mounted) {
+                          context.go('/home');
+                        }
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.cxRoyalBlue,
+                      padding: EdgeInsets.symmetric(vertical: 16.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      elevation: 2,
+                    ),
+                    child: Text(
+                      'Return to Home',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.cxPureWhite,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDialogInfoRow(String label, String value, IconData icon, Color color) {
+    return Row(
+      children: [
+        Icon(icon, size: 20.sp, color: color),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: AppColors.cxBlack.withOpacity(0.6),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              SizedBox(height: 2.h),
+              Text(
+                value,
+                style: TextStyle(
+                  fontSize: 15.sp,
+                  color: AppColors.cxBlack,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
   }
 
   void _resetVerification() {
@@ -81,7 +561,10 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       _statusMessage = 'Position your face in the frame';
       _employeeName = null;
       _employeePhoto = null;
+      _capturedPhoto = null;
+      _workEntryResponse = null;
     });
+    _openCameraDialog();
   }
 
   @override
@@ -129,6 +612,10 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
   }
 
   Widget _buildHeader() {
+    // Use real-time status from API, fallback to cached status if still loading
+    final status = (_currentEmployeeStatus ?? _authManager.currentEmployeeStatus)?.toLowerCase() ?? 'offline';
+    final isOnline = status == 'online';
+    
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
       decoration: BoxDecoration(
@@ -148,76 +635,112 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           ),
         ],
       ),
-      child: Row(
+      child: Column(
         children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(12.r),
+                decoration: BoxDecoration(
+                  color: AppColors.cxPureWhite.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(
+                  Icons.face_retouching_natural,
+                  color: AppColors.cxPureWhite,
+                  size: 28.sp,
+                ),
+              ),
+              SizedBox(width: 16.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Face Verification',
+                      style: TextStyle(
+                        fontSize: 24.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.cxPureWhite,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      'Work Entry Device',
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        color: AppColors.cxPureWhite.withOpacity(0.9),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: isOnline ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint,
+                  borderRadius: BorderRadius.circular(20.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (isOnline ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Container(
+                      width: 8.w,
+                      height: 8.h,
+                      decoration: const BoxDecoration(
+                        color: AppColors.cxPureWhite,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    SizedBox(width: 6.w),
+                    Text(
+                      isOnline ? 'ONLINE' : 'OFFLINE',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.cxPureWhite,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
           Container(
-            padding: EdgeInsets.all(12.r),
+            padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
             decoration: BoxDecoration(
-              color: AppColors.cxPureWhite.withOpacity(0.2),
+              color: AppColors.cxPureWhite.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12.r),
-            ),
-            child: Icon(
-              Icons.face_retouching_natural,
-              color: AppColors.cxPureWhite,
-              size: 28.sp,
-            ),
-          ),
-          SizedBox(width: 16.w),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Face Verification',
-                  style: TextStyle(
-                    fontSize: 24.sp,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.cxPureWhite,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                SizedBox(height: 4.h),
-                Text(
-                  'Work Entry Device',
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    color: AppColors.cxPureWhite.withOpacity(0.9),
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-            decoration: BoxDecoration(
-              color: AppColors.cxEmeraldGreen,
-              borderRadius: BorderRadius.circular(20.r),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cxEmeraldGreen.withOpacity(0.3),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
+              border: Border.all(
+                color: AppColors.cxPureWhite.withOpacity(0.3),
+                width: 1,
+              ),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 8.w,
-                  height: 8.h,
-                  decoration: const BoxDecoration(
-                    color: AppColors.cxPureWhite,
-                    shape: BoxShape.circle,
-                  ),
+                Icon(
+                  isOnline ? Icons.logout : Icons.login,
+                  color: AppColors.cxPureWhite,
+                  size: 18.sp,
                 ),
-                SizedBox(width: 6.w),
+                SizedBox(width: 8.w),
                 Text(
-                  'ACTIVE',
+                  isOnline ? 'Next Action: CHECK OUT' : 'Next Action: CHECK IN',
                   style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.cxPureWhite,
                     letterSpacing: 0.5,
                   ),
@@ -284,17 +807,24 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
               borderRadius: BorderRadius.circular(22.r),
               child: Stack(
                 children: [
-                  // Camera preview placeholder
-                  Container(
-                    color: AppColors.cxGraphiteGray.withOpacity(0.1),
-                    child: Center(
-                      child: Icon(
-                        Icons.videocam,
-                        size: 80.sp,
-                        color: AppColors.cxSilverTint.withOpacity(0.5),
+                  if (_capturedPhoto != null)
+                    Image.file(
+                      _capturedPhoto!,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
+                    )
+                  else
+                    Container(
+                      color: AppColors.cxGraphiteGray.withOpacity(0.1),
+                      child: Center(
+                        child: Icon(
+                          Icons.videocam,
+                          size: 80.sp,
+                          color: AppColors.cxSilverTint.withOpacity(0.5),
+                        ),
                       ),
                     ),
-                  ),
                   // Face detection overlay
                   _buildFaceOverlay(),
                   // Status indicator
@@ -626,10 +1156,10 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
     }
 
     return _buildButton(
-      label: _isVerifying ? 'Verifying...' : 'Start Verification',
-      icon: Icons.face_retouching_natural,
+      label: _isVerifying ? 'Processing...' : 'Capture Face',
+      icon: Icons.camera_alt,
       color: AppColors.cxRoyalBlue,
-      onPressed: _isVerifying ? null : _startVerification,
+      onPressed: _isVerifying ? null : _openCameraDialog,
     );
   }
 

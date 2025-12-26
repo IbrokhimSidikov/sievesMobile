@@ -175,6 +175,32 @@ class ApiService {
     }
   }
 
+  // Get current employee status from API
+  Future<String?> getCurrentEmployeeStatus(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/employee/$employeeId');
+
+      print('🔍 [STATUS CHECK] Fetching current employee status from: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final status = data['status'] as String?;
+        print('✅ [STATUS CHECK] Current employee status: $status');
+        return status;
+      } else {
+        print(
+          '❌ [STATUS CHECK] Error getting employee status: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('❌ [STATUS CHECK] Exception getting employee status: $e');
+      return null;
+    }
+  }
+
   // Get detailed employee profile data for profile page
   Future<Map<String, dynamic>?> getEmployeeProfileData(int employeeId) async {
     try {

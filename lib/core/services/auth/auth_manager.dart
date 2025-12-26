@@ -42,6 +42,12 @@ class AuthManager {
   // Get current user role
   String? get currentUserRole => _currentIdentity?.role;
   
+  // Get current employee status (online/offline)
+  String? get currentEmployeeStatus => _currentIdentity?.employee?.status;
+  
+  // Check if employee is online
+  bool get isEmployeeOnline => currentEmployeeStatus?.toLowerCase() == 'online';
+  
   // Check if user has required role for stopwatch access
   bool get hasStopwatchAccess {
     if (_currentIdentity == null) return false;

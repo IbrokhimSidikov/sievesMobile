@@ -226,7 +226,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => BlocProvider(
-              create: (context) => ChecklistCubit(),
+              create: (context) => ChecklistCubit(AuthManager()),
               child: ChecklistDetailPage(
                 checklistId: checklist.id,
               ),
