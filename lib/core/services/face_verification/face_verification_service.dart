@@ -1,8 +1,9 @@
 import 'dart:io';
+import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class FaceVerificationService {
-  static const String _baseUrl = 'https://faceid.sievesapp.com';
+  static const String _baseUrl = 'https://face-id.sievesapp.com';
   static const String _bearerToken = '3BUpSfYms0Ne54kWY7267ODiw2u86ECl';
 
   Future<FaceVerificationResult> verifyFace({
@@ -41,16 +42,33 @@ class FaceVerificationService {
       print('📥 [FACE VERIFICATION] Response body: ${response.body}');
       
       if (response.statusCode == 200) {
-        print('✅ [FACE VERIFICATION] Verification successful');
-        return FaceVerificationResult(
-          success: true,
-          message: 'Face verification successful',
-        );
+        // Parse the JSON response
+        final data = json.decode(response.body);
+        final bool match = data['match'] ?? false;
+        final double similarity = data['similarity'] ?? 0.0;
+        
+        print('📊 [FACE VERIFICATION] Match: $match, Similarity: $similarity');
+        
+        if (match) {
+          print('✅ [FACE VERIFICATION] Face matched successfully');
+          return FaceVerificationResult(
+            success: true,
+            message: 'Face verification successful',
+            similarity: similarity,
+          );
+        } else {
+          print('❌ [FACE VERIFICATION] Face did not match (similarity: $similarity)');
+          return FaceVerificationResult(
+            success: false,
+            message: 'Face verification failed. Your face does not match the registered profile. Please try again.',
+            similarity: similarity,
+          );
+        }
       } else {
         print('❌ [FACE VERIFICATION] Verification failed: ${response.statusCode}');
         return FaceVerificationResult(
           success: false,
-          message: 'Face verification failed. Please try again.',
+          message: 'Face verification service error. Please try again.',
           statusCode: response.statusCode,
         );
       }
@@ -68,10 +86,12 @@ class FaceVerificationResult {
   final bool success;
   final String message;
   final int? statusCode;
+  final double? similarity;
 
   FaceVerificationResult({
     required this.success,
     required this.message,
     this.statusCode,
+    this.similarity,
   });
 }

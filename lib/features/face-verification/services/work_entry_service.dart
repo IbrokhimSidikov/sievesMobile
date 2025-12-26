@@ -2,16 +2,19 @@ import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
 import '../../../core/services/api/api_service.dart';
 import '../../../core/services/location/location_service.dart';
+import '../../../core/services/face_verification/face_verification_service.dart';
 
 class WorkEntryService {
   static const String _baseUrl = 'https://app.sievesapp.com/v1';
   final AuthManager _authManager = AuthManager();
   late final ApiService _apiService;
   final LocationService _locationService = LocationService();
+  final FaceVerificationService _faceVerificationService = FaceVerificationService();
 
   WorkEntryService() {
     _apiService = ApiService(_authManager.authService);
@@ -50,6 +53,30 @@ class WorkEntryService {
       }
     } catch (e) {
       print('❌ [WORK ENTRY] Exception getting day session: $e');
+      return null;
+    }
+  }
+
+  Future<File?> downloadProfileImage(String photoUrl) async {
+    try {
+      print('📥 [WORK ENTRY] Downloading profile image from: $photoUrl');
+      
+      final response = await http.get(Uri.parse(photoUrl));
+      
+      if (response.statusCode == 200) {
+        final tempDir = await getTemporaryDirectory();
+        final timestamp = DateTime.now().millisecondsSinceEpoch;
+        final file = File('${tempDir.path}/profile_$timestamp.jpg');
+        await file.writeAsBytes(response.bodyBytes);
+        
+        print('✅ [WORK ENTRY] Profile image downloaded to: ${file.path}');
+        return file;
+      } else {
+        print('❌ [WORK ENTRY] Failed to download profile image: ${response.statusCode}');
+        return null;
+      }
+    } catch (e) {
+      print('❌ [WORK ENTRY] Exception downloading profile image: $e');
       return null;
     }
   }
@@ -244,7 +271,57 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 2: Uploading captured photo                           │');
+      print('│ STEP 2: Downloading profile image                          │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      final photoUrl = employee.individual?.photoUrl;
+      if (photoUrl == null || photoUrl.isEmpty) {
+        print('❌ [WORK ENTRY] No profile photo URL available');
+        return {'success': false, 'message': 'No profile photo available'};
+      }
+      final profileImageFile = await downloadProfileImage(photoUrl);
+      if (profileImageFile == null) {
+        print('❌ [WORK ENTRY] Failed to download profile image');
+        return {'success': false, 'message': 'Failed to download profile image'};
+      }
+      print('✅ Profile image downloaded');
+      print('');
+
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 3: Verifying face                                     │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      final verificationResult = await _faceVerificationService.verifyFace(
+        profileImage: profileImageFile,
+        capturedImage: capturedPhoto,
+      );
+      
+      // Clean up profile image file
+      try {
+        await profileImageFile.delete();
+        print('🗑️ Profile image file cleaned up');
+      } catch (e) {
+        print('⚠️ Failed to clean up profile image file: $e');
+      }
+      
+      print('Verification result: ${verificationResult.success ? "SUCCESS" : "FAILED"}');
+      print('Message: ${verificationResult.message}');
+      if (verificationResult.similarity != null) {
+        print('Similarity: ${(verificationResult.similarity! * 100).toStringAsFixed(2)}%');
+      }
+      
+      if (!verificationResult.success) {
+        print('❌ Face verification failed');
+        return {
+          'success': false,
+          'message': verificationResult.message,
+          'error_type': 'face_verification_failed',
+          'similarity': verificationResult.similarity,
+        };
+      }
+      print('✅ Face verification passed');
+      print('');
+
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 4: Uploading captured photo                           │');
       print('└─────────────────────────────────────────────────────────────┘');
       final photoId = await uploadPhoto(capturedPhoto);
       if (photoId == null) {
@@ -255,7 +332,7 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 3: Getting user location                              │');
+      print('│ STEP 5: Getting user location                              │');
       print('└─────────────────────────────────────────────────────────────┘');
       final locationData = await _locationService.getCurrentLocation();
       double? latitude;
@@ -270,7 +347,7 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 4: Fetching current employee status from API          │');
+      print('│ STEP 6: Fetching current employee status from API          │');
       print('└─────────────────────────────────────────────────────────────┘');
       final currentStatus = await _apiService.getCurrentEmployeeStatus(employeeId!);
       if (currentStatus == null) {
@@ -284,7 +361,7 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 5: Creating work entry                                │');
+      print('│ STEP 7: Creating work entry                                │');
       print('└─────────────────────────────────────────────────────────────┘');
       final now = DateTime.now();
       final timeLog = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
@@ -313,7 +390,7 @@ class WorkEntryService {
         print('');
         
         print('┌─────────────────────────────────────────────────────────────┐');
-        print('│ STEP 6: Refreshing employee identity to update status      │');
+        print('│ STEP 8: Refreshing employee identity to update status      │');
         print('└─────────────────────────────────────────────────────────────┘');
         await _authManager.refreshIdentity();
         print('✅ Employee identity refreshed - status updated');
