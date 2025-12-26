@@ -306,15 +306,25 @@ class _FaceCaptureDialogState extends State<FaceCaptureDialog> {
     return Stack(
       fit: StackFit.expand,
       children: [
-        // Camera preview
-        CameraPreview(_cameraController!),
-        
-        // Face guide overlay
-        CustomPaint(
-          painter: FaceGuidePainter(
-            color: isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3),
+        // Camera preview with proper aspect ratio and mirror effect for front camera
+        Center(
+          child: Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.identity()
+              ..scale(1.0, 3.0), // Mirror horizontally for front camera
+            child: AspectRatio(
+              aspectRatio: _cameraController!.value.aspectRatio,
+              child: CameraPreview(_cameraController!),
+            ),
           ),
         ),
+        
+        // Face guide overlay
+        // CustomPaint(
+        //   painter: FaceGuidePainter(
+        //     color: isDark ? const Color(0xFF6366F1) : const Color(0xFF0071E3),
+        //   ),
+        // ),
         
         // Capture indicator when capturing
         if (_isCapturing)

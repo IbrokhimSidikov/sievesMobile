@@ -5,11 +5,13 @@ import 'package:intl/intl.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
 import '../../../core/services/api/api_service.dart';
+import '../../../core/services/location/location_service.dart';
 
 class WorkEntryService {
   static const String _baseUrl = 'https://app.sievesapp.com/v1';
   final AuthManager _authManager = AuthManager();
   late final ApiService _apiService;
+  final LocationService _locationService = LocationService();
 
   WorkEntryService() {
     _apiService = ApiService(_authManager.authService);
@@ -112,6 +114,8 @@ class WorkEntryService {
     required String timeLog,
     required bool isOnline,
     int? mood,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       print('📝 [WORK ENTRY] Creating work entry...');
@@ -146,6 +150,11 @@ class WorkEntryService {
           'time_log': timeLog,
           'type': 'attendance',
         };
+        if (latitude != null && longitude != null) {
+          body['latitude'] = latitude;
+          body['longitude'] = longitude;
+          print('📍 [WORK ENTRY] Location: $latitude, $longitude');
+        }
         print('🔴 [WORK ENTRY] Creating CHECK OUT entry (employee is online)');
       } else {
         // Employee is OFFLINE -> Check IN (start)
@@ -162,6 +171,11 @@ class WorkEntryService {
           'time_log': timeLog,
           'type': 'attendance',
         };
+        if (latitude != null && longitude != null) {
+          body['latitude'] = latitude;
+          body['longitude'] = longitude;
+          print('📍 [WORK ENTRY] Location: $latitude, $longitude');
+        }
         print('🟢 [WORK ENTRY] Creating CHECK IN entry (employee is offline)');
         print('📝 [WORK ENTRY] Note (mood): ${mood?.toString() ?? "100"}');
       }
@@ -241,7 +255,22 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 3: Fetching current employee status from API          │');
+      print('│ STEP 3: Getting user location                              │');
+      print('└─────────────────────────────────────────────────────────────┘');
+      final locationData = await _locationService.getCurrentLocation();
+      double? latitude;
+      double? longitude;
+      if (locationData != null) {
+        latitude = locationData['latitude'];
+        longitude = locationData['longitude'];
+        print('✅ Location obtained: $latitude, $longitude');
+      } else {
+        print('⚠️ [WORK ENTRY] Could not get location, proceeding without it');
+      }
+      print('');
+
+      print('┌─────────────────────────────────────────────────────────────┐');
+      print('│ STEP 4: Fetching current employee status from API          │');
       print('└─────────────────────────────────────────────────────────────┘');
       final currentStatus = await _apiService.getCurrentEmployeeStatus(employeeId!);
       if (currentStatus == null) {
@@ -255,7 +284,7 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 4: Creating work entry                                │');
+      print('│ STEP 5: Creating work entry                                │');
       print('└─────────────────────────────────────────────────────────────┘');
       final now = DateTime.now();
       final timeLog = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
@@ -270,6 +299,8 @@ class WorkEntryService {
         timeLog: timeLog,
         isOnline: isOnline,
         mood: mood,
+        latitude: latitude,
+        longitude: longitude,
       );
 
       if (result != null) {
@@ -282,7 +313,7 @@ class WorkEntryService {
         print('');
         
         print('┌─────────────────────────────────────────────────────────────┐');
-        print('│ STEP 5: Refreshing employee identity to update status      │');
+        print('│ STEP 6: Refreshing employee identity to update status      │');
         print('└─────────────────────────────────────────────────────────────┘');
         await _authManager.refreshIdentity();
         print('✅ Employee identity refreshed - status updated');

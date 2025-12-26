@@ -1134,12 +1134,10 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           SizedBox(width: 16.w),
           Expanded(
             child: _buildButton(
-              label: 'View Details',
-              icon: Icons.info_outline,
+              label: 'Home page',
+              icon:Icons.arrow_back_ios_new_rounded,
               color: AppColors.cxEmeraldGreen,
-              onPressed: () {
-                // TODO: Navigate to employee details
-              },
+              onPressed:() => context.go('/home'),
             ),
           ),
         ],
