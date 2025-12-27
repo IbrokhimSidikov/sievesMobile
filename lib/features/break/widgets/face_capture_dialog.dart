@@ -3,6 +3,7 @@ import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:sieves_mob/core/l10n/app_localizations.dart';
 import '../../../core/constants/app_colors.dart';
 
 class FaceCaptureDialog extends StatefulWidget {
@@ -179,7 +180,7 @@ class _FaceCaptureDialogState extends State<FaceCaptureDialog> {
                 SizedBox(width: 12.w),
                 Expanded(
                   child: Text(
-                    'Face Verification',
+                    AppLocalizations.of(context).faceVerification,
                     style: TextStyle(
                       fontSize: 20.sp,
                       fontWeight: FontWeight.w700,
@@ -201,8 +202,8 @@ class _FaceCaptureDialogState extends State<FaceCaptureDialog> {
             // Instruction text
             Text(
               _capturedImage != null 
-                  ? 'Review your photo and confirm'
-                  : 'Position your face in the frame',
+                  ? AppLocalizations.of(context).subTitleFaceVerification
+                  : AppLocalizations.of(context).subTitle2,
               style: TextStyle(
                 fontSize: 14.sp,
                 color: theme.colorScheme.onSurfaceVariant,
@@ -290,7 +291,7 @@ class _FaceCaptureDialogState extends State<FaceCaptureDialog> {
               ),
               SizedBox(height: 16.h),
               Text(
-                'Initializing camera...',
+                AppLocalizations.of(context).cameraDialog,
                 style: TextStyle(
                   fontSize: 14.sp,
                   color: AppColors.cxWhite,
@@ -367,7 +368,7 @@ class _FaceCaptureDialogState extends State<FaceCaptureDialog> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      'Retake',
+                      AppLocalizations.of(context).retake,
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,
@@ -413,7 +414,7 @@ class _FaceCaptureDialogState extends State<FaceCaptureDialog> {
                     ),
                     SizedBox(width: 8.w),
                     Text(
-                      'Confirm',
+                      AppLocalizations.of(context).confirmPhoto,
                       style: TextStyle(
                         fontSize: 14.sp,
                         fontWeight: FontWeight.w600,

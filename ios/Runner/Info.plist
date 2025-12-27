@@ -84,5 +84,10 @@
 	<string>This app needs location access to record your check-in and check-out location</string>
 	<key>NSLocationAlwaysUsageDescription</key>
 	<string>This app needs location access to record your check-in and check-out location</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>
+    We use your location to verify your presence at the workplace and ensure accurate attendance tracking.
+    </string>
+
 </dict>
 </plist>

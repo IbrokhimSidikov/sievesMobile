@@ -140,8 +140,44 @@ class AppLocalizations {
       'errorSubmit':'Failed to submit data. Please try again.',
       'successSubmit':'Data submitted successfully!',
       'ok':'OK',
+      //face verification
       'faceVerification':'Face Verification',
       'faceVerificationSubtitle':'Verify your face',
+      'subTitleFaceVerification':'Review your photo and confirm',
+      'subTitle2':'Position your face in the frame',
+      'cameraDialog':'Initializing camera...',
+      'retake':'Retake',
+      'confirmPhoto':'Confirm',
+      'cameraCancelled':'Camera cancelled. Tap to try again.',
+      'moodTitle':'How are you feeling?',
+      'moodSubTitle':'Select your mood to check in',
+      'bad':'Bad',
+      '40':'Slightly Bad',
+      '60':'Normal',
+      '80':'Good',
+      '100':'Excellent',
+      'continue':'Continue',
+      'workEntrySuccess':'Work Entry Successful!',
+      'currentStatus':'Current Status',
+      'time':'Time',
+      'returnHome':'Return to Home',
+      'workEntryFail':'Face Verification Failed',
+      'cancel':'Cancel',
+      'tryAgain':'Try Again',
+      'locationError':'Location Error',
+      'error':'Error',
+      'workEntryDevice':'Work Entry Device',
+      'nextAction':'Next Action: CHECK OUT',
+      'nextAction2':'Next Action: CHECK IN',
+      'analysing!':'Analyzing...',
+      'faceDetected':'Face Detected',
+      'detectionFail':'Detection Failed',
+      'employeeVerified':'Employee Verified',
+      'verifiedAt':'Verified at',
+      'newVerification':'New Verification',
+      'processing':'Processing...',
+      'captureFace':'Capture Face',
+
 
     },
     'uz': {
@@ -273,9 +309,43 @@ class AppLocalizations {
       'errorSubmit':'Ma\'lumotlarni yuborishda xatolik. Qayta urinib ko\'ring.',
       'successSubmit':'Qayd etildi!',
       'ok':'OK',
+      //faceVerification
       'faceVerification':'Face ID',
       'faceVerificationSubtitle':'Face ID dan o\'ting',
-
+      "subTitleFaceVerification": "Suratingizni tekshiring va tasdiqlang",
+      "subTitle2": "Yuzingizni ramka ichiga joylashtiring",
+      "cameraDialog": "Kamera ishga tushirilmoqda...",
+      "retake": "Qayta olish",
+      "confirmPhoto": "Tasdiqlash",
+      "cameraCancelled": "Kamera bekor qilindi. Qayta urining",
+      "moodTitle": "O‘zingizni qanday his qilyapsiz?",
+      "moodSubTitle": "Kayfiyatingizni tanlang",
+      "bad": "Qayg\'u",
+      "40": "Yomon",
+      "60": "Normal",
+      "80": "Yaxshi",
+      "100": "A’lo",
+      "continue": "Davom etish",
+      "workEntrySuccess": "Ish boshlandi!",
+      "currentStatus": "Joriy holat",
+      "time": "Vaqt",
+      "returnHome": "Bosh sahifa",
+      "workEntryFail": "Yuzni tasdiqlanmadi",
+      "cancel": "Bekor qilish",
+      "tryAgain": "Qayta urinish",
+      "locationError": "Offisda emassiz",
+      "error": "Xatolik",
+      "workEntryDevice": "Ishga kirish qurilmasi",
+      "nextAction": "Keyingi amal: CHIQISH",
+      "nextAction2": "Keyingi amal: KIRISH",
+      "analysing!": "Tahlil qilinmoqda...",
+      "faceDetected": "Yuz aniqlandi",
+      "detectionFail": "Aniqlash muvaffaqiyatsiz",
+      "employeeVerified": "Xodim tasdiqlandi",
+      "verifiedAt": "Tasdiqlangan vaqt",
+      "newVerification": "Yangi tasdiqlash",
+      "processing": "Qayta ishlanmoqda...",
+      "captureFace": "Yuzni suratga olish"
 },
     'ru': {
       'title': 'Sieves',
@@ -407,9 +477,43 @@ class AppLocalizations {
       'errorSubmit':'Не удалось отправить данные. Попробуйте снова.',
       'successSubmit':'Успешно отправлено!',
       'ok':'ОК',
+      //faceVerification
       'faceVerification':'Face ID',
       'faceVerificationSubtitle':'Face ID dan o\'ting',
-
+      "subTitleFaceVerification": "Проверьте фото и подтвердите",
+      "subTitle2": "Расположите лицо в рамке",
+      "cameraDialog": "Инициализация камеры...",
+      "retake": "Переснять",
+      "confirmPhoto": "Подтвердить",
+      "cameraCancelled": "Камера отменена. Нажмите, чтобы попробовать снова.",
+      "moodTitle": "Как вы себя чувствуете?",
+      "moodSubTitle": "Выберите настроение для отметки",
+      "bad": "Плохо",
+      "40": "Слегка плохо",
+      "60": "Нормально",
+      "80": "Хорошо",
+      "100": "Отлично",
+      "continue": "Продолжить",
+      "workEntrySuccess": "Отметка успешна!",
+      "currentStatus": "Текущий статус",
+      "time": "Время",
+      "returnHome": "Вернуться на главную",
+      "workEntryFail": "Ошибка проверки лица",
+      "cancel": "Отмена",
+      "tryAgain": "Попробовать снова",
+      "locationError": "Ошибка местоположения",
+      "error": "Ошибка",
+      "workEntryDevice": "Устройство отметки",
+      "nextAction": "Следующее действие: ВЫХОД",
+      "nextAction2": "Следующее действие: ВХОД",
+      "analysing!": "Анализ...",
+      "faceDetected": "Лицо обнаружено",
+      "detectionFail": "Ошибка обнаружения",
+      "employeeVerified": "Сотрудник подтверждён",
+      "verifiedAt": "Подтверждено в",
+      "newVerification": "Новая проверка",
+      "processing": "Обработка...",
+      "captureFace": "Сделать фото лица"
 
     },
   };
@@ -546,9 +650,42 @@ class AppLocalizations {
   String get errorSubmit => translate('errorSubmit');
   String get successSubmit => translate('successSubmit');
   String get ok => translate('ok');
-
+  //faceVerification
   String get faceVerification => translate('faceVerification');
   String get faceVerificationSubtitle => translate('faceVerificationSubtitle');
-
+  String get subTitleFaceVerification => translate('subTitleFaceVerification');
+  String get subTitle2 => translate('subTitle2');
+  String get cameraDialog => translate('cameraDialog');
+  String get retake => translate('retake');
+  String get confirmPhoto => translate('confirmPhoto');
+  String get cameraCancelled => translate('cameraCancelled');
+  String get moodTitle => translate('moodTitle');
+  String get moodSubTitle => translate('moodSubTitle');
+  String get bad => translate('bad');
+  String get mood40 => translate('40');
+  String get mood60 => translate('60');
+  String get mood80 => translate('80');
+  String get mood100 => translate('100');
+  String get continueText => translate('continue');
+  String get workEntrySuccess => translate('workEntrySuccess');
+  String get currentStatus => translate('currentStatus');
+  String get time => translate('time');
+  String get returnHome => translate('returnHome');
+  String get workEntryFail => translate('workEntryFail');
+  String get cancel => translate('cancel');
+  String get tryAgain => translate('tryAgain');
+  String get locationError => translate('locationError');
+  String get error => translate('error');
+  String get workEntryDevice => translate('workEntryDevice');
+  String get nextAction => translate('nextAction');
+  String get nextAction2 => translate('nextAction2');
+  String get analysing => translate('analysing!');
+  String get faceDetected => translate('faceDetected');
+  String get detectionFail => translate('detectionFail');
+  String get employeeVerified => translate('employeeVerified');
+  String get verifiedAt => translate('verifiedAt');
+  String get newVerification => translate('newVerification');
+  String get processing => translate('processing');
+  String get captureFace => translate('captureFace');
 
 }

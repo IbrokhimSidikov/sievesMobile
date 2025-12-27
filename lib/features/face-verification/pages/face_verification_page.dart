@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sieves_mob/core/l10n/app_localizations.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../break/widgets/face_capture_dialog.dart';
 import '../services/work_entry_service.dart';
@@ -86,7 +87,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       await _processWorkEntry(capturedImage);
     } else {
       setState(() {
-        _statusMessage = 'Camera cancelled. Tap to try again.';
+        _statusMessage = AppLocalizations.of(context).cameraCancelled;
       });
     }
   }
@@ -214,7 +215,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                     ),
                     SizedBox(height: 16.h),
                     Text(
-                      'How are you feeling?',
+                      AppLocalizations.of(context).moodTitle,
                       style: TextStyle(
                         fontSize: 22.sp,
                         fontWeight: FontWeight.bold,
@@ -224,7 +225,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                     ),
                     SizedBox(height: 8.h),
                     Text(
-                      'Select your mood to check in',
+                      AppLocalizations.of(context).moodSubTitle,
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: AppColors.cxBlack.withOpacity(0.6),
@@ -241,7 +242,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           (value) => selectedMood = value,
                           20,
                           '😢',
-                          'Bad',
+                          AppLocalizations.of(context).bad,
                           Colors.red,
                         ),
                         SizedBox(height: 12.h),
@@ -252,7 +253,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           (value) => selectedMood = value,
                           40,
                           '😕',
-                          'Slightly Bad',
+                          AppLocalizations.of(context).mood40,
                           Colors.orange,
                         ),
                         SizedBox(height: 12.h),
@@ -263,7 +264,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           (value) => selectedMood = value,
                           60,
                           '😐',
-                          'Normal',
+                          AppLocalizations.of(context).mood60,
                           Colors.amber,
                         ),
                         SizedBox(height: 12.h),
@@ -274,7 +275,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           (value) => selectedMood = value,
                           80,
                           '😊',
-                          'Good',
+                          AppLocalizations.of(context).mood80,
                           Colors.lightGreen,
                         ),
                         SizedBox(height: 12.h),
@@ -285,7 +286,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           (value) => selectedMood = value,
                           100,
                           '😄',
-                          'Cheerful',
+                          AppLocalizations.of(context).mood100,
                           Colors.green,
                         ),
                       ],
@@ -307,7 +308,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           elevation: 2,
                         ),
                         child: Text(
-                          'Continue',
+                          AppLocalizations.of(context).continueText,
                           style: TextStyle(
                             fontSize: 16.sp,
                             fontWeight: FontWeight.bold,
@@ -445,7 +446,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                 ),
                 SizedBox(height: 20.h),
                 Text(
-                  'Work Entry Successful!',
+                  AppLocalizations.of(context).workEntrySuccess,
                   style: TextStyle(
                     fontSize: 22.sp,
                     fontWeight: FontWeight.bold,
@@ -477,7 +478,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                   child: Column(
                     children: [
                       _buildDialogInfoRow(
-                        'Current Status',
+                        AppLocalizations.of(context).currentStatus,
                         newStatus.toUpperCase(),
                         Icons.circle,
                         newStatus == 'online' ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint,
@@ -485,7 +486,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                       if (timeLog != null) ...[
                         SizedBox(height: 12.h),
                         _buildDialogInfoRow(
-                          'Time',
+                          AppLocalizations.of(context).time,
                           timeLog,
                           Icons.access_time,
                           AppColors.cxRoyalBlue,
@@ -515,7 +516,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                       elevation: 2,
                     ),
                     child: Text(
-                      'Return to Home',
+                      AppLocalizations.of(context).returnHome,
                       style: TextStyle(
                         fontSize: 16.sp,
                         fontWeight: FontWeight.bold,
@@ -571,7 +572,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                 ),
                 SizedBox(height: 20.h),
                 Text(
-                  'Face Verification Failed',
+                  AppLocalizations.of(context).workEntryFail,
                   style: TextStyle(
                     fontSize: 22.sp,
                     fontWeight: FontWeight.bold,
@@ -605,7 +606,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           ),
                         ),
                         child: Text(
-                          'Cancel',
+                          AppLocalizations.of(context).cancel,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
@@ -630,7 +631,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           elevation: 2,
                         ),
                         child: Text(
-                          'Try Again',
+                          AppLocalizations.of(context).tryAgain,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,
@@ -688,7 +689,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                 ),
                 SizedBox(height: 20.h),
                 Text(
-                  'Location Error',
+                  AppLocalizations.of(context).locationError,
                   style: TextStyle(
                     fontSize: 22.sp,
                     fontWeight: FontWeight.bold,
@@ -722,7 +723,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           ),
                         ),
                         child: Text(
-                          'Cancel',
+                          AppLocalizations.of(context).cancel,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
@@ -747,7 +748,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           elevation: 2,
                         ),
                         child: Text(
-                          'Try Again',
+                          AppLocalizations.of(context).tryAgain,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,
@@ -805,7 +806,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                 ),
                 SizedBox(height: 20.h),
                 Text(
-                  'Error',
+                  AppLocalizations.of(context).error,
                   style: TextStyle(
                     fontSize: 22.sp,
                     fontWeight: FontWeight.bold,
@@ -839,7 +840,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           ),
                         ),
                         child: Text(
-                          'Cancel',
+                          AppLocalizations.of(context).cancel,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.w600,
@@ -864,7 +865,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           elevation: 2,
                         ),
                         child: Text(
-                          'Try Again',
+                          AppLocalizations.of(context).tryAgain,
                           style: TextStyle(
                             fontSize: 15.sp,
                             fontWeight: FontWeight.bold,
@@ -921,7 +922,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       _isVerifying = false;
       _isVerified = false;
       _verificationFailed = false;
-      _statusMessage = 'Position your face in the frame';
+      _statusMessage = AppLocalizations.of(context).subTitle2;
       _employeeName = null;
       _employeePhoto = null;
       _capturedPhoto = null;
@@ -1020,7 +1021,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Face Verification',
+                      AppLocalizations.of(context).faceVerification,
                       style: TextStyle(
                         fontSize: 24.sp,
                         fontWeight: FontWeight.bold,
@@ -1030,7 +1031,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                     ),
                     SizedBox(height: 4.h),
                     Text(
-                      'Work Entry Device',
+                      AppLocalizations.of(context).workEntryDevice,
                       style: TextStyle(
                         fontSize: 14.sp,
                         color: AppColors.cxPureWhite.withOpacity(0.9),
@@ -1100,7 +1101,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                 ),
                 SizedBox(width: 8.w),
                 Text(
-                  isOnline ? 'Next Action: CHECK OUT' : 'Next Action: CHECK IN',
+                  isOnline ? AppLocalizations.of(context).nextAction : AppLocalizations.of(context).nextAction2,
                   style: TextStyle(
                     fontSize: 13.sp,
                     fontWeight: FontWeight.w600,
@@ -1276,10 +1277,10 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
             Flexible(
               child: Text(
                 _isVerifying
-                    ? 'Analyzing...'
+                    ? AppLocalizations.of(context).analysing
                     : _isVerified
-                        ? 'Face Detected'
-                        : 'Detection Failed',
+                        ? AppLocalizations.of(context).faceDetected
+                        : AppLocalizations.of(context).detectionFail,
                 style: TextStyle(
                   fontSize: 14.sp,
                   fontWeight: FontWeight.w600,
@@ -1427,7 +1428,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Employee Verified',
+                  AppLocalizations.of(context).employeeVerified,
                   style: TextStyle(
                     fontSize: 12.sp,
                     color: AppColors.cxEmeraldGreen,
@@ -1454,7 +1455,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                     ),
                     SizedBox(width: 4.w),
                     Text(
-                      'Verified at ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
+                      '${AppLocalizations.of(context).verifiedAt} ${DateTime.now().hour.toString().padLeft(2, '0')}:${DateTime.now().minute.toString().padLeft(2, '0')}',
                       style: TextStyle(
                         fontSize: 12.sp,
                         color: AppColors.cxSilverTint,
@@ -1488,7 +1489,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
         children: [
           Expanded(
             child: _buildButton(
-              label: 'New Verification',
+              label: AppLocalizations.of(context).newVerification,
               icon: Icons.refresh,
               color: AppColors.cxRoyalBlue,
               onPressed: _resetVerification,
@@ -1497,7 +1498,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           SizedBox(width: 16.w),
           Expanded(
             child: _buildButton(
-              label: 'Home page',
+              label: AppLocalizations.of(context).returnHome,
               icon:Icons.arrow_back_ios_new_rounded,
               color: AppColors.cxEmeraldGreen,
               onPressed:() => context.go('/home'),
@@ -1509,7 +1510,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
 
     if (_verificationFailed) {
       return _buildButton(
-        label: 'Try Again',
+        label: AppLocalizations.of(context).tryAgain,
         icon: Icons.refresh,
         color: AppColors.cxRoyalBlue,
         onPressed: _resetVerification,
@@ -1517,7 +1518,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
     }
 
     return _buildButton(
-      label: _isVerifying ? 'Processing...' : 'Capture Face',
+      label: _isVerifying ? AppLocalizations.of(context).processing : AppLocalizations.of(context).captureFace,
       icon: Icons.camera_alt,
       color: AppColors.cxRoyalBlue,
       onPressed: _isVerifying ? null : _openCameraDialog,
