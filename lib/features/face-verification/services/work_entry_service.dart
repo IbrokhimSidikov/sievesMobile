@@ -364,14 +364,42 @@ class WorkEntryService {
       print('│ STEP 7: Creating work entry                                │');
       print('└─────────────────────────────────────────────────────────────┘');
       final now = DateTime.now();
-      final timeLog = DateFormat('yyyy-MM-dd HH:mm:ss').format(now);
+      
+      // Check if department is excluded from cutoff logic
+      final excludedDepartments = [16, 28, 20];
+      final isExcludedDepartment = excludedDepartments.contains(departmentId);
+      
+      DateTime adjustedTime = now;
+      
+      if (!isExcludedDepartment) {
+        // Create 19:00:00 cutoff time for today (only for non-excluded departments)
+        final cutoffTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          19,
+          0,
+          0,
+        );
+        
+        // Clamp time to cutoff if it exceeds 19:00:00
+        adjustedTime = now.isAfter(cutoffTime) ? cutoffTime : now;
+        
+        if (now.isAfter(cutoffTime)) {
+          print('⏰ [WORK ENTRY] Time adjusted: ${DateFormat('HH:mm:ss').format(now)} -> 19:00:00');
+        }
+      } else {
+        print('⏰ [WORK ENTRY] Department $departmentId excluded from time cutoff logic');
+      }
+      
+      final timeLog = DateFormat('yyyy-MM-dd HH:mm:ss').format(adjustedTime);
       
       final result = await createWorkEntry(
         branchId: branchId,
         photoId: photoId,
         daySessionId: daySessionId,
         employeeDepartmentId: departmentId,
-        employeeId: employeeId!,
+        employeeId: employeeId,
         entryType: isOnline ? 'stop' : 'start',
         timeLog: timeLog,
         isOnline: isOnline,
