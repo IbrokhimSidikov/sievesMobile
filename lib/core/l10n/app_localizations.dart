@@ -45,7 +45,7 @@ class AppLocalizations {
       'productivityTimerSubtitle':'Track your focus time',
       'checklist':'Checklist',
       'checklistSubtitle':'Manage your tasks',
-
+      'faceIdSubtitle':'Work entry device',
       //Profile page
       'workHours':'Work Hours',
       'totalHours':'Total Hours',
@@ -215,6 +215,7 @@ class AppLocalizations {
       'productivityTimerSubtitle':'Diqqat vaqtini kuzatish',
       'checklist':'Checklist ro\'yxati',
       'checklistSubtitle':'Vazifalarni boshqarish',
+      'faceIdSubtitle':'Ishga keldi-ketdi',
       //Profile page
       'workHours':'Ish soatlari',
       'totalHours':'Umumiy soatlar',
@@ -382,7 +383,7 @@ class AppLocalizations {
       'productivityTimerSubtitle':'Отслеживайте время фокуса',
       'checklist':'Список задач',
       'checklistSubtitle':'Управляйте задачами',
-
+      'faceIdSubtitle':'Устройство распознавания',
       //Profile page
       'workHours':'Рабочие часы',
       'totalHours':'Общее количество часов',
@@ -480,40 +481,41 @@ class AppLocalizations {
       //faceVerification
       'faceVerification':'Face ID',
       'faceVerificationSubtitle':'Face ID dan o\'ting',
-      "subTitleFaceVerification": "Проверьте фото и подтвердите",
-      "subTitle2": "Расположите лицо в рамке",
-      "cameraDialog": "Инициализация камеры...",
-      "retake": "Переснять",
-      "confirmPhoto": "Подтвердить",
-      "cameraCancelled": "Камера отменена. Нажмите, чтобы попробовать снова.",
-      "moodTitle": "Как вы себя чувствуете?",
-      "moodSubTitle": "Выберите настроение для отметки",
-      "bad": "Плохо",
-      "40": "Слегка плохо",
-      "60": "Нормально",
-      "80": "Хорошо",
-      "100": "Отлично",
-      "continue": "Продолжить",
-      "workEntrySuccess": "Отметка успешна!",
-      "currentStatus": "Текущий статус",
-      "time": "Время",
-      "returnHome": "Вернуться на главную",
-      "workEntryFail": "Ошибка проверки лица",
-      "cancel": "Отмена",
-      "tryAgain": "Попробовать снова",
-      "locationError": "Ошибка местоположения",
-      "error": "Ошибка",
-      "workEntryDevice": "Устройство отметки",
-      "nextAction": "Следующее действие: ВЫХОД",
-      "nextAction2": "Следующее действие: ВХОД",
-      "analysing!": "Анализ...",
-      "faceDetected": "Лицо обнаружено",
-      "detectionFail": "Ошибка обнаружения",
-      "employeeVerified": "Сотрудник подтверждён",
-      "verifiedAt": "Подтверждено в",
-      "newVerification": "Новая проверка",
-      "processing": "Обработка...",
-      "captureFace": "Сделать фото лица"
+      'subTitleFaceVerification': 'Проверьте фото и подтвердите',
+      'subTitle2': 'Поместите лицо в рамке',
+      'cameraDialog': 'Инициализация камеры...',
+      'retake': 'Переснять',
+      'confirmPhoto': 'Подтвердить',
+      'cameraCancelled': 'Не распознано.  Нажмите, чтобы попробовать снова.',
+      'moodTitle': 'Как вы сегодня себя чувствуете?',
+      'moodSubTitle': 'Отметьте своё настроение',
+      'bad': 'Очень плохое',
+      '40': 'Плохое',
+      '60': 'Нормальное',
+      '80': 'Хорошее',
+      '100': 'Отличное',
+      'continue': 'Продолжить',
+      'workEntrySuccess': 'Отметка успешна!',
+      'currentStatus': 'Текущий статус',
+      'time': 'Время',
+      'returnHome': 'Вернуться на главную',
+      'workEntryFail': 'Ошибка проверки лица',
+      'cancel': 'Отмена',
+      'tryAgain': 'Попробовать снова',
+      'locationError': 'Ошибка местоположения',
+      'error': 'Ошибка',
+      'workEntryDevice': 'Отметка рабочего времени',
+      'nextAction': 'Следующая отметка: УХОД',
+      'nextAction2': 'Следующая отметка: ПРИХОД',
+      'analysing!': 'Анализ...',
+      'faceDetected': 'Лицо распознано',
+      'detectionFail': 'Сбой при распознавании',
+      'employeeVerified': 'Сотрудник подтверждён',
+      'verifiedAt': 'Подтверждено в',
+      'newVerification': 'Новая проверка',
+      'processing': 'Обработка...',
+      'captureFace': 'Сделать селфи'
+
 
     },
   };
@@ -556,6 +558,7 @@ class AppLocalizations {
   String get productivityTimerSubtitle => translate('productivityTimerSubtitle');
   String get checklist => translate('checklist');
   String get checklistSubtitle => translate('checklistSubtitle');
+  String get faceIdSubtitle => translate('faceIdSubtitle');
 
   //Profile page
   String get workHours => translate('workHours');

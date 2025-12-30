@@ -731,6 +731,7 @@ class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderSta
     if (title == localizations.testHistory) return localizations.testHistorySubtitle;
     if (title == localizations.productivityTimer) return localizations.productivityTimerSubtitle;
     if (title == localizations.checklist) return localizations.checklistSubtitle;
+    if (title == localizations.faceVerification) return localizations.faceIdSubtitle;
     return "Tap to explore";
   }
 }
