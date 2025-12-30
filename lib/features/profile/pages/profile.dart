@@ -1043,8 +1043,8 @@ class _ProfileState extends State<Profile> {
                       final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
                       final description = transaction['description'] as String? ?? 'No description';
                       final dateStr = transaction['date'] as String?;
-                      final branchData = transaction['branch'] as Map<String, dynamic>?;
-                      final branchName = branchData?['name'] as String?;
+                      final branchData = transaction['branch_id'] as num?;
+                      final branchName = branchData?.toString();
                       
                       String formattedDate = 'N/A';
                       if (dateStr != null) {

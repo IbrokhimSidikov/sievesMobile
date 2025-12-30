@@ -177,8 +177,15 @@ class AppLocalizations {
       'newVerification':'New Verification',
       'processing':'Processing...',
       'captureFace':'Capture Face',
-
-
+      //checklist
+      'mySubmissions':'My Submissions',
+      'submissionsFound':'submissions found',
+      'completed':'completed',
+      'complete':'Complete',
+      'loaderChecklist':'Loading checklists...',
+      'checklistSubmission':'Submitting checklist...',
+      'noChecklists':'No checklists found',
+      'noChecklistBranch':'There are no checklists for your branch',
     },
     'uz': {
       'title': 'Sieves',
@@ -346,8 +353,18 @@ class AppLocalizations {
       "verifiedAt": "Tasdiqlangan vaqt",
       "newVerification": "Yangi tasdiqlash",
       "processing": "Qayta ishlanmoqda...",
-      "captureFace": "Yuzni suratga olish"
-},
+      "captureFace": "Yuzni suratga olish",
+      //checklist
+      'mySubmissions': 'Mening cheklistlarim',
+      'submissionsFound': 'ta topshiriq topildi',
+      'completed': 'bajarilgan',
+      'complete': 'Yopilgan',
+      'loaderChecklist': 'Cheklistlar yuklanmoqda...',
+      'checklistSubmission': 'Yuborilmoqda...',
+      'noChecklists': 'Cheklistlar topilmadi',
+      'noChecklistBranch': 'Ushbu filial uchun cheklistlar mavjud emas',
+
+    },
     'ru': {
       'title': 'Sieves',
       'welcome': 'Добро пожаловать',
@@ -514,7 +531,16 @@ class AppLocalizations {
       'verifiedAt': 'Подтверждено в',
       'newVerification': 'Новая проверка',
       'processing': 'Обработка...',
-      'captureFace': 'Сделать селфи'
+      'captureFace': 'Сделать селфи',
+      //checklist
+      'mySubmissions': 'Мои задания',
+      'submissionsFound': 'заданий найдено',
+      'completed': 'выполнено',
+      'complete': 'Выполнено',
+      'loaderChecklist': 'Загрузка чек-листов...',
+      'checklistSubmission': 'Отправка чек-листа...',
+      'noChecklists': 'Чек-листы не найдены',
+      'noChecklistBranch': 'Для вашего филиала чек-листы отсутствуют',
 
 
     },
@@ -690,5 +716,14 @@ class AppLocalizations {
   String get newVerification => translate('newVerification');
   String get processing => translate('processing');
   String get captureFace => translate('captureFace');
+  //checklist
+  String get mySubmissions => translate('mySubmissions');
+  String get submissionsFound => translate('submissionsFound');
+  String get completed => translate('completed');
+  String get complete => translate('complete');
+  String get loaderChecklist => translate('loaderChecklist');
+  String get checklistSubmission => translate('checklistSubmission');
+  String get noChecklists => translate('noChecklists');
+  String get noChecklistBranch => translate('noChecklistBranch');
 
 }

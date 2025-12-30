@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../cubit/checklist_cubit.dart';
 import '../cubit/checklist_state.dart';
 
@@ -97,7 +98,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    'Loading checklist...',
+                    AppLocalizations.of(context).loaderChecklist,
                     style: TextStyle(
                       fontSize: 16.sp,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -175,7 +176,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
                   ),
                   SizedBox(height: 16.h),
                   Text(
-                    'Submitting checklist...',
+                    AppLocalizations.of(context).checklistSubmission,
                     style: TextStyle(
                       fontSize: 16.sp,
                       color: theme.colorScheme.onSurfaceVariant,

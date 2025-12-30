@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../cubit/checklist_cubit.dart';
 import '../cubit/checklist_list_cubit.dart';
@@ -152,7 +153,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
                       ),
                       SizedBox(height: 16.h),
                       Text(
-                        'Loading checklists...',
+                        AppLocalizations.of(context).loaderChecklist,
                         style: TextStyle(
                           fontSize: 16.sp,
                           color: theme.colorScheme.onSurfaceVariant,
@@ -229,7 +230,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
                         ),
                         SizedBox(height: 16.h),
                         Text(
-                          'No checklists found',
+                          AppLocalizations.of(context).noChecklists,
                           style: TextStyle(
                             fontSize: 18.sp,
                             fontWeight: FontWeight.w600,
@@ -238,7 +239,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
                         ),
                         SizedBox(height: 8.h),
                         Text(
-                          'There are no checklists for your branch',
+                          AppLocalizations.of(context).noChecklistBranch,
                           style: TextStyle(
                             fontSize: 14.sp,
                             color: theme.colorScheme.onSurfaceVariant,
@@ -329,7 +330,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'My Submissions',
+                        AppLocalizations.of(context).mySubmissions,
                         style: TextStyle(
                           fontSize: 18.sp,
                           fontWeight: FontWeight.bold,
@@ -338,7 +339,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
                       ),
                       SizedBox(height: 4.h),
                       Text(
-                        '${_submissions.length} submissions found',
+                        '${_submissions.length} ${AppLocalizations.of(context).submissionsFound}',
                         style: TextStyle(
                           fontSize: 13.sp,
                           color: theme.colorScheme.onSurfaceVariant,
@@ -651,7 +652,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                '$completedItems/$totalItems completed',
+                '$completedItems/$totalItems ${AppLocalizations.of(context).completed}',
                 style: TextStyle(
                   fontSize: 12.sp,
                   fontWeight: FontWeight.w500,
@@ -668,7 +669,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
                   borderRadius: BorderRadius.circular(4.r),
                 ),
                 child: Text(
-                  completedItems == totalItems ? 'Complete' : 'Partial',
+                  completedItems == totalItems ? AppLocalizations.of(context).complete : 'Partial',
                   style: TextStyle(
                     fontSize: 10.sp,
                     fontWeight: FontWeight.w600,
