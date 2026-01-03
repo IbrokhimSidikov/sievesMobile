@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -16,14 +17,22 @@ class _WalletPageState extends State<WalletPage> {
   final _productPriceController = TextEditingController();
   final _monthlyPaymentController = TextEditingController();
   final _durationController = TextEditingController();
+  final _interestRateController = TextEditingController();
   bool _isUpdatingMonthly = false;
   bool _isUpdatingDuration = false;
   final _priceFocus = FocusNode();
   final _monthlyFocus = FocusNode();
   final _durationFocus = FocusNode();
+  final _interestFocus = FocusNode();
+
+  // Calculation mode: 'monthly' or 'duration'
+  String _calculationMode = 'monthly';
 
   double? _totalPayment;
   double? _extraPayment;
+  double? _totalInterest;
+  double? _calculatedMonthlyPayment;
+  double? _calculatedDuration;
   bool _showResults = false;
 
   @override
@@ -31,18 +40,19 @@ class _WalletPageState extends State<WalletPage> {
     _productPriceController.dispose();
     _monthlyPaymentController.dispose();
     _durationController.dispose();
+    _interestRateController.dispose();
     _priceFocus.dispose();
     _monthlyFocus.dispose();
     _durationFocus.dispose();
+    _interestFocus.dispose();
     super.dispose();
   }
 
   @override
   void initState() {
     super.initState();
-
-    _monthlyPaymentController.addListener(_onMonthlyChanged);
-    _durationController.addListener(_onDurationChanged);
+    // Set default interest rate to 0%
+    _interestRateController.text = '0';
   }
 
   // Format number with spaces as thousand separators
@@ -59,24 +69,96 @@ class _WalletPageState extends State<WalletPage> {
     return double.tryParse(cleanText) ?? 0;
   }
 
+  // Calculate total amount with simple interest
+  double _calculateTotalWithInterest(double principal, double annualRate, int months) {
+    // Simple interest: Total = Principal + (Principal × Rate × Time)
+    // Time in years = months / 12
+    final years = months / 12;
+    final interest = principal * (annualRate / 100) * years;
+    return principal + interest;
+  }
+
+  // Calculate monthly payment using simple interest
+  double _calculateMonthlyPayment(double principal, double annualRate, int months) {
+    final totalAmount = _calculateTotalWithInterest(principal, annualRate, months);
+    return totalAmount / months;
+  }
+
+  // Calculate duration needed for given monthly payment
+  int _calculateDuration(double principal, double annualRate, double monthlyPayment) {
+    // We need to solve: monthlyPayment × months = principal + (principal × rate × months/12)
+    // monthlyPayment × months = principal × (1 + rate × months/12)
+    // This is a linear equation: months × (monthlyPayment - principal × rate/12) = principal
+    // months = principal / (monthlyPayment - principal × rate/12)
+    
+    if (annualRate == 0) {
+      return (principal / monthlyPayment).ceil();
+    }
+    
+    final monthlyInterestAmount = principal * (annualRate / 100) / 12;
+    final effectiveMonthlyPayment = monthlyPayment - monthlyInterestAmount;
+    
+    if (effectiveMonthlyPayment <= 0) {
+      // Payment doesn't cover interest, return a large number
+      return 999;
+    }
+    
+    return (principal / effectiveMonthlyPayment).ceil();
+  }
+
   // Calculate installment
   void _calculate() {
     if (_formKey.currentState!.validate()) {
       final productPrice = _parseFormattedNumber(_productPriceController.text);
-      final monthlyPayment = _parseFormattedNumber(_monthlyPaymentController.text);
-      final duration = int.tryParse(_durationController.text) ?? 0;
+      final interestRate = double.tryParse(_interestRateController.text) ?? 0;
 
-      // Calculate total payment = monthly payment × months
-      final totalPayment = monthlyPayment * duration;
-      
-      // Calculate extra payment = total payment − product price
-      final extraPayment = totalPayment - productPrice;
+      if (_calculationMode == 'monthly') {
+        // Calculate monthly payment based on duration
+        final duration = int.tryParse(_durationController.text) ?? 0;
+        
+        final monthlyPayment = _calculateMonthlyPayment(productPrice, interestRate, duration);
+        final totalPayment = monthlyPayment * duration;
+        final totalInterest = totalPayment - productPrice;
 
-      setState(() {
-        _totalPayment = totalPayment;
-        _extraPayment = extraPayment;
-        _showResults = true;
-      });
+        setState(() {
+          _calculatedMonthlyPayment = monthlyPayment;
+          _totalPayment = totalPayment;
+          _totalInterest = totalInterest;
+          _extraPayment = totalInterest;
+          _calculatedDuration = null;
+          _showResults = true;
+        });
+      } else {
+        // Calculate duration based on monthly payment
+        final monthlyPayment = _parseFormattedNumber(_monthlyPaymentController.text);
+        
+        // Validate that monthly payment is sufficient
+        if (interestRate > 0) {
+          final monthlyInterestAmount = productPrice * (interestRate / 100) / 12;
+          if (monthlyPayment <= monthlyInterestAmount) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Oylik to\'lov juda kam! Minimal: ${_formatCurrency(monthlyInterestAmount)}'),
+                backgroundColor: AppColors.cxCrimsonRed,
+              ),
+            );
+            return;
+          }
+        }
+        
+        final duration = _calculateDuration(productPrice, interestRate, monthlyPayment);
+        final totalPayment = monthlyPayment * duration;
+        final totalInterest = totalPayment - productPrice;
+
+        setState(() {
+          _calculatedDuration = duration.toDouble();
+          _totalPayment = totalPayment;
+          _totalInterest = totalInterest;
+          _extraPayment = totalInterest;
+          _calculatedMonthlyPayment = null;
+          _showResults = true;
+        });
+      }
     }
   }
 
@@ -85,44 +167,16 @@ class _WalletPageState extends State<WalletPage> {
       _productPriceController.clear();
       _monthlyPaymentController.clear();
       _durationController.clear();
+      _interestRateController.text = '0';
       _totalPayment = null;
       _extraPayment = null;
+      _totalInterest = null;
+      _calculatedMonthlyPayment = null;
+      _calculatedDuration = null;
       _showResults = false;
     });
   }
 
-  void _onMonthlyChanged() {
-    if (_isUpdatingMonthly) return;
-
-    final price = _parseFormattedNumber(_productPriceController.text);
-    final monthly = _parseFormattedNumber(_monthlyPaymentController.text);
-
-    if (price <= 0 || monthly <= 0) return;
-
-    _isUpdatingDuration = true;
-
-    final months = (price / monthly).ceil();
-    _durationController.text = months.toString();
-
-    _isUpdatingDuration = false;
-  }
-
-  void _onDurationChanged() {
-    if (_isUpdatingDuration) return;
-
-    final price = _parseFormattedNumber(_productPriceController.text);
-    final months = int.tryParse(_durationController.text) ?? 0;
-
-    if (price <= 0 || months <= 0) return;
-
-    _isUpdatingMonthly = true;
-
-    final monthly = price / months;
-    _monthlyPaymentController.text =
-        _formatCurrency(monthly.roundToDouble());
-
-    _isUpdatingMonthly = false;
-  }
 
 
   @override
@@ -205,6 +259,155 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                   SizedBox(height: 24.h),
 
+                  // Calculation Mode Selector
+                  Container(
+                    decoration: BoxDecoration(
+                      color: cardColor,
+                      borderRadius: BorderRadius.circular(16.r),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Padding(
+                          padding: EdgeInsets.all(16.w),
+                          child: Text(
+                            'Hisoblash rejimi',
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w600,
+                              color: subtleTextColor,
+                            ),
+                          ),
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _calculationMode = 'monthly';
+                                    _showResults = false;
+                                  });
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                                  decoration: BoxDecoration(
+                                    gradient: _calculationMode == 'monthly'
+                                        ? LinearGradient(
+                                            colors: isDark
+                                                ? [
+                                                    const Color(0xFF6366F1),
+                                                    const Color(0xFF4F46E5),
+                                                  ]
+                                                : [
+                                                    AppColors.cxRoyalBlue,
+                                                    AppColors.cxRoyalBlue.withOpacity(0.8),
+                                                  ],
+                                          )
+                                        : null,
+                                    borderRadius: BorderRadius.only(
+                                      bottomLeft: Radius.circular(16.r),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.payments_outlined,
+                                        color: _calculationMode == 'monthly'
+                                            ? Colors.white
+                                            : subtleTextColor,
+                                        size: 24.sp,
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        'Oylik to\'lovni\nhisoblash',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: _calculationMode == 'monthly'
+                                              ? Colors.white
+                                              : subtleTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 60.h,
+                              color: subtleTextColor.withOpacity(0.2),
+                            ),
+                            Expanded(
+                              child: InkWell(
+                                onTap: () {
+                                  setState(() {
+                                    _calculationMode = 'duration';
+                                    _showResults = false;
+                                  });
+                                },
+                                child: Container(
+                                  padding: EdgeInsets.symmetric(vertical: 12.h),
+                                  decoration: BoxDecoration(
+                                    gradient: _calculationMode == 'duration'
+                                        ? LinearGradient(
+                                            colors: isDark
+                                                ? [
+                                                    const Color(0xFF6366F1),
+                                                    const Color(0xFF4F46E5),
+                                                  ]
+                                                : [
+                                                    AppColors.cxRoyalBlue,
+                                                    AppColors.cxRoyalBlue.withOpacity(0.8),
+                                                  ],
+                                          )
+                                        : null,
+                                    borderRadius: BorderRadius.only(
+                                      bottomRight: Radius.circular(16.r),
+                                    ),
+                                  ),
+                                  child: Column(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_month_outlined,
+                                        color: _calculationMode == 'duration'
+                                            ? Colors.white
+                                            : subtleTextColor,
+                                        size: 24.sp,
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        'Muddatni\nhisoblash',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          fontWeight: FontWeight.w600,
+                                          color: _calculationMode == 'duration'
+                                              ? Colors.white
+                                              : subtleTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+
                   // Product Price Input
                   _buildInputField(
                     controller: _productPriceController,
@@ -227,49 +430,77 @@ class _WalletPageState extends State<WalletPage> {
                   ),
                   SizedBox(height: 16.h),
 
-                  // Monthly Payment Input
+                  // Interest Rate Input
                   _buildInputField(
-                    controller: _monthlyPaymentController,
-                    label: 'Oylik to\'lov',
+                    controller: _interestRateController,
+                    label: 'Yillik foiz stavkasi',
                     hint: '0',
-                    icon: Icons.payments_outlined,
-                    focusNode: _monthlyFocus,
-                    nextFocus: _durationFocus,
+                    icon: Icons.percent,
+                    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                    isPercentInput: true,
+                    focusNode: _interestFocus,
+                    nextFocus: _calculationMode == 'monthly' ? _durationFocus : _monthlyFocus,
                     textInputAction: TextInputAction.next,
                     validator: (value) {
                       if (value == null || value.isEmpty) {
-                        return 'Oylik to\'lovni kiriting';
+                        return 'Foiz stavkasini kiriting';
                       }
-                      final payment = _parseFormattedNumber(value);
-                      if (payment <= 0) {
-                        return 'To\'lov 0 dan katta bo\'lishi kerak';
+                      final rate = double.tryParse(value);
+                      if (rate == null || rate < 0) {
+                        return 'Foiz 0 dan katta yoki teng bo\'lishi kerak';
+                      }
+                      if (rate > 100) {
+                        return 'Foiz 100 dan kichik bo\'lishi kerak';
                       }
                       return null;
                     },
                   ),
                   SizedBox(height: 16.h),
 
-                  // Duration Input
-                  _buildInputField(
-                    controller: _durationController,
-                    label: 'Nasiya muddati (oy)',
-                    hint: '0',
-                    icon: Icons.calendar_month_outlined,
-                    keyboardType: TextInputType.number,
-                    isMonthInput: true,
-                    focusNode: _durationFocus,
-                    textInputAction: TextInputAction.next,
-                    validator: (value) {
-                      if (value == null || value.isEmpty) {
-                        return 'Muddatni kiriting';
-                      }
-                      final months = int.tryParse(value);
-                      if (months == null || months <= 0) {
-                        return 'Muddat 0 dan katta bo\'lishi kerak';
-                      }
-                      return null;
-                    },
-                  ),
+                  // Conditional inputs based on calculation mode
+                  if (_calculationMode == 'monthly') ...[
+                    // Duration Input
+                    _buildInputField(
+                      controller: _durationController,
+                      label: 'Nasiya muddati (oy)',
+                      hint: '0',
+                      icon: Icons.calendar_month_outlined,
+                      keyboardType: TextInputType.number,
+                      isMonthInput: true,
+                      focusNode: _durationFocus,
+                      textInputAction: TextInputAction.done,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Muddatni kiriting';
+                        }
+                        final months = int.tryParse(value);
+                        if (months == null || months <= 0) {
+                          return 'Muddat 0 dan katta bo\'lishi kerak';
+                        }
+                        return null;
+                      },
+                    ),
+                  ] else ...[
+                    // Monthly Payment Input
+                    _buildInputField(
+                      controller: _monthlyPaymentController,
+                      label: 'Oylik to\'lov',
+                      hint: '0',
+                      icon: Icons.payments_outlined,
+                      focusNode: _monthlyFocus,
+                      textInputAction: TextInputAction.done,
+                      validator: (value) {
+                        if (value == null || value.isEmpty) {
+                          return 'Oylik to\'lovni kiriting';
+                        }
+                        final payment = _parseFormattedNumber(value);
+                        if (payment <= 0) {
+                          return 'To\'lov 0 dan katta bo\'lishi kerak';
+                        }
+                        return null;
+                      },
+                    ),
+                  ],
                   SizedBox(height: 24.h),
 
                   // Calculate Button
@@ -347,49 +578,94 @@ class _WalletPageState extends State<WalletPage> {
                     ),
 
                   // Results Section
-                  // if (_showResults) ...[
-                  //   SizedBox(height: 24.h),
-                  //   // _buildResultCard(
-                  //   //   title: 'Umumiy to\'lov',
-                  //   //   amount: _totalPayment!,
-                  //   //   icon: Icons.account_balance_wallet_outlined,
-                  //   //   gradient: isDark
-                  //   //       ? [
-                  //   //           const Color(0xFF6366F1),
-                  //   //           const Color(0xFF4F46E5),
-                  //   //         ]
-                  //   //       : [
-                  //   //           AppColors.cxRoyalBlue,
-                  //   //           AppColors.cxRoyalBlue.withOpacity(0.8),
-                  //   //         ],
-                  //   // ),
-                  //   SizedBox(height: 16.h),
-                  //   // _buildResultCard(
-                  //   //   title: 'Ortiqcha to\'lov (Sizning zararingiz)',
-                  //   //   amount: _extraPayment!,
-                  //   //   icon: Icons.trending_up,
-                  //   //   gradient: _extraPayment! > 0
-                  //   //       ? (isDark
-                  //   //           ? [
-                  //   //               const Color(0xFFEF4444),
-                  //   //               const Color(0xFFDC2626),
-                  //   //             ]
-                  //   //           : [
-                  //   //               AppColors.cxCrimsonRed,
-                  //   //               AppColors.cxCrimsonRed.withOpacity(0.8),
-                  //   //             ])
-                  //   //       : (isDark
-                  //   //           ? [
-                  //   //               const Color(0xFF34D399),
-                  //   //               const Color(0xFF10B981),
-                  //   //             ]
-                  //   //           : [
-                  //   //               AppColors.cxEmeraldGreen,
-                  //   //               AppColors.cxEmeraldGreen.withOpacity(0.8),
-                  //   //             ]),
-                  //   //   isExtra: true,
-                  //   // ),
-                  // ],
+                  if (_showResults) ...[
+                    SizedBox(height: 24.h),
+                    
+                    // Calculated Result Card
+                    if (_calculationMode == 'monthly' && _calculatedMonthlyPayment != null)
+                      _buildResultCard(
+                        title: 'Oylik to\'lov',
+                        amount: _calculatedMonthlyPayment!,
+                        icon: Icons.payments_outlined,
+                        gradient: isDark
+                            ? [
+                                const Color(0xFF8B5CF6),
+                                const Color(0xFF7C3AED),
+                              ]
+                            : [
+                                AppColors.cxRoyalBlue,
+                                AppColors.cxRoyalBlue.withOpacity(0.8),
+                              ],
+                      ),
+                    
+                    if (_calculationMode == 'duration' && _calculatedDuration != null)
+                      _buildResultCard(
+                        title: 'Nasiya muddati',
+                        amount: _calculatedDuration!,
+                        icon: Icons.calendar_month_outlined,
+                        gradient: isDark
+                            ? [
+                                const Color(0xFF8B5CF6),
+                                const Color(0xFF7C3AED),
+                              ]
+                            : [
+                                AppColors.cxRoyalBlue,
+                                AppColors.cxRoyalBlue.withOpacity(0.8),
+                              ],
+                        isMonthDisplay: true,
+                      ),
+                    
+                    SizedBox(height: 16.h),
+                    
+                    // Total Payment Card
+                    _buildResultCard(
+                      title: 'Umumiy to\'lov',
+                      amount: _totalPayment!,
+                      icon: Icons.account_balance_wallet_outlined,
+                      gradient: isDark
+                          ? [
+                              const Color(0xFF6366F1),
+                              const Color(0xFF4F46E5),
+                            ]
+                          : [
+                              AppColors.cxRoyalBlue,
+                              AppColors.cxRoyalBlue.withOpacity(0.8),
+                            ],
+                    ),
+                    SizedBox(height: 16.h),
+                    
+                    // Interest/Extra Payment Card
+                    _buildResultCard(
+                      title: 'Foiz to\'lovi',
+                      amount: _totalInterest!,
+                      icon: Icons.trending_up,
+                      gradient: _totalInterest! > 0
+                          ? (isDark
+                              ? [
+                                  const Color(0xFFEF4444),
+                                  const Color(0xFFDC2626),
+                                ]
+                              : [
+                                  AppColors.cxCrimsonRed,
+                                  AppColors.cxCrimsonRed.withOpacity(0.8),
+                                ])
+                          : (isDark
+                              ? [
+                                  const Color(0xFF34D399),
+                                  const Color(0xFF10B981),
+                                ]
+                              : [
+                                  AppColors.cxEmeraldGreen,
+                                  AppColors.cxEmeraldGreen.withOpacity(0.8),
+                                ]),
+                      isExtra: true,
+                    ),
+                    
+                    SizedBox(height: 16.h),
+                    
+                    // Summary Card
+                    _buildSummaryCard(),
+                  ],
                 ],
               ),
             ),
@@ -407,6 +683,7 @@ class _WalletPageState extends State<WalletPage> {
     required String? Function(String?) validator,
     TextInputType keyboardType = TextInputType.number,
     bool isMonthInput = false,
+    bool isPercentInput = false,
     TextInputAction textInputAction = TextInputAction.next,
     FocusNode? focusNode,
     FocusNode? nextFocus,
@@ -443,8 +720,13 @@ class _WalletPageState extends State<WalletPage> {
           }
         },
         inputFormatters: [
-          FilteringTextInputFormatter.digitsOnly,
-          if (!isMonthInput) _CurrencyInputFormatter(),
+          if (isPercentInput)
+            FilteringTextInputFormatter.allow(RegExp(r'^\d*\.?\d{0,2}'))
+          else if (!isMonthInput) ...[
+            FilteringTextInputFormatter.digitsOnly,
+            _CurrencyInputFormatter(),
+          ] else
+            FilteringTextInputFormatter.digitsOnly,
         ],
         style: TextStyle(
           fontSize: 18.sp,
@@ -470,7 +752,7 @@ class _WalletPageState extends State<WalletPage> {
               size: 24.sp,
             ),
           ),
-          suffixText: isMonthInput ? 'oy' : 'summa',
+          suffixText: isPercentInput ? '%' : (isMonthInput ? 'oy' : 'summa'),
           suffixStyle: TextStyle(
             fontSize: 14.sp,
             fontWeight: FontWeight.w500,
@@ -527,6 +809,7 @@ class _WalletPageState extends State<WalletPage> {
     required IconData icon,
     required List<Color> gradient,
     bool isExtra = false,
+    bool isMonthDisplay = false,
   }) {
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -577,7 +860,9 @@ class _WalletPageState extends State<WalletPage> {
           ),
           SizedBox(height: 16.h),
           Text(
-            '${_formatCurrency(amount)} so\'m',
+            isMonthDisplay 
+                ? '${amount.toInt()} oy'
+                : '${_formatCurrency(amount)}',
             style: TextStyle(
               fontSize: 28.sp,
               fontWeight: FontWeight.w800,
@@ -606,6 +891,142 @@ class _WalletPageState extends State<WalletPage> {
               ),
             ),
           ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCard() {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardColor = isDark ? const Color(0xFF1A1A24) : Colors.white;
+    final textColor = isDark ? const Color(0xFFE8E8F0) : AppColors.cxDarkCharcoal;
+    final subtleTextColor = isDark ? const Color(0xFF9CA3AF) : AppColors.cxSilverTint;
+    
+    final productPrice = _parseFormattedNumber(_productPriceController.text);
+    final interestRate = double.tryParse(_interestRateController.text) ?? 0;
+    final monthlyPayment = _calculatedMonthlyPayment ?? _parseFormattedNumber(_monthlyPaymentController.text);
+    final duration = (_calculatedDuration ?? int.tryParse(_durationController.text) ?? 0).toInt();
+    
+    return Container(
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(
+          color: (isDark ? const Color(0xFF6366F1) : AppColors.cxRoyalBlue).withOpacity(0.3),
+          width: 2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.summarize_outlined,
+                color: isDark ? const Color(0xFF6366F1) : AppColors.cxRoyalBlue,
+                size: 24.sp,
+              ),
+              SizedBox(width: 8.w),
+              Text(
+                'Xulosa',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  color: textColor,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          _buildSummaryRow('Buyum narxi:', '${_formatCurrency(productPrice)}', textColor, subtleTextColor),
+          _buildSummaryRow('Foiz stavkasi:', '${interestRate.toStringAsFixed(2)}%', textColor, subtleTextColor),
+          _buildSummaryRow('Oylik to\'lov:', '${_formatCurrency(monthlyPayment)} ', textColor, subtleTextColor),
+          _buildSummaryRow('Muddat:', '$duration oy', textColor, subtleTextColor),
+          Divider(height: 24.h, color: subtleTextColor.withOpacity(0.3)),
+          _buildSummaryRow(
+            'Umumiy to\'lov:', 
+            '${_formatCurrency(_totalPayment!)}',
+            textColor, 
+            subtleTextColor,
+            isBold: true,
+          ),
+          _buildSummaryRow(
+            'Foiz to\'lovi:', 
+            '${_formatCurrency(_totalInterest!)}',
+            _totalInterest! > 0 
+                ? (isDark ? const Color(0xFFEF4444) : AppColors.cxCrimsonRed)
+                : (isDark ? const Color(0xFF34D399) : AppColors.cxEmeraldGreen),
+            subtleTextColor,
+            isBold: true,
+          ),
+          if (_totalInterest! > 0 && productPrice > 0) ...[
+            SizedBox(height: 8.h),
+            Container(
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              decoration: BoxDecoration(
+                color: (isDark ? const Color(0xFFEF4444) : AppColors.cxCrimsonRed).withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8.r),
+                border: Border.all(
+                  color: (isDark ? const Color(0xFFEF4444) : AppColors.cxCrimsonRed).withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    size: 16.sp,
+                    color: isDark ? const Color(0xFFEF4444) : AppColors.cxCrimsonRed,
+                  ),
+                  SizedBox(width: 8.w),
+                  Expanded(
+                    child: Text(
+                      'Siz buyum narxidan ${((_totalInterest! / productPrice) * 100).toStringAsFixed(1)}% ko\'proq to\'laysiz',
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: isDark ? const Color(0xFFEF4444) : AppColors.cxCrimsonRed,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, Color valueColor, Color labelColor, {bool isBold = false}) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 6.h),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: isBold ? 15.sp : 14.sp,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w500,
+              color: labelColor,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: isBold ? 15.sp : 14.sp,
+              fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
+              color: valueColor,
+            ),
+          ),
         ],
       ),
     );
