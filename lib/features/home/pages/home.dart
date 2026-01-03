@@ -41,7 +41,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       if (_authManager.hasBreakAccess)
         _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, AppColors.cxFF9800, '/breakOrder'),
       if (_authManager.hasBreakAccess)
-      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, AppColors.cxWarning, '/faceVerification'),
+      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, const Color(0xFF64B6FF), '/faceVerification'),
       if (_authManager.hasStopwatchAccess)
         _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
       _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
