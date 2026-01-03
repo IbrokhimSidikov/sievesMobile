@@ -6,15 +6,16 @@ class Test {
   final String title;
   final String description;
   final String category;
-  final int duration; // in minutes
+  final int duration;
   final int totalQuestions;
   final int passingScore;
   final String? imageUrl;
-  final String? courseUrl; // PDF or course material URL
+  final String? courseUrl;
+  final String? videoUrl;
   final List<Question>? questions;
   final DateTime? createdAt;
   final bool isCompleted;
-  final bool courseCompleted; // Track if user completed the course material
+  final bool courseCompleted;
   final int? userScore;
 
   Test({
@@ -27,6 +28,7 @@ class Test {
     required this.passingScore,
     this.imageUrl,
     this.courseUrl,
+    this.videoUrl,
     this.questions,
     this.createdAt,
     this.isCompleted = false,
@@ -45,6 +47,7 @@ class Test {
       passingScore: json['passingScore'] as int,
       imageUrl: json['imageUrl'] as String?,
       courseUrl: json['courseUrl'] as String?,
+      videoUrl: json['videoUrl'] as String?,
       questions: json['questions'] != null
           ? (json['questions'] as List<dynamic>)
               .map((e) => Question.fromJson(e as Map<String, dynamic>))
@@ -70,6 +73,7 @@ class Test {
       'passingScore': passingScore,
       'imageUrl': imageUrl,
       'courseUrl': courseUrl,
+      'videoUrl': videoUrl,
       'questions': questions?.map((e) => e.toJson()).toList(),
       'createdAt': createdAt?.toIso8601String(),
       'isCompleted': isCompleted,
@@ -88,6 +92,7 @@ class Test {
     int? passingScore,
     String? imageUrl,
     String? courseUrl,
+    String? videoUrl,
     List<Question>? questions,
     DateTime? createdAt,
     bool? isCompleted,
@@ -104,6 +109,7 @@ class Test {
       passingScore: passingScore ?? this.passingScore,
       imageUrl: imageUrl ?? this.imageUrl,
       courseUrl: courseUrl ?? this.courseUrl,
+      videoUrl: videoUrl ?? this.videoUrl,
       questions: questions ?? this.questions,
       createdAt: createdAt ?? this.createdAt,
       isCompleted: isCompleted ?? this.isCompleted,
@@ -125,6 +131,7 @@ class Test {
       passingScore: 70,
       imageUrl: null,
       courseUrl: course.pdfUrl,
+      videoUrl: course.videoUrl,
       questions: course.tests,
       createdAt: course.createdAt,
       isCompleted: false,

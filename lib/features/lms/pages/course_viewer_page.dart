@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:syncfusion_flutter_pdfviewer/pdfviewer.dart';
 import 'dart:developer' as developer;
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/constants/app_colors.dart';
 import '../models/test.dart';
 import '../models/test_with_sessions.dart';
@@ -88,6 +89,59 @@ class _CourseViewerPageState extends State<CourseViewerPage> {
       _loadError = null;
     });
     _updateProgress();
+  }
+
+  Future<void> _openVideo() async {
+    developer.log('Watch video button clicked', name: 'CourseViewer');
+    
+    if (widget.test.videoUrl == null || widget.test.videoUrl!.isEmpty) {
+      developer.log('No video URL available', name: 'CourseViewer');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('No video available for this course'),
+            backgroundColor: AppColors.cxWarning,
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      }
+      return;
+    }
+
+    try {
+      final url = Uri.parse(widget.test.videoUrl!);
+      developer.log('Opening video URL: $url', name: 'CourseViewer');
+      
+      if (await canLaunchUrl(url)) {
+        await launchUrl(
+          url,
+          mode: LaunchMode.externalApplication,
+        );
+        developer.log('Video opened successfully', name: 'CourseViewer');
+      } else {
+        developer.log('Cannot launch URL', name: 'CourseViewer');
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: const Text('Unable to open video'),
+              backgroundColor: AppColors.cxCrimsonRed,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      developer.log('Error opening video: $e', name: 'CourseViewer', error: e);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening video: $e'),
+            backgroundColor: AppColors.cxCrimsonRed,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 
   void _proceedToTest() {
@@ -537,96 +591,149 @@ class _CourseViewerPageState extends State<CourseViewerPage> {
       ),
       child: SafeArea(
         top: false,
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
-            // Navigation buttons
-            Expanded(
-              child: Row(
-                children: [
-                  _buildNavButton(
-                    icon: Icons.arrow_back_ios_new_rounded,
-                    onTap: () {
-                      if (_currentPage > 0) {
-                        _pdfController.previousPage();
-                      }
-                    },
-                    enabled: _currentPage > 0,
-                  ),
-                  SizedBox(width: 12.w),
-                  _buildNavButton(
-                    icon: Icons.arrow_forward_ios_rounded,
-                    onTap: () {
-                      if (_currentPage < _totalPages - 1) {
-                        _pdfController.nextPage();
-                      }
-                    },
-                    enabled: _currentPage < _totalPages - 1,
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 12.w),
-            // Proceed button
-            Expanded(
-              flex: 2,
-              child: Container(
-                height: 50.h,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: _canProceedToTest
-                        ? [
-                            AppColors.cxEmeraldGreen,
-                            AppColors.cxEmeraldGreen.withOpacity(0.8),
-                          ]
-                        : [
-                            AppColors.cxSilverTint,
-                            AppColors.cxSilverTint.withOpacity(0.8),
-                          ],
-                  ),
-                  borderRadius: BorderRadius.circular(12.r),
-                  boxShadow: _canProceedToTest
-                      ? [
-                          BoxShadow(
-                            color: AppColors.cxEmeraldGreen.withOpacity(0.4),
-                            blurRadius: 12,
-                            offset: const Offset(0, 4),
-                          ),
-                        ]
-                      : [],
+            // Navigation buttons row
+            Row(
+              children: [
+                _buildNavButton(
+                  icon: Icons.arrow_back_ios_new_rounded,
+                  onTap: () {
+                    if (_currentPage > 0) {
+                      _pdfController.previousPage();
+                    }
+                  },
+                  enabled: _currentPage > 0,
                 ),
-                child: Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: _proceedToTest,
-                    borderRadius: BorderRadius.circular(12.r),
-                    child: Center(
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            _canProceedToTest
-                                ? Icons.check_circle_outline_rounded
-                                : Icons.lock_outline_rounded,
-                            color: Colors.white,
-                            size: 20.sp,
+                SizedBox(width: 12.w),
+                _buildNavButton(
+                  icon: Icons.arrow_forward_ios_rounded,
+                  onTap: () {
+                    if (_currentPage < _totalPages - 1) {
+                      _pdfController.nextPage();
+                    }
+                  },
+                  enabled: _currentPage < _totalPages - 1,
+                ),
+                SizedBox(width: 12.w),
+                // Proceed button
+                Expanded(
+                  child: Container(
+                    height: 50.h,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: _canProceedToTest
+                            ? [
+                                AppColors.cxEmeraldGreen,
+                                AppColors.cxEmeraldGreen.withOpacity(0.8),
+                              ]
+                            : [
+                                AppColors.cxSilverTint,
+                                AppColors.cxSilverTint.withOpacity(0.8),
+                              ],
+                      ),
+                      borderRadius: BorderRadius.circular(12.r),
+                      boxShadow: _canProceedToTest
+                          ? [
+                              BoxShadow(
+                                color: AppColors.cxEmeraldGreen.withOpacity(0.4),
+                                blurRadius: 12,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
+                    ),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: _proceedToTest,
+                        borderRadius: BorderRadius.circular(12.r),
+                        child: Center(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                _canProceedToTest
+                                    ? Icons.check_circle_outline_rounded
+                                    : Icons.lock_outline_rounded,
+                                color: Colors.white,
+                                size: 20.sp,
+                              ),
+                              SizedBox(width: 8.w),
+                              Text(
+                                _canProceedToTest ? 'Start Test' : 'Complete Course',
+                                style: TextStyle(
+                                  fontSize: 15.sp,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            _canProceedToTest ? 'Start Test' : 'Complete Course',
-                            style: TextStyle(
-                              fontSize: 15.sp,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ),
+            // Watch Video button (only show if video available and course completed)
+            if (_canProceedToTest && widget.test.videoUrl != null && widget.test.videoUrl!.isNotEmpty) ...[
+              SizedBox(height: 12.h),
+              _buildVideoButton(),
+            ],
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVideoButton() {
+    return Container(
+      height: 50.h,
+      decoration: BoxDecoration(
+        gradient: const LinearGradient(
+          colors: [
+            Color(0xFFFF0000), // YouTube red
+            Color(0xFFCC0000),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(12.r),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFFFF0000).withOpacity(0.4),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: _openVideo,
+          borderRadius: BorderRadius.circular(12.r),
+          child: Center(
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.play_circle_outline_rounded,
+                  color: Colors.white,
+                  size: 20.sp,
+                ),
+                SizedBox(width: 8.w),
+                Text(
+                  'Watch Video',
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );

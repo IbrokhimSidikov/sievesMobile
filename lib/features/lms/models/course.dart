@@ -9,6 +9,7 @@ class Course {
   final String description;
   final String? category;
   final String? pdfUrl;
+  final String? videoUrl;
   final int sortOrder;
   final bool isActive;
   final DateTime createdAt;
@@ -26,6 +27,7 @@ class Course {
     required this.description,
     this.category,
     this.pdfUrl,
+    this.videoUrl,
     required this.sortOrder,
     required this.isActive,
     required this.createdAt,
@@ -52,6 +54,7 @@ class Course {
       description: (json['description'] as String?) ?? 'No description available',
       category: json['category'] as String?,
       pdfUrl: json['pdf_url'] as String?,
+      videoUrl: json['video_url'] as String?,
       sortOrder: json['sort_order'] as int,
       isActive: json['is_active'] as bool,
       createdAt: DateTime.parse(json['created_at'] as String),
@@ -74,6 +77,7 @@ class Course {
       'description': description,
       'category': category,
       'pdf_url': pdfUrl,
+      'video_url': videoUrl,
       'sort_order': sortOrder,
       'is_active': isActive,
       'created_at': createdAt.toIso8601String(),
