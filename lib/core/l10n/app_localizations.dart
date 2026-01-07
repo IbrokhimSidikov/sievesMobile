@@ -46,6 +46,8 @@ class AppLocalizations {
       'checklist':'Checklist',
       'checklistSubtitle':'Manage your tasks',
       'faceIdSubtitle':'Work entry device',
+      'calendar':'Calendar',
+      'calendarSubtitle':'Training schedule',
       //Profile page
       'workHours':'Work Hours',
       'totalHours':'Total Hours',
@@ -223,6 +225,8 @@ class AppLocalizations {
       'checklist':'Checklist ro\'yxati',
       'checklistSubtitle':'Vazifalarni boshqarish',
       'faceIdSubtitle':'Ishga keldi-ketdi',
+      'calendar':'Kalendar',
+      'calendarSubtitle':'Trening jadvali',
       //Profile page
       'workHours':'Ish soatlari',
       'totalHours':'Umumiy soatlar',
@@ -401,6 +405,8 @@ class AppLocalizations {
       'checklist':'Список задач',
       'checklistSubtitle':'Управляйте задачами',
       'faceIdSubtitle':'Устройство распознавания',
+      'calendar':'Календарь',
+      'calendarSubtitle':'Расписание тренингов',
       //Profile page
       'workHours':'Рабочие часы',
       'totalHours':'Общее количество часов',
@@ -585,6 +591,8 @@ class AppLocalizations {
   String get checklist => translate('checklist');
   String get checklistSubtitle => translate('checklistSubtitle');
   String get faceIdSubtitle => translate('faceIdSubtitle');
+  String get calendar => translate('calendar');
+  String get calendarSubtitle => translate('calendarSubtitle');
 
   //Profile page
   String get workHours => translate('workHours');

@@ -36,6 +36,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
       _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
       _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, '/lmsPage'),
+      _ModuleItem(localizations.calendar, Icons.calendar_month_outlined, const Color(0xFF8B5CF6), '/calendar'),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, '/wallet'),
       if (_authManager.hasBreakAccess)
@@ -732,6 +733,7 @@ class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderSta
     if (title == localizations.productivityTimer) return localizations.productivityTimerSubtitle;
     if (title == localizations.checklist) return localizations.checklistSubtitle;
     if (title == localizations.faceVerification) return localizations.faceIdSubtitle;
+    if (title == localizations.calendar) return localizations.calendarSubtitle;
     return "Tap to explore";
   }
 }
