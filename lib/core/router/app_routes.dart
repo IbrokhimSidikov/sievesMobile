@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sieves_mob/features/home/pages/home.dart';
 
@@ -20,7 +21,6 @@ import '../../features/lms/models/test_with_sessions.dart';
 import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
-import '../../features/splash/pages/splash.dart';
 import '../../features/face-verification/pages/face_verification_page.dart';
 import '../../features/wallet/pages/wallet_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
@@ -28,7 +28,6 @@ import '../services/auth/auth_manager.dart';
 
 class AppRoutes {
 
-  static const String splash = '/';
   static const String onboard = '/onboard';
   // static const String login = '/login';
   static const String home = '/home';
@@ -50,18 +49,20 @@ class AppRoutes {
   static const String wallet = '/wallet';
   static const String calendar = '/calendar';
 
-  static final GoRouter router = GoRouter(
-      initialLocation: splash,
+  static GoRouter createRouter(String initialLocation) {
+    return GoRouter(
+      initialLocation: initialLocation,
       routes: [
-          GoRoute(
-              path: '/',
-              name: splash,
-              builder: (context, state) => const SplashScreen()
-          ),
         GoRoute(
           path: '/onboard',
           name: onboard,
-          builder: (context, state) => const Onboard()
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const Onboard(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
         // GoRoute(
         //   path: '/login',
@@ -69,9 +70,15 @@ class AppRoutes {
         //   builder: (context, state) => const Login()
         // ),
         GoRoute(
-            path: '/home',
-            name: home,
-            builder: (context, state) => const Home()
+          path: '/home',
+          name: home,
+          pageBuilder: (context, state) => CustomTransitionPage(
+            key: state.pageKey,
+            child: const Home(),
+            transitionsBuilder: (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+          ),
         ),
         GoRoute(
           path: '/profile',
@@ -195,4 +202,5 @@ class AppRoutes {
           builder: (context, state) => const CalendarPage()
         ),
       ]);
+  }
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_remote_config/firebase_remote_config.dart';
@@ -73,6 +74,8 @@ class _MyAppState extends State<MyApp> {
   bool _isInitialized = false;
   final _navigatorKey = GlobalKey<NavigatorState>();
   final localeProvider = LocaleProvider();
+  String _initialRoute = '/onboard';
+  late GoRouter _router;
 
   @override
   void initState() {
@@ -85,6 +88,8 @@ class _MyAppState extends State<MyApp> {
     await localeProvider.initialize();
     // Then initialize version service
     await _initializeVersionService();
+    // Check auth status and determine initial route
+    await _checkAuthAndSetRoute();
   }
 
   Future<void> _initializeVersionService() async {
@@ -93,16 +98,32 @@ class _MyAppState extends State<MyApp> {
       final remoteConfig = FirebaseRemoteConfig.instance;
       _versionService = VersionService(remoteConfig);
       await _versionService.initialize();
+    } catch (e) {
+      print('Error initializing version service: $e');
+    }
+  }
 
+  Future<void> _checkAuthAndSetRoute() async {
+    try {
+      print('🔐 Checking authentication status...');
+      final authManager = AuthManager();
+      final isAuthenticated = await authManager.restoreSession();
+      
       setState(() {
+        _initialRoute = isAuthenticated ? '/home' : '/onboard';
+        _router = AppRoutes.createRouter(_initialRoute);
         _isInitialized = true;
       });
-
+      
+      print('✅ Initial route set to: $_initialRoute');
+      
       // Check for updates after app loads
       _checkForUpdates();
     } catch (e) {
-      print('Error initializing version service: $e');
+      print('❌ Error checking auth status: $e');
       setState(() {
+        _initialRoute = '/onboard';
+        _router = AppRoutes.createRouter(_initialRoute);
         _isInitialized = true;
       });
     }
@@ -150,14 +171,35 @@ class _MyAppState extends State<MyApp> {
       return MaterialApp(
         debugShowCheckedModeBanner: false,
         home: Scaffold(
-          body: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                CircularProgressIndicator(),
-                SizedBox(height: 16),
-                Text('Ochilmoqda...'),
-              ],
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF6366F1),
+                  Color(0xFF8B5CF6),
+                  Color(0xFFEC4899),
+                ],
+              ),
+            ),
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _BouncingDotsLoader(),
+                  SizedBox(height: 24),
+                  Text(
+                    'SIEVES MOBILE',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -182,71 +224,55 @@ class _MyAppState extends State<MyApp> {
             builder: (context, localeProvider, _) {
               return BlocBuilder<ThemeCubit, ThemeMode>(
                 builder: (context, themeMode) {
-                  return MaterialApp.router(
-                    title: 'Sieves Mobile App',
-                    debugShowCheckedModeBanner: false,
-                    // Localization configuration
-                    locale: localeProvider.locale,
-                    supportedLocales: const [
-                      Locale('en', ''),
-                      Locale('uz', ''),
-                      Locale('ru', ''),
-                    ],
-                    localizationsDelegates: const [
-                      AppLocalizationsDelegate(),
-                      GlobalMaterialLocalizations.delegate,
-                      GlobalWidgetsLocalizations.delegate,
-                      GlobalCupertinoLocalizations.delegate,
-                    ],
-                    theme: AppTheme.lightTheme.copyWith(
-                      textTheme: GoogleFonts.nunitoTextTheme(
-                        Theme.of(context).textTheme,
+                  return BlocListener<AuthCubit, AuthState>(
+                    listener: (context, state) {
+                      if (state is AuthError) {
+                        print('❌ [GLOBAL] Auth error: ${state.message}');
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(state.message),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 3),
+                          ),
+                        );
+                      } else if (state is AuthUnauthenticated) {
+                        print('🔐 [GLOBAL] Session expired - navigating to onboard');
+                        _router.go('/onboard');
+                      }
+                    },
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      child: MaterialApp.router(
+                        key: ValueKey(_isInitialized),
+                        title: 'Sieves Mobile App',
+                        debugShowCheckedModeBanner: false,
+                        // Localization configuration
+                        locale: localeProvider.locale,
+                        supportedLocales: const [
+                          Locale('en', ''),
+                          Locale('uz', ''),
+                          Locale('ru', ''),
+                        ],
+                        localizationsDelegates: const [
+                          AppLocalizationsDelegate(),
+                          GlobalMaterialLocalizations.delegate,
+                          GlobalWidgetsLocalizations.delegate,
+                          GlobalCupertinoLocalizations.delegate,
+                        ],
+                        theme: AppTheme.lightTheme.copyWith(
+                          textTheme: GoogleFonts.nunitoTextTheme(
+                            Theme.of(context).textTheme,
+                          ),
+                        ),
+                        darkTheme: AppTheme.darkTheme.copyWith(
+                            textTheme: GoogleFonts.nunitoTextTheme(
+                                Theme.of(context).textTheme,
+                            )),
+                        themeMode: themeMode,
+                        routerConfig: _router,
+                        scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
                       ),
                     ),
-                    darkTheme: AppTheme.darkTheme.copyWith(
-                        textTheme: GoogleFonts.nunitoTextTheme(
-                            Theme.of(context).textTheme,
-                        )),
-                    themeMode: themeMode,
-                    routerConfig: AppRoutes.router,
-                    scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
-                builder: (builderContext, routerChild) {
-                  return Navigator(
-                    key: _navigatorKey,
-                    onPopPage: (route, result) => route.didPop(result),
-                    pages: [
-                      MaterialPage(
-                        child: BlocListener<AuthCubit, AuthState>(
-                          // Global listener for auth state changes
-                          listener: (context, state) {
-                            print('');
-                            print('🌍 [GLOBAL BlocListener] Auth state changed: ${state.runtimeType}');
-                            
-                            if (state is AuthError) {
-                              print('❌ [GLOBAL BlocListener] Showing error message: ${state.message}');
-                              // Show error message (e.g., session expired)
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                SnackBar(
-                                  content: Text(state.message),
-                                  backgroundColor: Colors.red,
-                                  duration: const Duration(seconds: 3),
-                                ),
-                              );
-                            } else if (state is AuthUnauthenticated) {
-                              // Session expired or user logged out - navigate to login
-                              print('🔐 [GLOBAL BlocListener] AuthUnauthenticated detected');
-                              print('🚀 [GLOBAL BlocListener] Navigating to /onboard...');
-                              AppRoutes.router.go('/onboard');
-                              print('✅ [GLOBAL BlocListener] Navigation initiated');
-                            }
-                            print('');
-                          },
-                          child: routerChild ?? const SizedBox.shrink(),
-                        ),
-                      ),
-                    ],
-                  );
-                },
                   );
                 },
               );
@@ -254,6 +280,93 @@ class _MyAppState extends State<MyApp> {
           );
         },
       ),
+    );
+  }
+}
+
+// Bouncing Dots Loader Widget
+class _BouncingDotsLoader extends StatefulWidget {
+  @override
+  State<_BouncingDotsLoader> createState() => _BouncingDotsLoaderState();
+}
+
+class _BouncingDotsLoaderState extends State<_BouncingDotsLoader>
+    with TickerProviderStateMixin {
+  late List<AnimationController> _controllers;
+  late List<Animation<double>> _animations;
+
+  @override
+  void initState() {
+    super.initState();
+    _controllers = List.generate(
+      3,
+      (index) => AnimationController(
+        duration: const Duration(milliseconds: 600),
+        vsync: this,
+      ),
+    );
+
+    _animations = _controllers.map((controller) {
+      return Tween<double>(begin: 0, end: -20).animate(
+        CurvedAnimation(
+          parent: controller,
+          curve: Curves.easeInOut,
+        ),
+      );
+    }).toList();
+
+    // Start animations with delay
+    for (int i = 0; i < _controllers.length; i++) {
+      Future.delayed(Duration(milliseconds: i * 150), () {
+        if (mounted) {
+          _controllers[i].repeat(reverse: true);
+        }
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    for (var controller in _controllers) {
+      controller.dispose();
+    }
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(3, (index) {
+        return AnimatedBuilder(
+          animation: _animations[index],
+          builder: (context, child) {
+            return Container(
+              margin: EdgeInsets.symmetric(horizontal: 6),
+              transform: Matrix4.translationValues(
+                0,
+                _animations[index].value,
+                0,
+              ),
+              child: Container(
+                width: 16,
+                height: 16,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.white.withOpacity(0.5),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      }),
     );
   }
 }

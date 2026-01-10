@@ -47,6 +47,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
   bool _canCreateEvent() {
     final departmentId = _authManager.currentIdentity?.employee?.departmentId;
+    if (departmentId == null) return false;
     return departmentId == 16 || departmentId == 17;
   }
 
@@ -264,6 +265,7 @@ class _CalendarPageState extends State<CalendarPage> {
           ),
         ),
         actions: [
+          if (_canCreateEvent())
             GestureDetector(
               onTap: _showCreateEventDialog,
               child: Container(
