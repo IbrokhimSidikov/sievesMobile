@@ -20,6 +20,13 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 /// Helper function to save notification
 Future<void> _saveNotificationToStorage(RemoteMessage message) async {
   try {
+    final platform = Platform.isIOS ? '🍎 iOS' : '🤖 Android';
+    print('$platform Saving notification to storage...');
+    print('  Message ID: ${message.messageId}');
+    print('  Title: ${message.notification?.title}');
+    print('  Body: ${message.notification?.body}');
+    print('  Type: ${message.data['type']}');
+    
     final notification = NotificationModel(
       id: message.messageId ?? DateTime.now().millisecondsSinceEpoch.toString(),
       title: message.notification?.title ?? 'New Notification',
@@ -31,6 +38,7 @@ Future<void> _saveNotificationToStorage(RemoteMessage message) async {
     );
     
     await NotificationStorageService().saveNotification(notification);
+    print('$platform Notification saved successfully');
   } catch (e) {
     print('❌ Error saving notification: $e');
   }
@@ -212,10 +220,14 @@ class NotificationService {
   }
 
   /// Handle notification tap - navigate to appropriate screen
-  void _handleNotificationTap(RemoteMessage message) {
+  Future<void> _handleNotificationTap(RemoteMessage message) async {
     final data = message.data;
     
     print('📍 Notification tapped, navigating to notifications page');
+    
+    // Save notification to storage (important for iOS where background handler may not run)
+    await _saveNotificationToStorage(message);
+    print('✅ Notification saved on tap');
     
     // Navigate to notifications page by default
     // Use a delay to ensure app is fully loaded

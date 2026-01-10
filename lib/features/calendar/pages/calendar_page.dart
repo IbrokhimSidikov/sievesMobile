@@ -21,6 +21,14 @@ class _CalendarPageState extends State<CalendarPage> {
   List<TrainingEvent> _trainingEvents = [];
   bool _isLoading = true;
   String? _errorMessage;
+  final _formKey = GlobalKey<FormState>();
+  final _nameController = TextEditingController();
+  final _dateController = TextEditingController();
+  final _timeController = TextEditingController();
+  DateTime? _selectedEventDate;
+  TimeOfDay? _selectedEventTime;
+  final PageController _pageController = PageController();
+  int _currentPage = 0;
 
   @override
   void initState() {
@@ -28,7 +36,130 @@ class _CalendarPageState extends State<CalendarPage> {
     _loadTrainingEvents();
   }
 
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _dateController.dispose();
+    _timeController.dispose();
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  bool _canCreateEvent() {
+    final departmentId = _authManager.currentIdentity?.employee?.departmentId;
+    return departmentId == 16 || departmentId == 17;
+  }
+
+  Future<void> _createEvent(BuildContext dialogContext, Function(bool) setDialogLoading) async {
+    if (!_formKey.currentState!.validate()) return;
+
+    if (_selectedEventDate == null || _selectedEventTime == null) {
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        const SnackBar(content: Text('Please select date and time')),
+      );
+      return;
+    }
+
+    setDialogLoading(true);
+
+    try {
+      final accessToken = await _authManager.authService.getAccessToken();
+      if (accessToken == null) {
+        setDialogLoading(false);
+        if (dialogContext.mounted) {
+          ScaffoldMessenger.of(dialogContext).showSnackBar(
+            const SnackBar(content: Text('Authentication required')),
+          );
+        }
+        return;
+      }
+
+      final requestBody = {
+        'name': _nameController.text.trim(),
+        'date': DateFormat('yyyy-MM-dd').format(_selectedEventDate!),
+        'time': '${_selectedEventTime!.hour.toString().padLeft(2, '0')}:${_selectedEventTime!.minute.toString().padLeft(2, '0')}:00',
+      };
+
+      final response = await http.post(
+        Uri.parse('https://api.v3.sievesapp.com/training-calendar'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+        body: json.encode(requestBody),
+      );
+
+      setDialogLoading(false);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        if (dialogContext.mounted) {
+          Navigator.of(dialogContext).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Event created successfully')),
+          );
+        }
+        _nameController.clear();
+        _dateController.clear();
+        _timeController.clear();
+        _selectedEventDate = null;
+        _selectedEventTime = null;
+        
+        if (mounted) {
+          _loadTrainingEvents();
+        }
+      } else {
+        if (dialogContext.mounted) {
+          ScaffoldMessenger.of(dialogContext).showSnackBar(
+            SnackBar(content: Text('Failed to create event: ${response.statusCode}')),
+          );
+        }
+      }
+    } catch (e) {
+      print('Error creating event: $e');
+      setDialogLoading(false);
+      if (dialogContext.mounted) {
+        ScaffoldMessenger.of(dialogContext).showSnackBar(
+          SnackBar(content: Text('Error creating event: $e')),
+        );
+      }
+    }
+  }
+
+  void _showCreateEventDialog() {
+    showDialog(
+      context: context,
+      builder: (context) => _CreateEventDialog(
+        formKey: _formKey,
+        nameController: _nameController,
+        dateController: _dateController,
+        timeController: _timeController,
+        onDateSelected: (date) {
+          setState(() {
+            _selectedEventDate = date;
+            _dateController.text = DateFormat('yyyy-MM-dd').format(date);
+          });
+        },
+        onTimeSelected: (time) {
+          setState(() {
+            _selectedEventTime = time;
+            _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+          });
+        },
+        onCancel: () {
+          _nameController.clear();
+          _dateController.clear();
+          _timeController.clear();
+          _selectedEventDate = null;
+          _selectedEventTime = null;
+        },
+        onSubmit: _createEvent,
+      ),
+    );
+  }
+
   Future<void> _loadTrainingEvents() async {
+    if (!mounted) return;
+    
     setState(() {
       _isLoading = true;
       _errorMessage = null;
@@ -38,6 +169,7 @@ class _CalendarPageState extends State<CalendarPage> {
       final accessToken = await _authManager.authService.getAccessToken();
       
       if (accessToken == null) {
+        if (!mounted) return;
         setState(() {
           _errorMessage = 'Authentication required';
           _isLoading = false;
@@ -54,6 +186,8 @@ class _CalendarPageState extends State<CalendarPage> {
         },
       );
 
+      if (!mounted) return;
+
       if (response.statusCode == 200) {
         final List<dynamic> coursesJson = json.decode(response.body);
         
@@ -65,11 +199,13 @@ class _CalendarPageState extends State<CalendarPage> {
           }
         }
 
+        if (!mounted) return;
         setState(() {
           _trainingEvents = events;
           _isLoading = false;
         });
       } else {
+        if (!mounted) return;
         setState(() {
           _errorMessage = 'Failed to load training events';
           _isLoading = false;
@@ -77,6 +213,7 @@ class _CalendarPageState extends State<CalendarPage> {
       }
     } catch (e) {
       print('Error loading training events: $e');
+      if (!mounted) return;
       setState(() {
         _errorMessage = 'Error loading training events';
         _isLoading = false;
@@ -126,6 +263,29 @@ class _CalendarPageState extends State<CalendarPage> {
             color: theme.colorScheme.onSurface,
           ),
         ),
+        actions: [
+            GestureDetector(
+              onTap: _showCreateEventDialog,
+              child: Container(
+                margin: EdgeInsets.only(right: 8.w),
+                padding: EdgeInsets.all(8.sp),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                  ),
+                  borderRadius: BorderRadius.circular(8.r),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(Icons.add, color: Colors.white, size: 20.sp),
+              ),
+            ),
+        ],
       ),
       body: _isLoading
           ? Center(child: CircularProgressIndicator())
@@ -145,21 +305,68 @@ class _CalendarPageState extends State<CalendarPage> {
                     ],
                   ),
                 )
-              : SingleChildScrollView(
-                  padding: EdgeInsets.all(20.sp),
-                  child: Column(
-                    children: [
-                      _buildMonthSelector(theme, isDark),
-                      SizedBox(height: 24.h),
-                      _buildCalendar(theme, isDark),
-                      if (_selectedDay != null) ...[
-                        SizedBox(height: 24.h),
-                        _buildSelectedDayEvents(theme, isDark),
-                      ],
-                      SizedBox(height: 24.h),
-                      // _buildUpcomingEvents(theme, isDark),
-                    ],
-                  ),
+              : Column(
+                  children: [
+                    Expanded(
+                      child: PageView(
+                        controller: _pageController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        children: [
+                          // Page 1: Calendar View
+                          SingleChildScrollView(
+                            padding: EdgeInsets.all(20.sp),
+                            child: Column(
+                              children: [
+                                _buildMonthSelector(theme, isDark),
+                                SizedBox(height: 24.h),
+                                _buildCalendar(theme, isDark),
+                                if (_selectedDay != null) ...[
+                                  SizedBox(height: 24.h),
+                                  _buildSelectedDayEvents(theme, isDark),
+                                ],
+                              ],
+                            ),
+                          ),
+                          // Page 2: Upcoming Events List
+                          SingleChildScrollView(
+                            padding: EdgeInsets.all(20.sp),
+                            child: _buildUpcomingEvents(theme, isDark),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // Page Indicator
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 20.h),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          2,
+                          (index) => AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            margin: EdgeInsets.symmetric(horizontal: 4.w),
+                            width: _currentPage == index ? 24.w : 8.w,
+                            height: 8.h,
+                            decoration: BoxDecoration(
+                              gradient: _currentPage == index
+                                  ? const LinearGradient(
+                                      colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                                    )
+                                  : null,
+                              color: _currentPage == index
+                                  ? null
+                                  : theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
     );
   }
@@ -432,8 +639,12 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildUpcomingEvents(ThemeData theme, bool isDark) {
+    final now = DateTime.now();
+    final thirtyDaysFromNow = now.add(const Duration(days: 30));
+    
     final upcomingEvents = _trainingEvents.where((event) {
-      return event.date.isAfter(DateTime.now().subtract(const Duration(days: 1)));
+      return event.date.isAfter(now.subtract(const Duration(days: 1))) &&
+          event.date.isBefore(thirtyDaysFromNow.add(const Duration(days: 1)));
     }).toList()
       ..sort((a, b) => a.date.compareTo(b.date));
 
@@ -450,7 +661,7 @@ class _CalendarPageState extends State<CalendarPage> {
             Icon(Icons.event_busy, size: 48.sp, color: theme.colorScheme.onSurfaceVariant),
             SizedBox(height: 12.h),
             Text(
-              'No upcoming training events',
+              'No training events in the next 30 days',
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w500,
@@ -467,20 +678,42 @@ class _CalendarPageState extends State<CalendarPage> {
       children: [
         Row(
           children: [
-            Icon(Icons.upcoming_outlined, size: 20.sp, color: theme.colorScheme.onSurfaceVariant),
-            SizedBox(width: 8.w),
-            Text(
-              'Upcoming Training Events',
-              style: TextStyle(
-                fontSize: 16.sp,
-                fontWeight: FontWeight.w700,
-                color: theme.colorScheme.onSurface,
+            Container(
+              padding: EdgeInsets.all(8.sp),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+                ),
+                borderRadius: BorderRadius.circular(8.r),
               ),
+              child: Icon(Icons.calendar_month, size: 20.sp, color: Colors.white),
+            ),
+            SizedBox(width: 12.w),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Next 30 Days',
+                  style: TextStyle(
+                    fontSize: 18.sp,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                Text(
+                  '${upcomingEvents.length} training event${upcomingEvents.length != 1 ? 's' : ''}',
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
-        SizedBox(height: 12.h),
-        ...upcomingEvents.take(5).map((event) => _buildEventCard(event, theme, isDark, isCompact: true)),
+        SizedBox(height: 16.h),
+        ...upcomingEvents.map((event) => _buildEventCard(event, theme, isDark, isCompact: true)),
       ],
     );
   }
@@ -677,4 +910,265 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+}
+
+class _CreateEventDialog extends StatefulWidget {
+  final GlobalKey<FormState> formKey;
+  final TextEditingController nameController;
+  final TextEditingController dateController;
+  final TextEditingController timeController;
+  final Function(DateTime) onDateSelected;
+  final Function(TimeOfDay) onTimeSelected;
+  final VoidCallback onCancel;
+  final Future<void> Function(BuildContext, Function(bool)) onSubmit;
+
+  const _CreateEventDialog({
+    required this.formKey,
+    required this.nameController,
+    required this.dateController,
+    required this.timeController,
+    required this.onDateSelected,
+    required this.onTimeSelected,
+    required this.onCancel,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_CreateEventDialog> createState() => _CreateEventDialogState();
+}
+
+class _CreateEventDialogState extends State<_CreateEventDialog> {
+  bool _isLoading = false;
+
+  void _setLoading(bool loading) {
+    if (mounted) {
+      setState(() {
+        _isLoading = loading;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return AlertDialog(
+      backgroundColor: isDark ? theme.cardColor : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20.r),
+        side: isDark
+            ? BorderSide(color: theme.colorScheme.outline.withOpacity(0.2))
+            : BorderSide.none,
+      ),
+      title: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.sp),
+            decoration: BoxDecoration(
+              gradient: const LinearGradient(
+                colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)],
+              ),
+              borderRadius: BorderRadius.circular(8.r),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF6366F1).withOpacity(0.3),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Icon(Icons.add_circle_outline, color: Colors.white, size: 20.sp),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Text(
+              'Create Training Event',
+              style: TextStyle(
+                fontSize: 18.sp,
+                fontWeight: FontWeight.w700,
+                color: theme.colorScheme.onSurface,
+              ),
+            ),
+          ),
+        ],
+      ),
+      content: Form(
+        key: widget.formKey,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextFormField(
+                controller: widget.nameController,
+                enabled: !_isLoading,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Event Name',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  hintText: 'e.g., Customer Service Training',
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  prefixIcon: Icon(Icons.event, color: theme.colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor: isDark
+                      ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+                      : theme.colorScheme.surfaceVariant.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+                  ),
+                ),
+                validator: (value) {
+                  if (value == null || value.trim().isEmpty) {
+                    return 'Please enter event name';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.h),
+              TextFormField(
+                controller: widget.dateController,
+                enabled: !_isLoading,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Date',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  hintText: 'Select date',
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  prefixIcon: Icon(Icons.calendar_today, color: theme.colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor: isDark
+                      ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+                      : theme.colorScheme.surfaceVariant.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+                  ),
+                ),
+                readOnly: true,
+                onTap: _isLoading ? null : () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: DateTime.now(),
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (date != null) {
+                    widget.onDateSelected(date);
+                  }
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a date';
+                  }
+                  return null;
+                },
+              ),
+              SizedBox(height: 16.h),
+              TextFormField(
+                controller: widget.timeController,
+                enabled: !_isLoading,
+                style: TextStyle(color: theme.colorScheme.onSurface),
+                decoration: InputDecoration(
+                  labelText: 'Time',
+                  labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
+                  hintText: 'Select time',
+                  hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
+                  prefixIcon: Icon(Icons.access_time, color: theme.colorScheme.onSurfaceVariant),
+                  filled: true,
+                  fillColor: isDark
+                      ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+                      : theme.colorScheme.surfaceVariant.withOpacity(0.1),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: BorderSide(color: theme.colorScheme.outline.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12.r),
+                    borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
+                  ),
+                ),
+                readOnly: true,
+                onTap: _isLoading ? null : () async {
+                  final time = await showTimePicker(
+                    context: context,
+                    initialTime: TimeOfDay.now(),
+                  );
+                  if (time != null) {
+                    widget.onTimeSelected(time);
+                  }
+                },
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a time';
+                  }
+                  return null;
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _isLoading ? null : () {
+            Navigator.of(context).pop();
+            widget.onCancel();
+          },
+          style: TextButton.styleFrom(
+            foregroundColor: theme.colorScheme.onSurfaceVariant,
+          ),
+          child: Text(
+            'Cancel',
+            style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _isLoading ? null : () => widget.onSubmit(context, _setLoading),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: const Color(0xFF6366F1),
+            foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 12.h),
+            elevation: 2,
+          ),
+          child: _isLoading
+              ? SizedBox(
+                  width: 16.w,
+                  height: 16.h,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+              : Text(
+                  'Create',
+                  style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+                ),
+        ),
+      ],
+    );
+  }
 }

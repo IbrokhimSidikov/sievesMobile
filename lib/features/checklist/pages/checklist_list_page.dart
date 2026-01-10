@@ -20,19 +20,27 @@ class ChecklistListPage extends StatefulWidget {
   State<ChecklistListPage> createState() => _ChecklistListPageState();
 }
 
-class _ChecklistListPageState extends State<ChecklistListPage> {
+class _ChecklistListPageState extends State<ChecklistListPage> with SingleTickerProviderStateMixin {
   DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
   DateTime _endDate = DateTime.now();
   List<ChecklistSubmission> _submissions = [];
   bool _isLoadingSubmissions = false;
   String? _submissionsError;
   bool _isSubmissionsExpanded = false;
+  late TabController _tabController;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     context.read<ChecklistListCubit>().loadChecklists();
     _loadSubmissions();
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _loadSubmissions() async {
@@ -132,134 +140,182 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
             color: theme.colorScheme.onSurface,
           ),
         ),
+        bottom: PreferredSize(
+          preferredSize: Size.fromHeight(60.h),
+          child: Container(
+            margin: EdgeInsets.symmetric(horizontal: 20.w, vertical: 8.h),
+            decoration: BoxDecoration(
+              color: isDark ? const Color(0xFF1A1A24) : const Color(0xFFF5F5F7),
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            child: TabBar(
+              controller: _tabController,
+              indicator: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF4ECDC4), Color(0xFF44B3AA)],
+                ),
+                borderRadius: BorderRadius.circular(12.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: const Color(0xFF4ECDC4).withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              indicatorSize: TabBarIndicatorSize.tab,
+              dividerColor: Colors.transparent,
+              labelColor: Colors.white,
+              unselectedLabelColor: theme.colorScheme.onSurfaceVariant,
+              labelStyle: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w600,
+              ),
+              unselectedLabelStyle: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w500,
+              ),
+              tabs: [
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.wb_sunny_rounded, size: 18.sp),
+                      SizedBox(width: 6.w),
+                      const Text('Open Shift'),
+                    ],
+                  ),
+                ),
+                Tab(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.nightlight_rounded, size: 18.sp),
+                      SizedBox(width: 6.w),
+                      const Text('Close Shift'),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
       body: BlocBuilder<ChecklistListCubit, ChecklistListState>(
         builder: (context, state) {
-          return ListView(
-            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-            children: [
-              // Submissions Section
-              _buildSubmissionsCard(context, theme, isDark),
-              SizedBox(height: 24.h),
+          if (state is ChecklistListLoading) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(
+                    color: Color(0xFF4ECDC4),
+                  ),
+                  SizedBox(height: 16.h),
+                  Text(
+                    AppLocalizations.of(context).loaderChecklist,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
 
-              // Checklists Section
-              if (state is ChecklistListLoading)
-                Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const CircularProgressIndicator(
-                        color: Color(0xFF4ECDC4),
+          if (state is ChecklistListError) {
+            return Center(
+              child: Padding(
+                padding: EdgeInsets.all(32.w),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(
+                      Icons.error_outline_rounded,
+                      size: 64.sp,
+                      color: const Color(0xFFEF4444),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      'Error',
+                      style: TextStyle(
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.bold,
+                        color: theme.colorScheme.onSurface,
                       ),
-                      SizedBox(height: 16.h),
-                      Text(
-                        AppLocalizations.of(context).loaderChecklist,
+                    ),
+                    SizedBox(height: 8.h),
+                    Text(
+                      state.message,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 24.h),
+                    ElevatedButton(
+                      onPressed: () {
+                        context.read<ChecklistListCubit>().loadChecklists();
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF4ECDC4),
+                        foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 14.h),
+                      ),
+                      child: Text(
+                        'Retry',
                         style: TextStyle(
                           fontSize: 16.sp,
-                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          if (state is ChecklistListLoaded) {
+            final openShiftChecklists = state.checklists.where((checklist) {
+              return checklist.shift?.toLowerCase() == 'open';
+            }).toList();
+
+            final closeShiftChecklists = state.checklists.where((checklist) {
+              return checklist.shift?.toLowerCase() == 'close';
+            }).toList();
+
+            return Column(
+              children: [
+                // Submissions Section
+                Padding(
+                  padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 0),
+                  child: _buildSubmissionsCard(context, theme, isDark),
+                ),
+                SizedBox(height: 16.h),
+
+                // TabBarView with filtered checklists
+                Expanded(
+                  child: TabBarView(
+                    controller: _tabController,
+                    children: [
+                      // Open Shift Tab
+                      _buildChecklistsList(openShiftChecklists, theme, isDark),
+                      // Close Shift Tab
+                      _buildChecklistsList(closeShiftChecklists, theme, isDark),
                     ],
                   ),
-                )
-              else if (state is ChecklistListError)
-                Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32.w),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.error_outline_rounded,
-                          size: 64.sp,
-                          color: const Color(0xFFEF4444),
-                        ),
-                        SizedBox(height: 16.h),
-                        Text(
-                          'Error',
-                          style: TextStyle(
-                            fontSize: 22.sp,
-                            fontWeight: FontWeight.bold,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          state.message,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 15.sp,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                        SizedBox(height: 24.h),
-                        ElevatedButton(
-                          onPressed: () {
-                            context.read<ChecklistListCubit>().loadChecklists();
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF4ECDC4),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12.r),
-                            ),
-                            padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 14.h),
-                          ),
-                          child: Text(
-                            'Retry',
-                            style: TextStyle(
-                              fontSize: 16.sp,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                )
-              else if (state is ChecklistListLoaded)
-                if (state.checklists.isEmpty)
-                  Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.checklist_rounded,
-                          size: 64.sp,
-                          color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
-                        ),
-                        SizedBox(height: 16.h),
-                        Text(
-                          AppLocalizations.of(context).noChecklists,
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w600,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          AppLocalizations.of(context).noChecklistBranch,
-                          style: TextStyle(
-                            fontSize: 14.sp,
-                            color: theme.colorScheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                else
-                  ...state.checklists.map((checklist) => Padding(
-                        padding: EdgeInsets.only(bottom: 16.h),
-                        child: _buildChecklistCard(
-                          context,
-                          checklist,
-                          theme,
-                          isDark,
-                        ),
-                      )),
-            ],
-          );
+                ),
+              ],
+            );
+          }
+
+          return const SizedBox.shrink();
         },
       ),
     );
@@ -917,4 +973,60 @@ class _ChecklistListPageState extends State<ChecklistListPage> {
         ),
       ),
     );
-  }}
+  }
+
+  Widget _buildChecklistsList(
+    List<checklist_model.Checklist> checklists,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    if (checklists.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: EdgeInsets.all(32.w),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.checklist_rounded,
+                size: 64.sp,
+                color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
+              ),
+              SizedBox(height: 16.h),
+              Text(
+                'No Checklists',
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w600,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              SizedBox(height: 8.h),
+              Text(
+                'No checklists found for this shift type',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+      itemCount: checklists.length,
+      itemBuilder: (context, index) {
+        return _buildChecklistCard(
+          context,
+          checklists[index],
+          theme,
+          isDark,
+        );
+      },
+    );
+  }
+}

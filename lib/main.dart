@@ -156,7 +156,7 @@ class _MyAppState extends State<MyApp> {
               children: [
                 CircularProgressIndicator(),
                 SizedBox(height: 16),
-                Text('Loading...'),
+                Text('Ochilmoqda...'),
               ],
             ),
           ),

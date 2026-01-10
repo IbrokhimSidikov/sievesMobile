@@ -186,6 +186,7 @@ class Checklist extends Equatable {
   final String name;
   final String? description;
   final String role;
+  final String? shift;
   final bool isActive;
   final int createdBy;
   final int updatedBy;
@@ -202,6 +203,7 @@ class Checklist extends Equatable {
     required this.name,
     this.description,
     required this.role,
+    this.shift,
     required this.isActive,
     required this.createdBy,
     required this.updatedBy,
@@ -220,6 +222,7 @@ class Checklist extends Equatable {
       name: json['name'],
       description: json['description'],
       role: json['role'],
+      shift: json['shift'],
       isActive: json['is_active'],
       createdBy: json['created_by'],
       updatedBy: json['updated_by'],
@@ -242,6 +245,7 @@ class Checklist extends Equatable {
       'name': name,
       'description': description,
       'role': role,
+      'shift': shift,
       'is_active': isActive,
       'created_by': createdBy,
       'updated_by': updatedBy,
@@ -261,6 +265,7 @@ class Checklist extends Equatable {
         name,
         description,
         role,
+        shift,
         isActive,
         createdBy,
         updatedBy,

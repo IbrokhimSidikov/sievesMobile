@@ -40,13 +40,15 @@ class _NotificationsPageState extends State<NotificationsPage> {
   Future<void> _loadNotifications() async {
     setState(() => _isLoading = true);
     try {
+      print('📱 Loading notifications from storage...');
       final notifications = await NotificationStorageService().getNotifications();
+      print('✅ Loaded ${notifications.length} notifications');
       setState(() {
         _notifications = notifications;
         _isLoading = false;
       });
     } catch (e) {
-      print('Error loading notifications: $e');
+      print('❌ Error loading notifications: $e');
       setState(() => _isLoading = false);
     }
   }

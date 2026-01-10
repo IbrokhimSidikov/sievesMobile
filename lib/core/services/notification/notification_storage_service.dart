@@ -16,8 +16,17 @@ class NotificationStorageService {
       final prefs = await SharedPreferences.getInstance();
       final notifications = await getNotifications();
       
-      // Add new notification at the beginning
-      notifications.insert(0, notification);
+      // Check if notification already exists (prevent duplicates)
+      final existingIndex = notifications.indexWhere((n) => n.id == notification.id);
+      if (existingIndex != -1) {
+        print('ℹ️ Notification already exists: ${notification.title}');
+        // Update existing notification instead of adding duplicate
+        notifications[existingIndex] = notification;
+      } else {
+        // Add new notification at the beginning
+        notifications.insert(0, notification);
+        print('✅ Notification saved: ${notification.title}');
+      }
       
       // Keep only the most recent notifications
       if (notifications.length > _maxNotifications) {
@@ -27,8 +36,6 @@ class NotificationStorageService {
       // Convert to JSON and save
       final jsonList = notifications.map((n) => n.toJson()).toList();
       await prefs.setString(_notificationsKey, jsonEncode(jsonList));
-      
-      print('✅ Notification saved: ${notification.title}');
     } catch (e) {
       print('❌ Error saving notification: $e');
     }

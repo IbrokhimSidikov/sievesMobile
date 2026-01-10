@@ -95,7 +95,15 @@ extension AppDelegate {
     print("🔔 iOS: Notification tapped")
     print("UserInfo: \(userInfo)")
     
-    completionHandler()
+    // Forward to Flutter plugin - this is critical for iOS!
+    // This ensures FirebaseMessaging.onMessageOpenedApp is triggered
+    if let flutterViewController = window?.rootViewController as? FlutterViewController {
+      // The notification data will be handled by Firebase Messaging plugin
+      print("✅ iOS: Forwarding notification tap to Flutter")
+    }
+    
+    // Call super to ensure Firebase Messaging plugin receives the notification
+    super.userNotificationCenter(center, didReceive: response, withCompletionHandler: completionHandler)
   }
 }
 
