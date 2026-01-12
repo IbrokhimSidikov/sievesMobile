@@ -65,6 +65,17 @@ class AuthManager {
     return _currentIdentity!.employee?.branchId == 2 || _currentIdentity!.employee?.branchId == 6;
   }
   
+  // Check if user has access to checklists (admin, manager, teamleader, trainer, superadmin)
+  bool get hasChecklistAccess {
+    if (_currentIdentity == null) return false;
+    final role = _currentIdentity!.role.toLowerCase();
+    return role == 'admin' || 
+           role == 'manager' || 
+           role == 'teamleader' || 
+           role == 'trainer' || 
+           role == 'superadmin';
+  }
+  
   // Callback for when session expires (refresh token failed)
   Function()? onSessionExpired;
 

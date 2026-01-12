@@ -43,9 +43,25 @@ class ChecklistListCubit extends Cubit<ChecklistListState> {
 
       if (response.statusCode == 200) {
         final List<dynamic> jsonList = json.decode(response.body);
-        final checklists = jsonList.map((json) => Checklist.fromJson(json)).toList();
+        final allChecklists = jsonList.map((json) => Checklist.fromJson(json)).toList();
         
-        print('✅ Loaded ${checklists.length} checklists');
+        // Get current user role
+        final userRole = _authManager.currentUserRole?.toLowerCase();
+        
+        // Filter checklists based on user role
+        final checklists = allChecklists.where((checklist) {
+          final checklistRole = checklist.role.toLowerCase();
+          
+          // If user has no role or no checklist access, show nothing
+          if (userRole == null || !_authManager.hasChecklistAccess) {
+            return false;
+          }
+          
+          // Match checklist role with user role
+          return checklistRole == userRole;
+        }).toList();
+        
+        print('✅ Loaded ${allChecklists.length} total checklists, filtered to ${checklists.length} for role: $userRole');
         
         emit(ChecklistListLoaded(checklists: checklists));
       } else {
