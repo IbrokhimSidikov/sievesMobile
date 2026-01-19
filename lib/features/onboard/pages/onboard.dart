@@ -8,6 +8,7 @@ import '../../../core/constants/app_images.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/services/auth/auth_cubit.dart';
 import '../../../core/services/auth/auth_state.dart';
+import '../../../core/utils/responsive_helper.dart';
 
 class Onboard extends StatefulWidget {
   const Onboard({super.key});
@@ -58,15 +59,22 @@ class _OnboardState extends State<Onboard> {
               children: [
                 Spacer(),
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40.w),
+                  padding: ResponsiveHelper.rPadding(
+                    context,
+                    horizontal: 40,
+                    tabletMultiplier: 2.5,
+                  ),
                   child: Container(
+                    constraints: BoxConstraints(
+                      maxWidth: ResponsiveHelper.isTablet(context) ? 450 : double.infinity,
+                    ),
                     decoration: BoxDecoration(
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.cxRoyalBlue.withOpacity(0.15),
-                          blurRadius: 30,
-                          offset: Offset(0, 15),
-                          spreadRadius: -5,
+                          blurRadius: ResponsiveHelper.rw(context, 30, 40),
+                          offset: Offset(0, ResponsiveHelper.rh(context, 15, 20)),
+                          spreadRadius: ResponsiveHelper.rw(context, -5, -8),
                         ),
                       ],
                     ),
@@ -78,9 +86,16 @@ class _OnboardState extends State<Onboard> {
                 ),
                 Spacer(),
                 Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 40.w),
+                  padding: ResponsiveHelper.rPadding(
+                    context,
+                    horizontal: 40,
+                    tabletMultiplier: 2.5,
+                  ),
                   child: Container(
                     width: double.infinity,
+                    constraints: BoxConstraints(
+                      maxWidth: ResponsiveHelper.isTablet(context) ? 450 : double.infinity,
+                    ),
                     decoration: BoxDecoration(
                       gradient: LinearGradient(
                         begin: Alignment.topLeft,
@@ -90,69 +105,88 @@ class _OnboardState extends State<Onboard> {
                           AppColors.cxEmeraldGreen,
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(30.r),
+                      borderRadius: BorderRadius.circular(
+                        ResponsiveHelper.rr(context, 30, 36),
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: AppColors.cxRoyalBlue.withOpacity(0.3),
-                          blurRadius: 30,
-                          offset: Offset(0, 15),
+                          blurRadius: ResponsiveHelper.rw(context, 30, 40),
+                          offset: Offset(0, ResponsiveHelper.rh(context, 15, 20)),
                         ),
                       ],
                     ),
                     child: Material(
                       color: Colors.transparent,
                       child: InkWell(
-                        borderRadius: BorderRadius.circular(16.r),
+                        borderRadius: BorderRadius.circular(
+                          ResponsiveHelper.rr(context, 16, 20),
+                        ),
                         onTap: _handleLogin,
                         child: BlocBuilder<AuthCubit, AuthState>(
                           builder: (context, state) {
                             final isLoading = state is AuthLoading;
                             
                             return Padding(
-                              padding: EdgeInsets.symmetric(vertical: 12.h),
+                              padding: ResponsiveHelper.rPadding(
+                                context,
+                                vertical: 12,
+                                tabletMultiplier: 1.3,
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (isLoading) ...[
                                     SizedBox(
-                                      width: 20.w,
-                                      height: 20.h,
+                                      width: ResponsiveHelper.rw(context, 20, 24),
+                                      height: ResponsiveHelper.rh(context, 20, 24),
                                       child: CircularProgressIndicator(
                                         color: AppColors.cxPureWhite,
-                                        strokeWidth: 2,
+                                        strokeWidth: ResponsiveHelper.isTablet(context) ? 2.5 : 2,
                                       ),
                                     ),
-                                    SizedBox(width: 8.w),
-                                    Text(
-                                      'Logging in...',
-                                      style: TextStyle(
-                                        color: AppColors.cxPureWhite,
-                                        fontSize: 18.sp,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
+                                    SizedBox(width: ResponsiveHelper.rw(context, 8, 12)),
+                                    Flexible(
+                                      child: Text(
+                                        'Logging in...',
+                                        style: TextStyle(
+                                          color: AppColors.cxPureWhite,
+                                          fontSize: ResponsiveHelper.rsp(context, 18, 22),
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ] else ...[
                                     Container(
-                                      padding: EdgeInsets.all(8.r),
+                                      padding: EdgeInsets.all(
+                                        ResponsiveHelper.rr(context, 8, 10),
+                                      ),
                                       decoration: BoxDecoration(
                                         color: AppColors.cxPureWhite.withOpacity(0.2),
-                                        borderRadius: BorderRadius.circular(8.r),
+                                        borderRadius: BorderRadius.circular(
+                                          ResponsiveHelper.rr(context, 8, 10),
+                                        ),
                                       ),
                                       child: Icon(
                                         Icons.fingerprint_rounded,
                                         color: AppColors.cxPureWhite,
-                                        size: 24.sp,
+                                        size: ResponsiveHelper.rsp(context, 24, 28),
                                       ),
                                     ),
-                                    SizedBox(width: 12.w),
-                                    Text(
-                                      'Sign In with Auth0',
-                                      style: TextStyle(
-                                        color: AppColors.cxPureWhite,
-                                        fontSize: 18.sp,
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 0.5,
+                                    SizedBox(width: ResponsiveHelper.rw(context, 12, 16)),
+                                    Flexible(
+                                      child: Text(
+                                        'Sign In with Auth0',
+                                        style: TextStyle(
+                                          color: AppColors.cxPureWhite,
+                                          fontSize: ResponsiveHelper.rsp(context, 18, 22),
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 0.5,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
                                       ),
                                     ),
                                   ],
@@ -165,7 +199,7 @@ class _OnboardState extends State<Onboard> {
                     ),
                   ),
                 ),
-                40.verticalSpace,
+                ResponsiveHelper.rVerticalSpace(context, 40, 60),
               ],
             ),
           ),

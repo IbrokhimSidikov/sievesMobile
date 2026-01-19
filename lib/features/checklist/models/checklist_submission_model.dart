@@ -33,15 +33,24 @@ class ChecklistSubmission extends Equatable {
 
   factory ChecklistSubmission.fromJson(Map<String, dynamic> json) {
     return ChecklistSubmission(
-      id: json['id'],
-      checklistId: json['checklist_id'],
-      submittedBy: json['submitted_by'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
-      checklist: Checklist.fromJson(json['checklist']),
-      submissionItems: (json['submission_items'] as List)
-          .map((item) => SubmissionItem.fromJson(item))
-          .toList(),
+      id: json['id'] ?? 0,
+      checklistId: json['checklist_id'] ?? 0,
+      submittedBy: json['submitted_by'] ?? 0,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : DateTime.now(),
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : DateTime.now(),
+      checklist: json['checklist'] != null ? Checklist.fromJson(json['checklist']) : const Checklist(
+        id: 0,
+        branchId: 0,
+        name: 'Unknown',
+        role: 'Unknown',
+        isActive: false,
+        createdAt: null,
+        updatedAt: null,
+      ),
+      submissionItems: (json['submission_items'] as List?)
+          ?.map((item) => item != null ? SubmissionItem.fromJson(item) : null)
+          .whereType<SubmissionItem>()
+          .toList() ?? [],
     );
   }
 
@@ -56,8 +65,8 @@ class Checklist extends Equatable {
   final String? description;
   final String role;
   final bool isActive;
-  final DateTime createdAt;
-  final DateTime updatedAt;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   const Checklist({
     required this.id,
@@ -78,21 +87,21 @@ class Checklist extends Equatable {
       'description': description,
       'role': role,
       'is_active': isActive,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt.toIso8601String(),
+      'created_at': createdAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String(),
     };
   }
 
   factory Checklist.fromJson(Map<String, dynamic> json) {
     return Checklist(
-      id: json['id'],
-      branchId: json['branch_id'],
-      name: json['name'],
+      id: json['id'] ?? 0,
+      branchId: json['branch_id'] ?? 0,
+      name: json['name'] ?? 'Unknown',
       description: json['description'],
-      role: json['role'],
-      isActive: json['is_active'],
-      createdAt: DateTime.parse(json['created_at']),
-      updatedAt: DateTime.parse(json['updated_at']),
+      role: json['role'] ?? 'Unknown',
+      isActive: json['is_active'] ?? false,
+      createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
+      updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,
     );
   }
 
@@ -130,12 +139,17 @@ class SubmissionItem extends Equatable {
 
   factory SubmissionItem.fromJson(Map<String, dynamic> json) {
     return SubmissionItem(
-      id: json['id'],
-      submissionId: json['submission_id'],
-      checklistItemId: json['checklist_item_id'],
-      isChecked: json['is_checked'],
-      note: json['note'],
-      checklistItem: ChecklistItem.fromJson(json['checklist_item']),
+      id: json['id'] ?? 0,
+      submissionId: json['submission_id'] ?? 0,
+      checklistItemId: json['checklist_item_id'] ?? 0,
+      isChecked: json['is_checked'] ?? false,
+      note: json['note'] ?? '',
+      checklistItem: json['checklist_item'] != null ? ChecklistItem.fromJson(json['checklist_item']) : const ChecklistItem(
+        id: 0,
+        checklistId: 0,
+        name: 'Unknown',
+        isActive: false,
+      ),
     );
   }
 
@@ -170,11 +184,11 @@ class ChecklistItem extends Equatable {
 
   factory ChecklistItem.fromJson(Map<String, dynamic> json) {
     return ChecklistItem(
-      id: json['id'],
-      checklistId: json['checklist_id'],
-      name: json['name'],
+      id: json['id'] ?? 0,
+      checklistId: json['checklist_id'] ?? 0,
+      name: json['name'] ?? 'Unknown',
       description: json['description'],
-      isActive: json['is_active'],
+      isActive: json['is_active'] ?? false,
     );
   }
 

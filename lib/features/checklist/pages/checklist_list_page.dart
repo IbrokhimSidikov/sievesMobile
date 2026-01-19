@@ -994,7 +994,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
               ),
               SizedBox(height: 16.h),
               Text(
-                'No Checklists',
+                AppLocalizations.of(context).noChecklists,
                 style: TextStyle(
                   fontSize: 18.sp,
                   fontWeight: FontWeight.w600,
@@ -1003,7 +1003,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
               ),
               SizedBox(height: 8.h),
               Text(
-                'No checklists found for this shift type',
+                AppLocalizations.of(context).noChecklistBranch,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.sp,

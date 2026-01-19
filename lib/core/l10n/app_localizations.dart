@@ -188,6 +188,12 @@ class AppLocalizations {
       'checklistSubmission':'Submitting checklist...',
       'noChecklists':'No checklists found',
       'noChecklistBranch':'There are no checklists for your branch',
+      'retry':'Retry',
+      'addNoteOptional':'Add a note (Optional)',
+      'submitChecklist':'Submit Checklist',
+      'submittingChecklist':'Submitting checklist...',
+      'overallProgress':'Overall Progress',
+
     },
     'uz': {
       'title': 'Sieves',
@@ -367,6 +373,11 @@ class AppLocalizations {
       'checklistSubmission': 'Yuborilmoqda...',
       'noChecklists': 'Cheklistlar topilmadi',
       'noChecklistBranch': 'Ushbu filial uchun cheklistlar mavjud emas',
+      "retry": "Qayta urinish",
+      "addNoteOptional": "Izoh qo‘shish (ixtiyoriy)",
+      "submitChecklist": "Tekshiruv ro‘yxatini yuborish",
+      "submittingChecklist": "Tekshiruv ro‘yxati yuborilmoqda...",
+      "overallProgress": "Umumiy jarayon"
 
     },
     'ru': {
@@ -547,6 +558,11 @@ class AppLocalizations {
       'checklistSubmission': 'Отправка чек-листа...',
       'noChecklists': 'Чек-листы не найдены',
       'noChecklistBranch': 'Для вашего филиала чек-листы отсутствуют',
+      "retry": "Повторить",
+      "addNoteOptional": "Добавить заметку (необязательно)",
+      "submitChecklist": "Отправить чек-лист",
+      "submittingChecklist": "Отправка чек-листа...",
+      "overallProgress": "Общий прогресс"
 
 
     },
@@ -733,5 +749,10 @@ class AppLocalizations {
   String get checklistSubmission => translate('checklistSubmission');
   String get noChecklists => translate('noChecklists');
   String get noChecklistBranch => translate('noChecklistBranch');
+  String get retry => translate('retry');
+  String get addNoteOptional => translate('addNoteOptional');
+  String get submitChecklist => translate('submitChecklist');
+  String get submittingChecklist => translate('submittingChecklist');
+  String get overallProgress => translate('overallProgress');
 
 }

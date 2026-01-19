@@ -123,7 +123,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
                     ),
                     SizedBox(height: 16.h),
                     Text(
-                      'Error',
+                      AppLocalizations.of(context).error,
                       style: TextStyle(
                         fontSize: 22.sp,
                         fontWeight: FontWeight.bold,
@@ -153,7 +153,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
                         padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 14.h),
                       ),
                       child: Text(
-                        'Retry',
+                        AppLocalizations.of(context).retry,
                         style: TextStyle(
                           fontSize: 16.sp,
                           fontWeight: FontWeight.w600,
@@ -295,7 +295,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
                     context.read<ChecklistCubit>().updateItemNote(item.id, value);
                   },
                   decoration: InputDecoration(
-                    hintText: 'Add a note (optional)',
+                    hintText: AppLocalizations.of(context).addNoteOptional,
                     hintStyle: TextStyle(
                       fontSize: 13.sp,
                       color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5),
@@ -369,7 +369,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Overall Progress',
+                    AppLocalizations.of(context).overallProgress,
                     style: TextStyle(
                       fontSize: 14.sp,
                       color: theme.colorScheme.onSurfaceVariant,
@@ -478,7 +478,7 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
-                'Submit Checklist',
+                AppLocalizations.of(context).submitChecklist,
                 style: TextStyle(
                   fontSize: 16.sp,
                   fontWeight: FontWeight.w600,
