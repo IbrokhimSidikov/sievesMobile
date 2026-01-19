@@ -75,6 +75,15 @@ class AuthManager {
            role == 'trainer' || 
            role == 'superadmin';
   }
+
+  //planshet uchun, break and face verification work entry ga
+  bool get hasFaceIdAccess {
+    if(_currentIdentity == null) return false;
+    final role = _currentIdentity!.role.toLowerCase();
+
+    return role == 'faceId';
+
+  }
   
   // Callback for when session expires (refresh token failed)
   Function()? onSessionExpired;
