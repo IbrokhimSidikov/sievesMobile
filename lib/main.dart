@@ -111,7 +111,7 @@ class _MyAppState extends State<MyApp> {
       
       setState(() {
         _initialRoute = isAuthenticated ? '/home' : '/onboard';
-        _router = AppRoutes.createRouter(_initialRoute);
+        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: _navigatorKey);
         _isInitialized = true;
       });
       
@@ -123,7 +123,7 @@ class _MyAppState extends State<MyApp> {
       print('❌ Error checking auth status: $e');
       setState(() {
         _initialRoute = '/onboard';
-        _router = AppRoutes.createRouter(_initialRoute);
+        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: _navigatorKey);
         _isInitialized = true;
       });
     }

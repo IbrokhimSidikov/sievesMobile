@@ -49,8 +49,9 @@ class AppRoutes {
   static const String wallet = '/wallet';
   static const String calendar = '/calendar';
 
-  static GoRouter createRouter(String initialLocation) {
+  static GoRouter createRouter(String initialLocation, {GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
+      navigatorKey: navigatorKey,
       initialLocation: initialLocation,
       routes: [
         GoRoute(
