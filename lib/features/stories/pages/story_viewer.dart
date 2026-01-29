@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:video_player/video_player.dart';
 import '../../../core/model/story_model.dart';
+import '../../../core/services/auth/auth_manager.dart';
 
 class StoryViewer extends StatefulWidget {
   final UserStories userStories;
@@ -26,6 +27,7 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
   Timer? _progressTimer;
   double _progress = 0.0;
   late AnimationController _animationController;
+  final AuthManager _authManager = AuthManager();
 
   @override
   void initState() {
@@ -46,38 +48,56 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
     });
 
     _progressTimer?.cancel();
-    await _videoController?.dispose();
+    
+    // Properly dispose of the old controller
+    if (_videoController != null) {
+      await _videoController!.pause();
+      await _videoController!.dispose();
+      _videoController = null;
+    }
 
     final story = widget.userStories.stories[_currentStoryIndex];
 
     try {
-      _videoController = VideoPlayerController.networkUrl(
+      final controller = VideoPlayerController.networkUrl(
         Uri.parse(story.videoUrl),
       );
-
-      await _videoController!.initialize();
       
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+      _videoController = controller;
 
-        await _videoController!.play();
-        _startProgressTimer();
-
-        _videoController!.addListener(() {
-          if (_videoController!.value.hasError) {
-            setState(() {
-              _hasError = true;
-            });
-          }
-          
-          if (_videoController!.value.position >= _videoController!.value.duration) {
-            _nextStory();
-          }
-        });
+      await controller.initialize();
+      
+      if (!mounted || _videoController != controller) {
+        // Widget was disposed or controller changed during initialization
+        await controller.dispose();
+        return;
       }
+      
+      setState(() {
+        _isLoading = false;
+      });
+
+      await controller.play();
+      _startProgressTimer();
+
+      // Use a local reference to avoid issues with controller changes
+      void videoListener() {
+        if (!mounted || _videoController != controller) return;
+        
+        if (controller.value.hasError) {
+          setState(() {
+            _hasError = true;
+          });
+        }
+        
+        if (controller.value.position >= controller.value.duration) {
+          _nextStory();
+        }
+      }
+
+      controller.addListener(videoListener);
     } catch (e) {
+      print('❌ Error loading story: $e');
       if (mounted) {
         setState(() {
           _isLoading = false;
@@ -140,10 +160,32 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
     }
   }
 
+  String? _getUserPhotoUrl() {
+    // First try to get from current user's identity
+    final identity = _authManager.currentIdentity;
+    final userPhoto = identity?.employee?.individual?.photoUrl;
+    
+    // Return only if it's not null and not empty
+    if (userPhoto != null && userPhoto.isNotEmpty) {
+      return userPhoto;
+    }
+    
+    // Fallback to story's userPhoto if available and not empty
+    if (widget.userStories.userPhoto != null && 
+        widget.userStories.userPhoto!.isNotEmpty) {
+      return widget.userStories.userPhoto;
+    }
+    
+    return null;
+  }
+
   @override
   void dispose() {
     _progressTimer?.cancel();
-    _videoController?.dispose();
+    if (_videoController != null) {
+      _videoController!.pause();
+      _videoController!.dispose();
+    }
     _animationController.dispose();
     super.dispose();
   }
@@ -248,17 +290,17 @@ class _StoryViewerState extends State<StoryViewer> with SingleTickerProviderStat
                           children: [
                             CircleAvatar(
                               radius: 18.r,
-                              backgroundImage: widget.userStories.userPhoto != null
-                                  ? NetworkImage(widget.userStories.userPhoto!)
+                              backgroundImage: _getUserPhotoUrl() != null
+                                  ? NetworkImage(_getUserPhotoUrl()!)
                                   : null,
-                              child: widget.userStories.userPhoto == null
+                              child: _getUserPhotoUrl() == null
                                   ? Icon(Icons.person, size: 20.sp)
                                   : null,
                             ),
                             SizedBox(width: 12.w),
                             Expanded(
                               child: Text(
-                                widget.userStories.userName,
+                                'Sieves Mobile',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontSize: 14.sp,
