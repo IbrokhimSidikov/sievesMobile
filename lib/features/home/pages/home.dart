@@ -11,6 +11,9 @@ import '../../../core/services/theme/theme_cubit.dart';
 import '../../../core/services/notification/notification_storage_service.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/services/api/api_service.dart';
+import '../../../core/model/story_model.dart';
+import '../../stories/pages/story_viewer.dart';
+import '../../stories/widgets/story_avatar.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -28,6 +31,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   String? _currentEmployeeStatus;
   bool _isLoadingStatus = true;
   late final ApiService _apiService;
+  List<UserStories> _userStories = [];
+  bool _isLoadingStories = true;
 
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
@@ -105,6 +110,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _loadUnreadCount();
     _loadCurrentStatus();
+    _loadUserStories();
     
     // Refresh badge every 5 seconds when on home page
     _startPeriodicRefresh();
@@ -139,6 +145,27 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           _isLoadingStatus = false;
         });
         print('🔄 [HOME] Status loaded from API: $status');
+      }
+    }
+  }
+
+  Future<void> _loadUserStories() async {
+    try {
+      final stories = await _apiService.getAdminStories();
+      if (mounted) {
+        setState(() {
+          _userStories = stories;
+          _isLoadingStories = false;
+        });
+        final totalStories = stories.fold<int>(0, (sum, userStory) => sum + userStory.stories.length);
+        print('📖 [HOME] Admin stories loaded: $totalStories stories from ${stories.length} users');
+      }
+    } catch (e) {
+      print('❌ [HOME] Error loading admin stories: $e');
+      if (mounted) {
+        setState(() {
+          _isLoadingStories = false;
+        });
       }
     }
   }
@@ -320,9 +347,15 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
             SizedBox(height: 4.sp),
             Row(
               children: [
+
+                Padding(
+                  padding: EdgeInsets.only(right: 22.w),
+                  child: _buildUserAvatar(),
+                ),
                 Expanded(
                   child: Text(
                     _getUserDisplayName(),
+                    textAlign: TextAlign.left,
                     style: TextStyle(
                       fontSize: 22.sp,
                       fontWeight: FontWeight.w600,
@@ -330,7 +363,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
-                // _buildStatusBadge(theme),
               ],
             ),
 
@@ -358,6 +390,79 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUserAvatar() {
+    final identity = _authManager.currentIdentity;
+    final userPhoto = identity?.employee?.individual?.photoUrl;
+    final firstUserStories = _userStories.isNotEmpty ? _userStories.first : null;
+    final hasStories = firstUserStories != null && firstUserStories.stories.isNotEmpty;
+    final hasUnviewed = hasStories && firstUserStories.hasUnviewedStories;
+
+    return GestureDetector(
+      onTap: hasStories
+          ? () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (context) => StoryViewer(
+                    userStories: firstUserStories,
+                  ),
+                ),
+              );
+            }
+          : null,
+      child: Container(
+        width: 60.w,
+        height: 60.h,
+        padding: hasStories ? EdgeInsets.all(3.w) : null,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          gradient: hasStories && hasUnviewed
+              ? const LinearGradient(
+                  colors: [
+                    Color(0xFFF58529),
+                    Color(0xFFDD2A7B),
+                    Color(0xFF8134AF),
+                    Color(0xFF515BD4),
+                  ],
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                )
+              : null,
+          border: hasStories && !hasUnviewed
+              ? Border.all(
+                  color: Colors.grey.shade400,
+                  width: 2.w,
+                )
+              : null,
+        ),
+        child: Container(
+          decoration: hasStories
+              ? BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: Theme.of(context).scaffoldBackgroundColor,
+                    width: 3.w,
+                  ),
+                )
+              : null,
+          child: CircleAvatar(
+            radius: hasStories ? (60 - 12).r : 30.r,
+            backgroundImage: userPhoto != null
+                ? NetworkImage(userPhoto)
+                : null,
+            backgroundColor: Colors.grey.shade300,
+            child: userPhoto == null
+                ? Icon(
+                    Icons.person,
+                    size: hasStories ? (60 - 20).sp : 30.sp,
+                    color: Colors.grey.shade600,
+                  )
+                : null,
+          ),
         ),
       ),
     );

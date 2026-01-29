@@ -8,11 +8,13 @@ import '../../model/work_entry_model.dart';
 import '../../model/break_order_model.dart';
 import '../../model/history_model.dart';
 import '../../model/inventory_model.dart';
+import '../../model/story_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
 class ApiService {
   final String baseUrl = 'https://app.sievesapp.com/v1';
+  final String baseUrl2 = 'https://api.v3.sievesapp.com/v1';
   // final String baseUrl = 'https://app.sievesapp.com/v1';
   final AuthService authService;
   late final AuthHttpClient _httpClient;
@@ -1143,6 +1145,61 @@ class ApiService {
     } catch (e) {
       print('❌ Exception getting POS categories: $e');
       return [];
+    }
+  }
+
+  // Get admin stories (global stories visible to all employees)
+  Future<List<UserStories>> getAdminStories() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl2/story');
+
+      print('📖 [API] Fetching admin stories: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body) as List<dynamic>;
+        print('✅ [API] Fetched admin stories successfully');
+        return jsonData
+            .map((item) => UserStories.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else {
+        print(
+          '❌ Error getting admin stories: ${response.statusCode} - ${response.body}',
+        );
+        return [];
+      }
+    } catch (e) {
+      print('❌ Exception getting admin stories: $e');
+      return [];
+    }
+  }
+
+  // Mark story as viewed
+  Future<bool> markStoryAsViewed(String storyId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/story/$storyId/view');
+
+      print('👁️ [API] Marking story as viewed: $storyId');
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('✅ [API] Story marked as viewed');
+        return true;
+      } else {
+        print(
+          '❌ Error marking story as viewed: ${response.statusCode} - ${response.body}',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('❌ Exception marking story as viewed: $e');
+      return false;
     }
   }
 }
