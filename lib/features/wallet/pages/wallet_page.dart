@@ -219,50 +219,50 @@ class _WalletPageState extends State<WalletPage> {
                   SizedBox(height: 16.h),
 
                   // Header Icon
-                  Container(
-                    padding: EdgeInsets.all(20.w),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: isDark
-                            ? [
-                                const Color(0xFF6366F1),
-                                const Color(0xFF4F46E5),
-                              ]
-                            : [
-                                AppColors.cxRoyalBlue,
-                                AppColors.cxRoyalBlue.withOpacity(0.8),
-                              ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(20.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (isDark ? const Color(0xFF6366F1) : AppColors.cxRoyalBlue).withOpacity(0.3),
-                          blurRadius: 15,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.calculate_rounded,
-                          size: 48.sp,
-                          color: Colors.white,
-                        ),
-                        SizedBox(width: 12.w),
-                        Text(
-                          'Oylik to\'lovni hisoblang',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  // Container(
+                  //   padding: EdgeInsets.all(20.w),
+                  //   decoration: BoxDecoration(
+                  //     gradient: LinearGradient(
+                  //       colors: isDark
+                  //           ? [
+                  //               const Color(0xFF6366F1),
+                  //               const Color(0xFF4F46E5),
+                  //             ]
+                  //           : [
+                  //               AppColors.cxRoyalBlue,
+                  //               AppColors.cxRoyalBlue.withOpacity(0.8),
+                  //             ],
+                  //       begin: Alignment.topLeft,
+                  //       end: Alignment.bottomRight,
+                  //     ),
+                  //     borderRadius: BorderRadius.circular(20.r),
+                  //     boxShadow: [
+                  //       BoxShadow(
+                  //         color: (isDark ? const Color(0xFF6366F1) : AppColors.cxRoyalBlue).withOpacity(0.3),
+                  //         blurRadius: 15,
+                  //         offset: const Offset(0, 8),
+                  //       ),
+                  //     ],
+                  //   ),
+                  //   child: Row(
+                  //     children: [
+                  //       Icon(
+                  //         Icons.calculate_rounded,
+                  //         size: 48.sp,
+                  //         color: Colors.white,
+                  //       ),
+                  //       SizedBox(width: 12.w),
+                  //       Text(
+                  //         'Oylik to\'lovni hisoblang',
+                  //         style: TextStyle(
+                  //           fontSize: 16.sp,
+                  //           fontWeight: FontWeight.w600,
+                  //           color: Colors.white,
+                  //         ),
+                  //       ),
+                  //     ],
+                  //   ),
+                  // ),
                   SizedBox(height: 24.h),
 
                   // Calculation Mode Selector
@@ -1069,6 +1069,8 @@ class _WalletPageState extends State<WalletPage> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
+            print('🔘 Opening PDF viewer...');
+            print('📁 PDF Path: assets/presentations/financial_guide.pdf');
             Navigator.push(
               context,
               MaterialPageRoute(

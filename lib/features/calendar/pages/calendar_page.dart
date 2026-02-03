@@ -9,6 +9,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../models/training_event.dart';
+import '../models/training_theme.dart';
 
 class CalendarPage extends StatefulWidget {
   const CalendarPage({super.key});
@@ -33,6 +34,10 @@ class _CalendarPageState extends State<CalendarPage> {
   final PageController _pageController = PageController();
   int _currentPage = 0;
   String? _expandedEventId;
+  List<TrainingTheme> _trainingThemes = [];
+  TrainingTheme? _selectedTheme;
+  bool _isLoadingThemes = false;
+  Function(void Function())? _dialogSetState;
 
   @override
   void initState() {
@@ -65,6 +70,13 @@ class _CalendarPageState extends State<CalendarPage> {
       return;
     }
 
+    if (_selectedTheme == null) {
+      ScaffoldMessenger.of(dialogContext).showSnackBar(
+        const SnackBar(content: Text('Please select a training theme')),
+      );
+      return;
+    }
+
     setDialogLoading(true);
 
     try {
@@ -80,7 +92,8 @@ class _CalendarPageState extends State<CalendarPage> {
       }
 
       final requestBody = {
-        'name': _nameController.text.trim(),
+        'name': _selectedTheme!.name,
+        'training_theme_id': _selectedTheme!.id,
         'date': DateFormat('yyyy-MM-dd').format(_selectedEventDate!),
         'time': '${_selectedEventTime!.hour.toString().padLeft(2, '0')}:${_selectedEventTime!.minute.toString().padLeft(2, '0')}:00',
       };
@@ -99,8 +112,60 @@ class _CalendarPageState extends State<CalendarPage> {
       if (response.statusCode == 200 || response.statusCode == 201) {
         if (dialogContext.mounted) {
           Navigator.of(dialogContext).pop();
+          final l10n = AppLocalizations.of(context);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Event created successfully')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(8.w),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.check_circle_outline,
+                      color: Colors.white,
+                      size: 24.sp,
+                    ),
+                  ),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          l10n.translate('success'),
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                        Text(
+                          l10n.translate('eventCreatedSuccess'),
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.white.withOpacity(0.9),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.cxEmeraldGreen,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              margin: EdgeInsets.all(16.w),
+              duration: const Duration(seconds: 3),
+              elevation: 6,
+            ),
           );
         }
         _nameController.clear();
@@ -114,8 +179,28 @@ class _CalendarPageState extends State<CalendarPage> {
         }
       } else {
         if (dialogContext.mounted) {
+          final l10n = AppLocalizations.of(dialogContext);
           ScaffoldMessenger.of(dialogContext).showSnackBar(
-            SnackBar(content: Text('Failed to create event: ${response.statusCode}')),
+            SnackBar(
+              content: Row(
+                children: [
+                  Icon(Icons.error_outline, color: Colors.white, size: 24.sp),
+                  SizedBox(width: 12.w),
+                  Expanded(
+                    child: Text(
+                      '${l10n.translate('failedToCreateEvent')}: ${response.statusCode}',
+                      style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: AppColors.cxCrimsonRed,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              margin: EdgeInsets.all(16.w),
+            ),
           );
         }
       }
@@ -123,43 +208,149 @@ class _CalendarPageState extends State<CalendarPage> {
       print('Error creating event: $e');
       setDialogLoading(false);
       if (dialogContext.mounted) {
+        final l10n = AppLocalizations.of(dialogContext);
         ScaffoldMessenger.of(dialogContext).showSnackBar(
-          SnackBar(content: Text('Error creating event: $e')),
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.error_outline, color: Colors.white, size: 24.sp),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    '${l10n.translate('failedToCreateEvent')}: $e',
+                    style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
+                  ),
+                ),
+              ],
+            ),
+            backgroundColor: AppColors.cxCrimsonRed,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12.r),
+            ),
+            margin: EdgeInsets.all(16.w),
+          ),
         );
       }
     }
   }
 
+  Future<void> _loadTrainingThemes() async {
+    // Skip if already loaded
+    if (_trainingThemes.isNotEmpty) {
+      return;
+    }
+
+    if (!mounted) return;
+
+    setState(() {
+      _isLoadingThemes = true;
+    });
+
+    try {
+      final accessToken = await _authManager.authService.getAccessToken();
+      if (accessToken == null) {
+        if (!mounted) return;
+        setState(() {
+          _isLoadingThemes = false;
+        });
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('https://api.v3.sievesapp.com/training-theme'),
+        headers: {
+          'Authorization': 'Bearer $accessToken',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        setState(() {
+          _trainingThemes = data.map((json) => TrainingTheme.fromJson(json)).toList();
+          _isLoadingThemes = false;
+        });
+        // Update dialog if it's open
+        _dialogSetState?.call(() {});
+      } else {
+        setState(() {
+          _isLoadingThemes = false;
+        });
+        // Update dialog if it's open
+        _dialogSetState?.call(() {});
+      }
+    } catch (e) {
+      print('Error loading training themes: $e');
+      if (!mounted) return;
+      setState(() {
+        _isLoadingThemes = false;
+      });
+      // Update dialog if it's open
+      _dialogSetState?.call(() {});
+    }
+  }
+
   void _showCreateEventDialog() {
+    // Load themes only if not already cached
+    if (_trainingThemes.isEmpty) {
+      _loadTrainingThemes();
+    }
+    _selectedTheme = null;
+    
     showDialog(
       context: context,
-      builder: (context) => _CreateEventDialog(
-        formKey: _formKey,
-        nameController: _nameController,
-        dateController: _dateController,
-        timeController: _timeController,
-        onDateSelected: (date) {
-          setState(() {
-            _selectedEventDate = date;
-            _dateController.text = DateFormat('yyyy-MM-dd').format(date);
-          });
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          // Store the setState callback so we can call it when themes load
+          _dialogSetState = setDialogState;
+          
+          return _CreateEventDialog(
+            formKey: _formKey,
+            nameController: _nameController,
+            dateController: _dateController,
+            timeController: _timeController,
+            trainingThemes: _trainingThemes,
+            selectedTheme: _selectedTheme,
+            isLoadingThemes: _isLoadingThemes,
+            onThemeSelected: (theme) {
+              setState(() {
+                _selectedTheme = theme;
+              });
+              setDialogState(() {});
+            },
+            onDateSelected: (date) {
+              setState(() {
+                _selectedEventDate = date;
+                _dateController.text = DateFormat('yyyy-MM-dd').format(date);
+              });
+              setDialogState(() {});
+            },
+            onTimeSelected: (time) {
+              setState(() {
+                _selectedEventTime = time;
+                _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
+              });
+              setDialogState(() {});
+            },
+            onCancel: () {
+              _nameController.clear();
+              _dateController.clear();
+              _timeController.clear();
+              _selectedEventDate = null;
+              _selectedEventTime = null;
+              _selectedTheme = null;
+            },
+            onSubmit: _createEvent,
+          );
         },
-        onTimeSelected: (time) {
-          setState(() {
-            _selectedEventTime = time;
-            _timeController.text = '${time.hour.toString().padLeft(2, '0')}:${time.minute.toString().padLeft(2, '0')}';
-          });
-        },
-        onCancel: () {
-          _nameController.clear();
-          _dateController.clear();
-          _timeController.clear();
-          _selectedEventDate = null;
-          _selectedEventTime = null;
-        },
-        onSubmit: _createEvent,
       ),
-    );
+    ).then((_) {
+      // Clear the callback when dialog closes
+      _dialogSetState = null;
+    });
   }
 
   Future<void> _loadTrainingEvents() async {
@@ -775,16 +966,21 @@ class _CalendarPageState extends State<CalendarPage> {
                       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.3),
-                            Colors.white.withOpacity(0.2),
-                          ],
+                          colors: isDark
+                              ? [
+                                  Colors.white.withOpacity(0.3),
+                                  Colors.white.withOpacity(0.2),
+                                ]
+                              : [
+                                  AppColors.cxDarkCharcoal.withOpacity(0.15),
+                                  AppColors.cxDarkCharcoal.withOpacity(0.1),
+                                ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(12.r),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.4),
+                          color: isDark ? Colors.white.withOpacity(0.4) : AppColors.cxDarkCharcoal.withOpacity(0.3),
                           width: 1.5,
                         ),
                         boxShadow: [
@@ -800,7 +996,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         children: [
                           Icon(
                             Icons.access_time_rounded,
-                            color: Colors.white,
+                            color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                             size: 20.sp,
                           ),
                           SizedBox(height: 4.h),
@@ -809,7 +1005,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             style: TextStyle(
                               fontSize: 18.sp,
                               fontWeight: FontWeight.w900,
-                              color: Colors.white,
+                              color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                               letterSpacing: 0.5,
                               height: 1,
                             ),
@@ -828,7 +1024,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       ),
                       child: Icon(
                         hasVideo ? Icons.play_circle_outline : Icons.school_outlined,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                         size: isCompact ? 22.sp : 26.sp,
                       ),
                     ),
@@ -843,7 +1039,7 @@ class _CalendarPageState extends State<CalendarPage> {
                           style: TextStyle(
                             fontSize: isCompact ? 15.sp : 18.sp,
                             fontWeight: FontWeight.w700,
-                            color: Colors.white,
+                            color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                             letterSpacing: 0.3,
                           ),
                           maxLines: isCompact ? 1 : 2,
@@ -856,7 +1052,7 @@ class _CalendarPageState extends State<CalendarPage> {
                             style: TextStyle(
                               fontSize: 13.sp,
                               fontWeight: FontWeight.w400,
-                              color: Colors.white.withOpacity(0.85),
+                              color: isDark ? Colors.white.withOpacity(0.85) : AppColors.cxDarkCharcoal.withOpacity(0.75),
                             ),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -865,44 +1061,52 @@ class _CalendarPageState extends State<CalendarPage> {
                         ],
                         Row(
                           children: [
-                            Icon(Icons.calendar_today, size: 13.sp, color: Colors.white.withOpacity(0.9)),
+                            Icon(Icons.calendar_today, size: 13.sp, color: isDark ? Colors.white.withOpacity(0.9) : AppColors.cxDarkCharcoal.withOpacity(0.8)),
                             SizedBox(width: 5.w),
-                            Text(
-                              DateFormat('MMM dd, yyyy').format(event.date),
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
-                                color: Colors.white,
+                            Flexible(
+                              child: Text(
+                                DateFormat('MMM dd, yyyy').format(event.date),
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
+                                ),
+                                overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             if (event.time != null && isCompact) ...[
-                              SizedBox(width: 12.w),
+                              SizedBox(width: 8.w),
                               Container(
-                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
-                                    colors: [
-                                      Colors.white.withOpacity(0.35),
-                                      Colors.white.withOpacity(0.25),
-                                    ],
+                                    colors: isDark
+                                        ? [
+                                            Colors.white.withOpacity(0.35),
+                                            Colors.white.withOpacity(0.25),
+                                          ]
+                                        : [
+                                            AppColors.cxDarkCharcoal.withOpacity(0.15),
+                                            AppColors.cxDarkCharcoal.withOpacity(0.1),
+                                          ],
                                   ),
                                   borderRadius: BorderRadius.circular(8.r),
                                   border: Border.all(
-                                    color: Colors.white.withOpacity(0.4),
+                                    color: isDark ? Colors.white.withOpacity(0.4) : AppColors.cxDarkCharcoal.withOpacity(0.3),
                                     width: 1,
                                   ),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Icon(Icons.access_time_rounded, size: 12.sp, color: Colors.white),
-                                    SizedBox(width: 4.w),
+                                    Icon(Icons.access_time_rounded, size: 12.sp, color: isDark ? Colors.white : AppColors.cxDarkCharcoal),
+                                    SizedBox(width: 3.w),
                                     Text(
                                       event.time!.substring(0, 5),
                                       style: TextStyle(
-                                        fontSize: 13.sp,
+                                        fontSize: 12.sp,
                                         fontWeight: FontWeight.w800,
-                                        color: Colors.white,
+                                        color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                                         letterSpacing: 0.5,
                                       ),
                                     ),
@@ -915,7 +1119,7 @@ class _CalendarPageState extends State<CalendarPage> {
                               Container(
                                 padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: isDark ? Colors.white.withOpacity(0.2) : AppColors.cxDarkCharcoal.withOpacity(0.15),
                                   borderRadius: BorderRadius.circular(8.r),
                                 ),
                                 child: Text(
@@ -923,7 +1127,7 @@ class _CalendarPageState extends State<CalendarPage> {
                                   style: TextStyle(
                                     fontSize: 10.sp,
                                     fontWeight: FontWeight.w600,
-                                    color: Colors.white,
+                                    color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                                   ),
                                 ),
                               ),
@@ -940,7 +1144,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       duration: const Duration(milliseconds: 300),
                       child: Icon(
                         Icons.keyboard_arrow_down,
-                        color: Colors.white,
+                        color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
                         size: 24.sp,
                       ),
                     ),
@@ -973,7 +1177,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w400,
-                          color: Colors.white.withOpacity(0.9),
+                          color: isDark ? Colors.white.withOpacity(0.9) : AppColors.cxDarkCharcoal.withOpacity(0.85),
                           height: 1.4,
                         ),
                       ),
@@ -1170,7 +1374,7 @@ class _TrainingVideoPlayerState extends State<_TrainingVideoPlayer> {
       child: ClipRRect(
         borderRadius: BorderRadius.circular(12.r),
         child: AspectRatio(
-          aspectRatio: 16 / 9,
+          aspectRatio: 9 / 16,
           child: _hasError
               ? Center(
                   child: Column(
@@ -1288,6 +1492,10 @@ class _CreateEventDialog extends StatefulWidget {
   final TextEditingController nameController;
   final TextEditingController dateController;
   final TextEditingController timeController;
+  final List<TrainingTheme> trainingThemes;
+  final TrainingTheme? selectedTheme;
+  final bool isLoadingThemes;
+  final Function(TrainingTheme?) onThemeSelected;
   final Function(DateTime) onDateSelected;
   final Function(TimeOfDay) onTimeSelected;
   final VoidCallback onCancel;
@@ -1298,6 +1506,10 @@ class _CreateEventDialog extends StatefulWidget {
     required this.nameController,
     required this.dateController,
     required this.timeController,
+    required this.trainingThemes,
+    required this.selectedTheme,
+    required this.isLoadingThemes,
+    required this.onThemeSelected,
     required this.onDateSelected,
     required this.onTimeSelected,
     required this.onCancel,
@@ -1371,16 +1583,15 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: widget.nameController,
-                enabled: !_isLoading,
-                style: TextStyle(color: theme.colorScheme.onSurface),
+              // Training Theme Dropdown
+              DropdownButtonFormField<TrainingTheme>(
+                value: widget.selectedTheme,
                 decoration: InputDecoration(
                   labelText: l10n.translate('eventName'),
                   labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                  hintText: l10n.translate('eventNameHint'),
+                  hintText: widget.isLoadingThemes ? 'Loading...' : l10n.translate('eventNameHint'),
                   hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
-                  prefixIcon: Icon(Icons.event, color: theme.colorScheme.onSurfaceVariant),
+                  prefixIcon: Icon(Icons.school_outlined, color: theme.colorScheme.onSurfaceVariant),
                   filled: true,
                   fillColor: isDark
                       ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
@@ -1398,8 +1609,27 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                     borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
                   ),
                 ),
+                dropdownColor: isDark ? theme.cardColor : Colors.white,
+                style: TextStyle(color: theme.colorScheme.onSurface, fontSize: 14.sp),
+                isExpanded: true,
+                items: widget.trainingThemes.map((themeItem) {
+                  return DropdownMenuItem<TrainingTheme>(
+                    value: themeItem,
+                    child: Text(
+                      themeItem.name,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : AppColors.cxDarkCharcoal,
+                        fontSize: 14.sp,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  );
+                }).toList(),
+                onChanged: _isLoading || widget.isLoadingThemes ? null : (TrainingTheme? newValue) {
+                  widget.onThemeSelected(newValue);
+                },
                 validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
+                  if (value == null) {
                     return l10n.translate('eventNameHint');
                   }
                   return null;
