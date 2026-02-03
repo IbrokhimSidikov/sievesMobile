@@ -3,7 +3,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
+import 'package:video_player/video_player.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../models/training_event.dart';
 
@@ -29,6 +32,7 @@ class _CalendarPageState extends State<CalendarPage> {
   TimeOfDay? _selectedEventTime;
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  String? _expandedEventId;
 
   @override
   void initState() {
@@ -172,7 +176,7 @@ class _CalendarPageState extends State<CalendarPage> {
       if (accessToken == null) {
         if (!mounted) return;
         setState(() {
-          _errorMessage = 'Authentication required';
+          _errorMessage = AppLocalizations.of(context).translate('authenticationRequired');
           _isLoading = false;
         });
         return;
@@ -208,17 +212,17 @@ class _CalendarPageState extends State<CalendarPage> {
       } else {
         if (!mounted) return;
         setState(() {
-          _errorMessage = 'Failed to load training events';
+          _errorMessage = AppLocalizations.of(context).translate('failedToLoadEvents');
           _isLoading = false;
         });
       }
     } catch (e) {
       print('Error loading training events: $e');
       if (!mounted) return;
-      setState(() {
-        _errorMessage = 'Error loading training events';
-        _isLoading = false;
-      });
+        setState(() {
+          _errorMessage = AppLocalizations.of(context).translate('errorLoadingEvents');
+          _isLoading = false;
+        });
     }
   }
 
@@ -246,6 +250,7 @@ class _CalendarPageState extends State<CalendarPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -257,7 +262,7 @@ class _CalendarPageState extends State<CalendarPage> {
           onPressed: () => Navigator.pop(context),
         ),
         title: Text(
-          'Training Calendar',
+          l10n.translate('trainingCalendar'),
           style: TextStyle(
             fontSize: 24.sp,
             fontWeight: FontWeight.w600,
@@ -290,7 +295,7 @@ class _CalendarPageState extends State<CalendarPage> {
         ],
       ),
       body: _isLoading
-          ? Center(child: CircularProgressIndicator())
+          ? _buildShimmerLoader(theme, isDark)
           : _errorMessage != null
               ? Center(
                   child: Column(
@@ -302,7 +307,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       SizedBox(height: 16.h),
                       ElevatedButton(
                         onPressed: _loadTrainingEvents,
-                        child: Text('Retry'),
+                        child: Text(l10n.translate('retry')),
                       ),
                     ],
                   ),
@@ -651,6 +656,7 @@ class _CalendarPageState extends State<CalendarPage> {
       ..sort((a, b) => a.date.compareTo(b.date));
 
     if (upcomingEvents.isEmpty) {
+      final l10n = AppLocalizations.of(context);
       return Container(
         padding: EdgeInsets.all(32.sp),
         decoration: BoxDecoration(
@@ -663,7 +669,7 @@ class _CalendarPageState extends State<CalendarPage> {
             Icon(Icons.event_busy, size: 48.sp, color: theme.colorScheme.onSurfaceVariant),
             SizedBox(height: 12.h),
             Text(
-              'No training events in the next 30 days',
+              l10n.translate('noEventsNext30Days'),
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w500,
@@ -675,6 +681,7 @@ class _CalendarPageState extends State<CalendarPage> {
       );
     }
 
+    final l10n = AppLocalizations.of(context);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -695,7 +702,7 @@ class _CalendarPageState extends State<CalendarPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Next 30 Days',
+                  l10n.translate('nextDays'),
                   style: TextStyle(
                     fontSize: 18.sp,
                     fontWeight: FontWeight.w700,
@@ -703,7 +710,7 @@ class _CalendarPageState extends State<CalendarPage> {
                   ),
                 ),
                 Text(
-                  '${upcomingEvents.length} training event${upcomingEvents.length != 1 ? 's' : ''}',
+                  '${upcomingEvents.length} ${upcomingEvents.length == 1 ? l10n.translate('trainingEvent') : l10n.translate('trainingEvents')}',
                   style: TextStyle(
                     fontSize: 12.sp,
                     fontWeight: FontWeight.w500,
@@ -721,197 +728,559 @@ class _CalendarPageState extends State<CalendarPage> {
   }
 
   Widget _buildEventCard(TrainingEvent event, ThemeData theme, bool isDark, {bool isCompact = true}) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 12.h),
-      padding: EdgeInsets.all(isCompact ? 14.sp : 16.sp),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDark
-              ? [AppColors.cxEmeraldGreen.withOpacity(0.2), AppColors.cxEmeraldGreen.withOpacity(0.1)]
-              : [AppColors.cxEmeraldGreen.withOpacity(0.9), AppColors.cxEmeraldGreen.withOpacity(0.7)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(16.r),
-        border: isDark ? Border.all(color: AppColors.cxEmeraldGreen.withOpacity(0.3), width: 1) : null,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cxEmeraldGreen.withOpacity(isDark ? 0.15 : 0.25),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    final isExpanded = _expandedEventId == event.id;
+    final hasVideo = event.videoUrl != null && event.videoUrl!.isNotEmpty;
+    final hasDescription = event.description.isNotEmpty;
+    final canExpand = hasVideo || hasDescription;
+
+    return GestureDetector(
+      onTap: canExpand ? () {
+        setState(() {
+          _expandedEventId = isExpanded ? null : event.id;
+        });
+      } : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+        margin: EdgeInsets.only(bottom: 12.h),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: isDark
+                ? [AppColors.cxEmeraldGreen.withOpacity(0.2), AppColors.cxEmeraldGreen.withOpacity(0.1)]
+                : [AppColors.cxEmeraldGreen.withOpacity(0.9), AppColors.cxEmeraldGreen.withOpacity(0.7)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Row(
-        children: [
-          if (event.time != null && !isCompact) ...[
-            Container(
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    Colors.white.withOpacity(0.3),
-                    Colors.white.withOpacity(0.2),
-                  ],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: Colors.white.withOpacity(0.4),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.access_time_rounded,
-                    color: Colors.white,
-                    size: 20.sp,
-                  ),
-                  SizedBox(height: 4.h),
-                  Text(
-                    event.time!.substring(0, 5),
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                      height: 1,
-                    ),
-                  ),
-                ],
-              ),
+          borderRadius: BorderRadius.circular(16.r),
+          border: isExpanded 
+              ? Border.all(color: Colors.white.withOpacity(0.5), width: 2)
+              : isDark ? Border.all(color: AppColors.cxEmeraldGreen.withOpacity(0.3), width: 1) : null,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.cxEmeraldGreen.withOpacity(isDark ? 0.15 : 0.25),
+              blurRadius: isExpanded ? 20 : 12,
+              offset: Offset(0, isExpanded ? 6 : 4),
             ),
-            SizedBox(width: 12.w),
-          ] else if (event.time == null || isCompact) ...[
-            Container(
-              width: isCompact ? 44.w : 52.w,
-              height: isCompact ? 44.h : 52.h,
-              decoration: BoxDecoration(
-                color: isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Icon(
-                Icons.school_outlined,
-                color: Colors.white,
-                size: isCompact ? 22.sp : 26.sp,
-              ),
-            ),
-            SizedBox(width: 12.w),
           ],
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  style: TextStyle(
-                    fontSize: isCompact ? 15.sp : 18.sp,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.white,
-                    letterSpacing: 0.3,
-                  ),
-                  maxLines: isCompact ? 1 : 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                SizedBox(height: 6.h),
-                if (!isCompact && event.description.isNotEmpty) ...[
-                  Text(
-                    event.description,
-                    style: TextStyle(
-                      fontSize: 13.sp,
-                      fontWeight: FontWeight.w400,
-                      color: Colors.white.withOpacity(0.85),
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 8.h),
-                ],
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today, size: 13.sp, color: Colors.white.withOpacity(0.9)),
-                    SizedBox(width: 5.w),
-                    Text(
-                      DateFormat('MMM dd, yyyy').format(event.date),
-                      style: TextStyle(
-                        fontSize: 13.sp,
-                        fontWeight: FontWeight.w600,
-                        color: Colors.white,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: EdgeInsets.all(isCompact ? 14.sp : 16.sp),
+              child: Row(
+                children: [
+                  if (event.time != null && !isCompact) ...[
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.3),
+                            Colors.white.withOpacity(0.2),
+                          ],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: Colors.white.withOpacity(0.4),
+                          width: 1.5,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.access_time_rounded,
+                            color: Colors.white,
+                            size: 20.sp,
+                          ),
+                          SizedBox(height: 4.h),
+                          Text(
+                            event.time!.substring(0, 5),
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: 0.5,
+                              height: 1,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    if (event.time != null && isCompact) ...[
-                      SizedBox(width: 12.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.white.withOpacity(0.35),
-                              Colors.white.withOpacity(0.25),
-                            ],
+                    SizedBox(width: 12.w),
+                  ] else if (event.time == null || isCompact) ...[
+                    Container(
+                      width: isCompact ? 44.w : 52.w,
+                      height: isCompact ? 44.h : 52.h,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white.withOpacity(0.15) : Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Icon(
+                        hasVideo ? Icons.play_circle_outline : Icons.school_outlined,
+                        color: Colors.white,
+                        size: isCompact ? 22.sp : 26.sp,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                  ],
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          event.title,
+                          style: TextStyle(
+                            fontSize: isCompact ? 15.sp : 18.sp,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                            letterSpacing: 0.3,
                           ),
-                          borderRadius: BorderRadius.circular(8.r),
-                          border: Border.all(
-                            color: Colors.white.withOpacity(0.4),
-                            width: 1,
-                          ),
+                          maxLines: isCompact ? 1 : 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
+                        SizedBox(height: 6.h),
+                        if (!isCompact && event.description.isNotEmpty) ...[
+                          Text(
+                            event.description,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w400,
+                              color: Colors.white.withOpacity(0.85),
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          SizedBox(height: 8.h),
+                        ],
+                        Row(
                           children: [
-                            Icon(Icons.access_time_rounded, size: 12.sp, color: Colors.white),
-                            SizedBox(width: 4.w),
+                            Icon(Icons.calendar_today, size: 13.sp, color: Colors.white.withOpacity(0.9)),
+                            SizedBox(width: 5.w),
                             Text(
-                              event.time!.substring(0, 5),
+                              DateFormat('MMM dd, yyyy').format(event.date),
                               style: TextStyle(
                                 fontSize: 13.sp,
-                                fontWeight: FontWeight.w800,
+                                fontWeight: FontWeight.w600,
                                 color: Colors.white,
-                                letterSpacing: 0.5,
                               ),
                             ),
+                            if (event.time != null && isCompact) ...[
+                              SizedBox(width: 12.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: [
+                                      Colors.white.withOpacity(0.35),
+                                      Colors.white.withOpacity(0.25),
+                                    ],
+                                  ),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                  border: Border.all(
+                                    color: Colors.white.withOpacity(0.4),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.access_time_rounded, size: 12.sp, color: Colors.white),
+                                    SizedBox(width: 4.w),
+                                    Text(
+                                      event.time!.substring(0, 5),
+                                      style: TextStyle(
+                                        fontSize: 13.sp,
+                                        fontWeight: FontWeight.w800,
+                                        color: Colors.white,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            if (event.category.isNotEmpty) ...[
+                              SizedBox(width: 12.w),
+                              Container(
+                                padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8.r),
+                                ),
+                                child: Text(
+                                  event.category,
+                                  style: TextStyle(
+                                    fontSize: 10.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (canExpand) ...[
+                    SizedBox(width: 8.w),
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 300),
+                      child: Icon(
+                        Icons.keyboard_arrow_down,
+                        color: Colors.white,
+                        size: 24.sp,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            if (isExpanded && canExpand) ...[
+              Padding(
+                padding: EdgeInsets.fromLTRB(14.w, 0, 14.w, 14.h),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 1,
+                      margin: EdgeInsets.only(bottom: 12.h),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            Colors.white.withOpacity(0.0),
+                            Colors.white.withOpacity(0.3),
+                            Colors.white.withOpacity(0.0),
                           ],
                         ),
                       ),
-                    ],
-                    if (event.category.isNotEmpty) ...[
-                      SizedBox(width: 12.w),
-                      Container(
-                        padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    if (hasDescription) ...[
+                      Text(
+                        event.description,
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w400,
+                          color: Colors.white.withOpacity(0.9),
+                          height: 1.4,
                         ),
-                        child: Text(
-                          event.category,
-                          style: TextStyle(
-                            fontSize: 10.sp,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
+                      ),
+                      SizedBox(height: 12.h),
+                    ],
+                    if (hasVideo) _TrainingVideoPlayer(videoUrl: event.videoUrl!),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildShimmerLoader(ThemeData theme, bool isDark) {
+    final shimmerBase = isDark 
+        ? Colors.white.withOpacity(0.05) 
+        : const Color(0xFF6366F1).withOpacity(0.1);
+    final shimmerHighlight = isDark 
+        ? Colors.white.withOpacity(0.1) 
+        : const Color(0xFF6366F1).withOpacity(0.2);
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(20.sp),
+      child: Column(
+        children: [
+          // Month selector shimmer
+          Shimmer.fromColors(
+            baseColor: shimmerBase,
+            highlightColor: shimmerHighlight,
+            child: Container(
+              height: 56.h,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16.r),
+              ),
+            ),
+          ),
+          SizedBox(height: 24.h),
+          
+          // Calendar shimmer
+          Container(
+            decoration: BoxDecoration(
+              color: isDark ? theme.cardColor : Colors.white,
+              borderRadius: BorderRadius.circular(20.r),
+              border: isDark ? Border.all(color: theme.colorScheme.outline.withOpacity(0.2)) : null,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.2 : 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            padding: EdgeInsets.all(16.sp),
+            child: Column(
+              children: [
+                // Weekday headers shimmer
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: List.generate(
+                    7,
+                    (index) => Expanded(
+                      child: Center(
+                        child: Shimmer.fromColors(
+                          baseColor: shimmerBase,
+                          highlightColor: shimmerHighlight,
+                          child: Container(
+                            width: 30.w,
+                            height: 12.h,
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(4.r),
+                            ),
                           ),
                         ),
                       ),
-                    ],
-                  ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 12.h),
+                
+                // Calendar grid shimmer
+                GridView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 7,
+                    childAspectRatio: 0.75,
+                    crossAxisSpacing: 4.w,
+                    mainAxisSpacing: 4.h,
+                  ),
+                  itemCount: 35,
+                  itemBuilder: (context, index) {
+                    return Shimmer.fromColors(
+                      baseColor: shimmerBase,
+                      highlightColor: shimmerHighlight,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ],
+            ),
+          ),
+          SizedBox(height: 24.h),
+          
+          // Event cards shimmer
+          ...List.generate(
+            3,
+            (index) => Padding(
+              padding: EdgeInsets.only(bottom: 16.h),
+              child: Shimmer.fromColors(
+                baseColor: shimmerBase,
+                highlightColor: shimmerHighlight,
+                child: Container(
+                  height: 100.h,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16.r),
+                  ),
+                ),
+              ),
             ),
           ),
         ],
       ),
     );
   }
+}
 
+class _TrainingVideoPlayer extends StatefulWidget {
+  final String videoUrl;
+
+  const _TrainingVideoPlayer({required this.videoUrl});
+
+  @override
+  State<_TrainingVideoPlayer> createState() => _TrainingVideoPlayerState();
+}
+
+class _TrainingVideoPlayerState extends State<_TrainingVideoPlayer> {
+  VideoPlayerController? _controller;
+  bool _isInitialized = false;
+  bool _hasError = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeVideo();
+  }
+
+  Future<void> _initializeVideo() async {
+    try {
+      _controller = VideoPlayerController.networkUrl(Uri.parse(widget.videoUrl));
+      await _controller!.initialize();
+      if (mounted) {
+        setState(() {
+          _isInitialized = true;
+        });
+      }
+    } catch (e) {
+      print('Error initializing video: $e');
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.black.withOpacity(0.3),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: Colors.white.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(12.r),
+        child: AspectRatio(
+          aspectRatio: 16 / 9,
+          child: _hasError
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.error_outline,
+                        color: Colors.white.withOpacity(0.7),
+                        size: 32.sp,
+                      ),
+                      SizedBox(height: 8.h),
+                      Text(
+                        AppLocalizations.of(context).translate('unableToLoadVideo'),
+                        style: TextStyle(
+                          color: Colors.white.withOpacity(0.7),
+                          fontSize: 12.sp,
+                        ),
+                      ),
+                    ],
+                  ),
+                )
+              : !_isInitialized
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withOpacity(0.7),
+                        ),
+                      ),
+                    )
+                  : Stack(
+                      alignment: Alignment.center,
+                      children: [
+                        VideoPlayer(_controller!),
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              if (_controller!.value.isPlaying) {
+                                _controller!.pause();
+                              } else {
+                                _controller!.play();
+                              }
+                            });
+                          },
+                          child: Container(
+                            color: Colors.transparent,
+                            child: Center(
+                              child: AnimatedOpacity(
+                                opacity: _controller!.value.isPlaying ? 0.0 : 1.0,
+                                duration: const Duration(milliseconds: 200),
+                                child: Container(
+                                  padding: EdgeInsets.all(12.sp),
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withOpacity(0.6),
+                                    shape: BoxShape.circle,
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.3),
+                                        blurRadius: 12,
+                                        offset: const Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Icon(
+                                    Icons.play_arrow,
+                                    color: Colors.white,
+                                    size: 40.sp,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned(
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          child: AnimatedOpacity(
+                            opacity: _controller!.value.isPlaying ? 0.0 : 1.0,
+                            duration: const Duration(milliseconds: 200),
+                            child: Container(
+                              padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  begin: Alignment.bottomCenter,
+                                  end: Alignment.topCenter,
+                                  colors: [
+                                    Colors.black.withOpacity(0.7),
+                                    Colors.transparent,
+                                  ],
+                                ),
+                              ),
+                              child: VideoProgressIndicator(
+                                _controller!,
+                                allowScrubbing: true,
+                                colors: VideoProgressColors(
+                                  playedColor: Colors.white,
+                                  bufferedColor: Colors.white.withOpacity(0.3),
+                                  backgroundColor: Colors.white.withOpacity(0.1),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 4.h),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+        ),
+      ),
+    );
+  }
 }
 
 class _CreateEventDialog extends StatefulWidget {
@@ -954,6 +1323,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
+    final l10n = AppLocalizations.of(context);
 
     return AlertDialog(
       backgroundColor: isDark ? theme.cardColor : Colors.white,
@@ -985,7 +1355,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
           SizedBox(width: 12.w),
           Expanded(
             child: Text(
-              'Create Training Event',
+              l10n.translate('createEvent'),
               style: TextStyle(
                 fontSize: 18.sp,
                 fontWeight: FontWeight.w700,
@@ -1006,9 +1376,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 enabled: !_isLoading,
                 style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  labelText: 'Event Name',
+                  labelText: l10n.translate('eventName'),
                   labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                  hintText: 'e.g., Customer Service Training',
+                  hintText: l10n.translate('eventNameHint'),
                   hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
                   prefixIcon: Icon(Icons.event, color: theme.colorScheme.onSurfaceVariant),
                   filled: true,
@@ -1030,7 +1400,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 ),
                 validator: (value) {
                   if (value == null || value.trim().isEmpty) {
-                    return 'Please enter event name';
+                    return l10n.translate('eventNameHint');
                   }
                   return null;
                 },
@@ -1041,9 +1411,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 enabled: !_isLoading,
                 style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  labelText: 'Date',
+                  labelText: l10n.translate('eventDate'),
                   labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                  hintText: 'Select date',
+                  hintText: l10n.translate('selectDate'),
                   hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
                   prefixIcon: Icon(Icons.calendar_today, color: theme.colorScheme.onSurfaceVariant),
                   filled: true,
@@ -1077,7 +1447,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please select a date';
+                    return l10n.translate('selectDate');
                   }
                   return null;
                 },
@@ -1088,9 +1458,9 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 enabled: !_isLoading,
                 style: TextStyle(color: theme.colorScheme.onSurface),
                 decoration: InputDecoration(
-                  labelText: 'Time',
+                  labelText: l10n.translate('eventTime'),
                   labelStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant),
-                  hintText: 'Select time',
+                  hintText: l10n.translate('selectTime'),
                   hintStyle: TextStyle(color: theme.colorScheme.onSurfaceVariant.withOpacity(0.5)),
                   prefixIcon: Icon(Icons.access_time, color: theme.colorScheme.onSurfaceVariant),
                   filled: true,
@@ -1122,7 +1492,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                 },
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please select a time';
+                    return l10n.translate('selectTime');
                   }
                   return null;
                 },
@@ -1141,7 +1511,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
             foregroundColor: theme.colorScheme.onSurfaceVariant,
           ),
           child: Text(
-            'Cancel',
+            l10n.translate('cancel'),
             style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
           ),
         ),
@@ -1166,7 +1536,7 @@ class _CreateEventDialogState extends State<_CreateEventDialog> {
                   ),
                 )
               : Text(
-                  'Create',
+                  l10n.translate('create'),
                   style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
                 ),
         ),

@@ -21,7 +21,7 @@ class ChecklistListPage extends StatefulWidget {
 }
 
 class _ChecklistListPageState extends State<ChecklistListPage> with SingleTickerProviderStateMixin {
-  DateTime _startDate = DateTime.now().subtract(const Duration(days: 30));
+  DateTime _startDate = DateTime.now();
   DateTime _endDate = DateTime.now();
   List<ChecklistSubmission> _submissions = [];
   bool _isLoadingSubmissions = false;
@@ -283,12 +283,24 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
 
           if (state is ChecklistListLoaded) {
             final openShiftChecklists = state.checklists.where((checklist) {
-              return checklist.shift?.toLowerCase() == 'open';
+              return checklist.shift?.toLowerCase() == 'open' && 
+                     !state.submittedChecklistIds.contains(checklist.id);
             }).toList();
 
             final closeShiftChecklists = state.checklists.where((checklist) {
-              return checklist.shift?.toLowerCase() == 'close';
+              return checklist.shift?.toLowerCase() == 'close' && 
+                     !state.submittedChecklistIds.contains(checklist.id);
             }).toList();
+
+            final openShiftHiddenCount = state.checklists.where((checklist) {
+              return checklist.shift?.toLowerCase() == 'open' && 
+                     state.submittedChecklistIds.contains(checklist.id);
+            }).length;
+
+            final closeShiftHiddenCount = state.checklists.where((checklist) {
+              return checklist.shift?.toLowerCase() == 'close' && 
+                     state.submittedChecklistIds.contains(checklist.id);
+            }).length;
 
             return Column(
               children: [
@@ -305,9 +317,9 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
                     controller: _tabController,
                     children: [
                       // Open Shift Tab
-                      _buildChecklistsList(openShiftChecklists, theme, isDark),
+                      _buildChecklistsList(openShiftChecklists, openShiftHiddenCount, theme, isDark),
                       // Close Shift Tab
-                      _buildChecklistsList(closeShiftChecklists, theme, isDark),
+                      _buildChecklistsList(closeShiftChecklists, closeShiftHiddenCount, theme, isDark),
                     ],
                   ),
                 ),
@@ -561,11 +573,21 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
                     ),
                   )
                 else
-                  Column(
-                    children: _submissions.map((submission) => Padding(
-                      padding: EdgeInsets.only(bottom: 12.h),
-                      child: _buildSubmissionItem(submission, theme, isDark),
-                    )).toList(),
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxHeight: 400.h,
+                    ),
+                    child: ListView.builder(
+                      shrinkWrap: true,
+                      physics: const BouncingScrollPhysics(),
+                      itemCount: _submissions.length,
+                      itemBuilder: (context, index) {
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: _buildSubmissionItem(_submissions[index], theme, isDark),
+                        );
+                      },
+                    ),
                   ),
               ],
             ),
@@ -811,8 +833,8 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
     final icon = _getIconForChecklist(checklist.name);
 
     return GestureDetector(
-      onTap: () {
-        Navigator.of(context).push(
+      onTap: () async {
+        final result = await Navigator.of(context).push(
           MaterialPageRoute(
             builder: (context) => BlocProvider(
               create: (context) => ChecklistCubit(AuthManager()),
@@ -822,6 +844,10 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
             ),
           ),
         );
+        
+        if (result == true && mounted) {
+          context.read<ChecklistListCubit>().loadChecklists();
+        }
       },
       child: Container(
         margin: EdgeInsets.only(bottom: 16.h),
@@ -977,6 +1003,7 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
 
   Widget _buildChecklistsList(
     List<checklist_model.Checklist> checklists,
+    int hiddenCount,
     ThemeData theme,
     bool isDark,
   ) {
@@ -1003,7 +1030,9 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
               ),
               SizedBox(height: 8.h),
               Text(
-                AppLocalizations.of(context).noChecklistBranch,
+                hiddenCount > 0
+                    ? 'All checklists completed for today!\n$hiddenCount ${hiddenCount == 1 ? 'checklist' : 'checklists'} will be available tomorrow.'
+                    : AppLocalizations.of(context).noChecklistBranch,
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 14.sp,
@@ -1016,17 +1045,63 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
       );
     }
 
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
-      itemCount: checklists.length,
-      itemBuilder: (context, index) {
-        return _buildChecklistCard(
-          context,
-          checklists[index],
-          theme,
-          isDark,
-        );
-      },
+    return Column(
+      children: [
+        if (hiddenCount > 0)
+          Container(
+            margin: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 8.h),
+            padding: EdgeInsets.all(14.w),
+            decoration: BoxDecoration(
+              color: const Color(0xFF4ECDC4).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(
+                color: const Color(0xFF4ECDC4).withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(8.w),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF4ECDC4).withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(
+                    Icons.check_circle_rounded,
+                    color: const Color(0xFF4ECDC4),
+                    size: 20.sp,
+                  ),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    '$hiddenCount ${hiddenCount == 1 ? 'checklist' : 'checklists'} completed today (hidden until tomorrow)',
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: theme.colorScheme.onSurface,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        Expanded(
+          child: ListView.builder(
+            padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+            itemCount: checklists.length,
+            itemBuilder: (context, index) {
+              return _buildChecklistCard(
+                context,
+                checklists[index],
+                theme,
+                isDark,
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 }

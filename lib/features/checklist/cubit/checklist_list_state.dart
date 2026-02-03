@@ -18,11 +18,15 @@ class ChecklistListLoading extends ChecklistListState {
 
 class ChecklistListLoaded extends ChecklistListState {
   final List<Checklist> checklists;
+  final Set<int> submittedChecklistIds;
 
-  const ChecklistListLoaded({required this.checklists});
+  const ChecklistListLoaded({
+    required this.checklists,
+    this.submittedChecklistIds = const {},
+  });
 
   @override
-  List<Object?> get props => [checklists];
+  List<Object?> get props => [checklists, submittedChecklistIds];
 }
 
 class ChecklistListError extends ChecklistListState {

@@ -5,6 +5,7 @@ class TrainingEvent {
   final String? time;
   final String description;
   final String category;
+  final String? videoUrl;
 
   TrainingEvent({
     required this.id,
@@ -13,6 +14,7 @@ class TrainingEvent {
     this.time,
     required this.description,
     required this.category,
+    this.videoUrl,
   });
 
   factory TrainingEvent.fromJson(Map<String, dynamic> json) {
@@ -27,6 +29,7 @@ class TrainingEvent {
       time: json['time'],
       description: json['description'] ?? '',
       category: json['category'] ?? 'General',
+      videoUrl: json['video_url'] ?? json['videoUrl'],
     );
   }
 
@@ -38,6 +41,7 @@ class TrainingEvent {
       'time': time,
       'description': description,
       'category': category,
+      'videoUrl': videoUrl,
     };
   }
 }

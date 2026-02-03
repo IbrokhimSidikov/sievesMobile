@@ -83,7 +83,9 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
               ),
             );
             Future.delayed(const Duration(seconds: 1), () {
-              if (mounted) context.pop();
+              if (mounted) {
+                context.pop(true);
+              }
             });
           }
         },
