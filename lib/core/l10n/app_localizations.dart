@@ -214,6 +214,14 @@ class AppLocalizations {
       'trainingEvents':'training events',
       'noEventsNext30Days':'No training events in the next 30 days',
       'unableToLoadVideo':'Unable to load video',
+      //PDF Viewer
+      'financialGuide':'Financial Guide',
+      'viewGuide':'View Guide',
+      'page':'Page',
+      'of':'of',
+      'previous':'Previous',
+      'next':'Next',
+      'loadingDocument':'Loading document...',
 
     },
     'uz': {
@@ -420,6 +428,14 @@ class AppLocalizations {
       'trainingEvents':'ta trening tadbiri',
       'noEventsNext30Days':'Keyingi 30 kun ichida trening tadbirlari yo\'q',
       'unableToLoadVideo':'Videoni yuklab bo\'lmadi',
+      //PDF Viewer
+      'financialGuide':'Moliyaviy Qo\'llanma',
+      'viewGuide':'Qo\'llanmani ko\'rish',
+      'page':'Sahifa',
+      'of':'dan',
+      'previous':'Oldingi',
+      'next':'Keyingi',
+      'loadingDocument':'Hujjat yuklanmoqda...',
 
     },
     'ru': {
@@ -626,6 +642,14 @@ class AppLocalizations {
       'trainingEvents':'тренингов',
       'noEventsNext30Days':'Нет тренингов в ближайшие 30 дней',
       'unableToLoadVideo':'Не удалось загрузить видео',
+      //PDF Viewer
+      'financialGuide':'Финансовый гид',
+      'viewGuide':'Открыть гид',
+      'page':'Страница',
+      'of':'из',
+      'previous':'Назад',
+      'next':'Вперёд',
+      'loadingDocument':'Загрузка документа...',
 
 
     },

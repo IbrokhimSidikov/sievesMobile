@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_localizations.dart';
+import 'pdf_viewer_page.dart';
 
 class WalletPage extends StatefulWidget {
   const WalletPage({super.key});
@@ -212,6 +214,10 @@ class _WalletPageState extends State<WalletPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  // Financial Guide Button
+                  _buildFinancialGuideButton(isDark, cardColor, textColor, subtleTextColor),
+                  SizedBox(height: 16.h),
+
                   // Header Icon
                   Container(
                     padding: EdgeInsets.all(20.w),
@@ -1028,6 +1034,103 @@ class _WalletPageState extends State<WalletPage> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFinancialGuideButton(bool isDark, Color cardColor, Color textColor, Color subtleTextColor) {
+    final l10n = AppLocalizations.of(context);
+    
+    return Container(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDark
+              ? [
+                  const Color(0xFF10B981),
+                  const Color(0xFF059669),
+                ]
+              : [
+                  AppColors.cxEmeraldGreen,
+                  AppColors.cxEmeraldGreen.withOpacity(0.8),
+                ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20.r),
+        boxShadow: [
+          BoxShadow(
+            color: (isDark ? const Color(0xFF10B981) : AppColors.cxEmeraldGreen).withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => PdfViewerPage(
+                  pdfPath: 'assets/presentations/financial_guide.pdf',
+                  title: l10n.translate('financialGuide'),
+                ),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20.r),
+          child: Padding(
+            padding: EdgeInsets.all(20.w),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(12.w),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    size: 32.sp,
+                    color: Colors.white,
+                  ),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        l10n.translate('financialGuide'),
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: Colors.white,
+                          letterSpacing: 0.3,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        l10n.translate('viewGuide'),
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.arrow_forward_ios,
+                  color: Colors.white,
+                  size: 20.sp,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
