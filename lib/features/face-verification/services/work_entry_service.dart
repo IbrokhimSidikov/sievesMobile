@@ -334,15 +334,24 @@ class WorkEntryService {
       print('┌─────────────────────────────────────────────────────────────┐');
       print('│ STEP 5: Getting user location                              │');
       print('└─────────────────────────────────────────────────────────────┘');
-      final locationData = await _locationService.getCurrentLocation();
+      
+      // Skip location validation for department ID 28
+      final skipLocationValidation = departmentId == 28;
+      
       double? latitude;
       double? longitude;
-      if (locationData != null) {
-        latitude = locationData['latitude'];
-        longitude = locationData['longitude'];
-        print('✅ Location obtained: $latitude, $longitude');
+      
+      if (skipLocationValidation) {
+        print('⏭️ [WORK ENTRY] Department $departmentId - Skipping location validation');
       } else {
-        print('⚠️ [WORK ENTRY] Could not get location, proceeding without it');
+        final locationData = await _locationService.getCurrentLocation();
+        if (locationData != null) {
+          latitude = locationData['latitude'];
+          longitude = locationData['longitude'];
+          print('✅ Location obtained: $latitude, $longitude');
+        } else {
+          print('⚠️ [WORK ENTRY] Could not get location, proceeding without it');
+        }
       }
       print('');
 
