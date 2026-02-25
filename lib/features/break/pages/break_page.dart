@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:http/http.dart' as http;
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/model/inventory_model.dart';
@@ -98,6 +99,17 @@ class _BreakPageState extends State<BreakPage>
     });
   }
 
+  // Check if current time is within evening order window (17:00 - 20:00)
+  // This window is always active
+  bool _isWithinEveningOrderTime() {
+    final now = DateTime.now();
+    final hour = now.hour;
+    final minute = now.minute;
+
+    // Evening window: 17:00 - 20:00
+    return (hour == 17 || hour == 18 || hour == 19) || (hour == 20 && minute == 0);
+  }
+
   // Check if current time is within allowed order windows
 
   bool _isWithinOrderTime() {
@@ -114,6 +126,11 @@ class _BreakPageState extends State<BreakPage>
     final day = now.weekday; // Monday = 1, Friday = 5
     final hour = now.hour;
     final minute = now.minute;
+
+    // Check evening order time first (if enabled via Remote Config)
+    if (_isWithinEveningOrderTime()) {
+      return true;
+    }
 
     if (day == 5) {
       // Friday: 12:45 - 14:30
@@ -143,12 +160,22 @@ class _BreakPageState extends State<BreakPage>
     final hour = now.hour;
     final minute = now.minute;
 
+    // If we're between lunch and evening window
+    if (hour >= 14 && hour < 17) {
+      return 'Orders available at 17:00 - 20:00 (Evening)';
+    }
+
+    // If we're after evening window (past 20:00)
+    if (hour >= 20 && minute > 0) {
+      return 'Orders available tomorrow at 12:00 - 12:30';
+    }
+
     if (day == 5) {
       // Friday
       if (hour < 12 || (hour == 12 && minute < 45)) {
         return 'Orders available at 12:45 - 14:30 (Friday)';
       } else {
-        return 'Orders available tomorrow at 12:00 - 12:30';
+        return 'Orders available at 17:00 - 20:00 (Evening)';
       }
     } else {
       // Other days
@@ -159,7 +186,7 @@ class _BreakPageState extends State<BreakPage>
       } else if (hour >= 13 && hour < 13 || (hour == 13 && minute < 30)) {
         return 'Orders available at 13:30 - 14:00';
       } else {
-        return 'Orders available tomorrow at 12:00 - 12:30';
+        return 'Orders available at 17:00 - 20:00 (Evening)';
       }
     }
   }
@@ -1082,23 +1109,15 @@ class _BreakPageState extends State<BreakPage>
   }
 
   Widget _buildHeader(ThemeData theme, bool isDark) {
-    final headerColors = isDark
-        ? [const Color(0xFF6366F1), const Color(0xFF8B5CF6)] // Indigo to Purple
-        : [const Color(0xFF0071E3), const Color(0xFF5E5CE6)]; // Blue to Indigo
-
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 20.h),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: headerColors,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
         boxShadow: [
           BoxShadow(
-            color: headerColors[0].withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -1108,17 +1127,18 @@ class _BreakPageState extends State<BreakPage>
             children: [
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.cxWhite.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: AppColors.cxWhite.withOpacity(0.3),
-                    width: 1.5,
-                  ),
+                  color: isDark 
+                      ? theme.colorScheme.surfaceVariant.withOpacity(0.5)
+                      : AppColors.cxF5F7F9,
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
                 child: IconButton(
                   onPressed: () => context.go('/home'),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
-                  color: AppColors.cxWhite,
+                  icon: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20.sp,
+                  ),
+                  color: theme.colorScheme.onSurface,
                 ),
               ),
               SizedBox(width: 16.w),
@@ -1129,25 +1149,19 @@ class _BreakPageState extends State<BreakPage>
                     Text(
                       AppLocalizations.of(context).breakOrder,
                       style: TextStyle(
-                        fontSize: 24.sp,
+                        fontSize: 22.sp,
                         fontWeight: FontWeight.w700,
-                        color: AppColors.cxWhite,
-                        shadows: [
-                          Shadow(
-                            color: AppColors.cxBlack.withOpacity(0.15),
-                            offset: const Offset(0, 2),
-                            blurRadius: 4,
-                          ),
-                        ],
+                        color: theme.colorScheme.onSurface,
+                        letterSpacing: -0.5,
                       ),
                     ),
-                    SizedBox(height: 4.h),
+                    SizedBox(height: 2.h),
                     Text(
                       AppLocalizations.of(context).breakOrderSubtitle,
                       style: TextStyle(
-                        fontSize: 14.sp,
+                        fontSize: 13.sp,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.cxWhite.withOpacity(0.9),
+                        color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ],
@@ -1155,12 +1169,10 @@ class _BreakPageState extends State<BreakPage>
               ),
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.cxWhite.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: AppColors.cxWhite.withOpacity(0.3),
-                    width: 1.5,
-                  ),
+                  color: isDark 
+                      ? theme.colorScheme.surfaceVariant.withOpacity(0.5)
+                      : AppColors.cxF5F7F9,
+                  borderRadius: BorderRadius.circular(14.r),
                 ),
                 child: IconButton(
                   onPressed: _isLoading
@@ -1168,68 +1180,60 @@ class _BreakPageState extends State<BreakPage>
                       : () => _fetchMenuItems(forceRefresh: true),
                   icon: _isLoading
                       ? SizedBox(
-                          width: 24.sp,
-                          height: 24.sp,
+                          width: 20.sp,
+                          height: 20.sp,
                           child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
+                            strokeWidth: 2,
                             valueColor: AlwaysStoppedAnimation<Color>(
-                              AppColors.cxWhite,
+                              theme.colorScheme.onSurface,
                             ),
                           ),
                         )
                       : Icon(
                           Icons.refresh_rounded,
-                          color: AppColors.cxWhite,
-                          size: 24.sp,
+                          color: theme.colorScheme.onSurface,
+                          size: 22.sp,
                         ),
                   tooltip: 'Refresh Menu',
                 ),
               ),
               if (_cart.isNotEmpty) ...[
-                SizedBox(width: 8.w),
+                SizedBox(width: 25.w),
                 GestureDetector(
                   onTap: _showCartDialog,
                   child: Container(
                     padding: EdgeInsets.all(12.w),
                     decoration: BoxDecoration(
-                      color: AppColors.cxWhite.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(12.r),
-                      border: Border.all(
-                        color: AppColors.cxWhite.withOpacity(0.3),
-                        width: 1.5,
-                      ),
+                      color: AppColors.cxWarning,
+                      borderRadius: BorderRadius.circular(14.r),
                     ),
                     child: Stack(
                       clipBehavior: Clip.none,
                       children: [
                         Icon(
-                          Icons.shopping_cart_rounded,
+                          Icons.shopping_bag_outlined,
                           color: AppColors.cxWhite,
-                          size: 24.sp,
+                          size: 22.sp,
                         ),
                         Positioned(
-                          top: -6.h,
-                          right: -6.w,
+                          top: -8.h,
+                          right: -8.w,
                           child: Container(
-                            padding: EdgeInsets.all(4.w),
+                            padding: EdgeInsets.all(5.w),
                             decoration: BoxDecoration(
-                              color: AppColors.cxWarning,
+                              color: AppColors.cxBlack,
                               shape: BoxShape.circle,
-                              border: Border.all(
-                                color: AppColors.cxWhite,
-                                width: 2,
-                              ),
                             ),
                             constraints: BoxConstraints(
-                              minWidth: 20.w,
-                              minHeight: 20.w,
+                              minWidth: 18.w,
+                              minHeight: 18.w,
                             ),
                             child: Center(
                               child: Text(
                                 '${_getCartItemCount()}',
                                 style: TextStyle(
-                                  fontSize: 10.sp,
-                                  fontWeight: FontWeight.w700,
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.w800,
                                   color: AppColors.cxWhite,
                                   height: 1,
                                 ),
@@ -1242,23 +1246,6 @@ class _BreakPageState extends State<BreakPage>
                   ),
                 ),
               ],
-              SizedBox(width: 8.w),
-              Container(
-                padding: EdgeInsets.all(12.w),
-                decoration: BoxDecoration(
-                  color: AppColors.cxWhite.withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: AppColors.cxWhite.withOpacity(0.3),
-                    width: 1.5,
-                  ),
-                ),
-                child: Icon(
-                  Icons.restaurant_menu_rounded,
-                  color: AppColors.cxWhite,
-                  size: 28.sp,
-                ),
-              ),
             ],
           ),
         ],
@@ -1330,327 +1317,300 @@ class _BreakPageState extends State<BreakPage>
     return Container(
       decoration: BoxDecoration(
         color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
-        borderRadius: BorderRadius.circular(20.r),
-        border: isDark
-            ? Border.all(
-                color: theme.colorScheme.outline.withOpacity(0.2),
-                width: 1,
-              )
-            : null,
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: isDark
+              ? theme.colorScheme.outline.withOpacity(0.1)
+              : AppColors.cxF5F7F9,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Stack(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                height: 120.h,
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20.r),
-                    topRight: Radius.circular(20.r),
-                  ),
-                  gradient: LinearGradient(
-                    colors: [
-                      AppColors.cxWarning.withOpacity(0.1),
-                      AppColors.cxFEDA84.withOpacity(0.1),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                ),
-                child: imageUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(20.r),
-                          topRight: Radius.circular(20.r),
-                        ),
-                        child: Image.network(
-                          imageUrl,
-                          width: double.infinity,
-                          height: 120.h,
-                          fit: BoxFit.cover,
-                          cacheWidth:
-                              300, // Cache smaller version for better performance
-                          loadingBuilder: (context, child, loadingProgress) {
-                            if (loadingProgress == null) return child;
-                            return Center(
-                              child: CircularProgressIndicator(
-                                value:
-                                    loadingProgress.expectedTotalBytes != null
-                                    ? loadingProgress.cumulativeBytesLoaded /
-                                          loadingProgress.expectedTotalBytes!
-                                    : null,
-                                strokeWidth: 2,
-                                color: AppColors.cxWarning,
-                              ),
-                            );
-                          },
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Icon(
-                                Icons.fastfood_rounded,
-                                size: 48.sp,
-                                color: AppColors.cxWarning,
-                              ),
-                            );
-                          },
-                        ),
-                      )
-                    : Center(
-                        child: Icon(
-                          Icons.fastfood_rounded,
-                          size: 48.sp,
-                          color: AppColors.cxWarning,
-                        ),
-                      ),
-              ),
-              if (item.hasChangeableItems)
-                Positioned(
-                  top: 8.h,
-                  right: 8.w,
-                  child: Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 8.w,
-                      vertical: 4.h,
-                    ),
+              Stack(
+                children: [
+                  Container(
+                    height: 120.h,
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          const Color(0xFF6366F1),
-                          const Color(0xFF8B5CF6),
-                        ],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(16.r),
+                        topRight: Radius.circular(16.r),
                       ),
-                      borderRadius: BorderRadius.circular(8.r),
-                      boxShadow: [
-                        BoxShadow(
-                          color: AppColors.cxBlack.withOpacity(0.2),
-                          blurRadius: 4,
-                          offset: const Offset(0, 2),
-                        ),
-                      ],
+                      color: isDark 
+                          ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+                          : AppColors.cxF5F7F9,
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.swap_horiz_rounded,
-                          size: 12.sp,
-                          color: AppColors.cxWhite,
+                    child: imageUrl != null
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.only(
+                              topLeft: Radius.circular(16.r),
+                              topRight: Radius.circular(16.r),
+                            ),
+                            child: Image.network(
+                              imageUrl,
+                              width: double.infinity,
+                              height: 120.h,
+                              fit: BoxFit.cover,
+                              cacheWidth: 300,
+                              loadingBuilder: (context, child, loadingProgress) {
+                                if (loadingProgress == null) return child;
+                                return Center(
+                                  child: CircularProgressIndicator(
+                                    value: loadingProgress.expectedTotalBytes != null
+                                        ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                        : null,
+                                    strokeWidth: 2,
+                                    color: AppColors.cxWarning,
+                                  ),
+                                );
+                              },
+                              errorBuilder: (context, error, stackTrace) {
+                                return Center(
+                                  child: Icon(
+                                    Icons.restaurant_outlined,
+                                    size: 40.sp,
+                                    color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                                  ),
+                                );
+                              },
+                            ),
+                          )
+                        : Center(
+                            child: Icon(
+                              Icons.restaurant_outlined,
+                              size: 40.sp,
+                              color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                            ),
+                          ),
+                  ),
+                  if (item.hasChangeableItems)
+                    Positioned(
+                      top: 8.h,
+                      right: 8.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 4.h,
                         ),
-                        SizedBox(width: 4.w),
-                        Text(
-                          'Change',
+                        decoration: BoxDecoration(
+                          color: AppColors.cxBlack.withOpacity(0.7),
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.tune_rounded,
+                              size: 12.sp,
+                              color: AppColors.cxWhite,
+                            ),
+                            SizedBox(width: 4.w),
+                            Text(
+                              'Custom',
+                              style: TextStyle(
+                                fontSize: 10.sp,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.cxWhite,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  if (quantity > 0)
+                    Positioned(
+                      top: 8.h,
+                      left: 8.w,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8.w,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxWarning,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                        child: Text(
+                          '$quantity',
                           style: TextStyle(
-                            fontSize: 10.sp,
+                            fontSize: 12.sp,
                             fontWeight: FontWeight.w700,
                             color: AppColors.cxWhite,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-            ],
-          ),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.all(12.w),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    item.name,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.onSurface,
-                    ),
-                    maxLines: hasChanges ? 1 : 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (hasChanges) ...[
-                    ...itemChangesList
-                        .map(
-                          (change) => Container(
-                            margin: EdgeInsets.only(top: 4.h),
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 6.w,
-                              vertical: 2.h,
-                            ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF6366F1).withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(6.r),
-                              border: Border.all(
-                                color: const Color(0xFF6366F1).withOpacity(0.3),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.swap_horiz_rounded,
-                                  size: 10.sp,
-                                  color: const Color(0xFF6366F1),
-                                ),
-                                SizedBox(width: 3.w),
-                                Flexible(
+                ],
+              ),
+              Expanded(
+                child: Padding(
+                  padding: EdgeInsets.all(12.w),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.name,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: theme.colorScheme.onSurface,
+                          height: 1.3,
+                        ),
+                        maxLines: hasChanges ? 1 : 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      if (hasChanges) ...[
+                        SizedBox(height: 4.h),
+                        Wrap(
+                          spacing: 4.w,
+                          runSpacing: 4.h,
+                          children: itemChangesList
+                              .map(
+                                (change) => Container(
+                                  padding: EdgeInsets.symmetric(
+                                    horizontal: 6.w,
+                                    vertical: 2.h,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                                    borderRadius: BorderRadius.circular(6.r),
+                                  ),
                                   child: Text(
                                     change.changedItem.name,
                                     style: TextStyle(
                                       fontSize: 9.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: const Color(0xFF6366F1),
+                                      fontWeight: FontWeight.w500,
+                                      color: theme.colorScheme.onSurfaceVariant,
                                     ),
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                   ),
                                 ),
-                              ],
-                            ),
-                          ),
-                        )
-                        .toList(),
-                  ],
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          '$price UZS',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.cxWarning,
-                          ),
+                              )
+                              .toList(),
                         ),
-                      ),
-                      if (quantity == 0)
-                        GestureDetector(
-                          onTap: () => _handleProductClick(item),
-                          child: Container(
-                            padding: EdgeInsets.all(8.w),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  AppColors.cxWarning,
-                                  AppColors.cxFEDA84,
-                                ],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                              borderRadius: BorderRadius.circular(10.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: AppColors.cxWarning.withOpacity(0.3),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.add_rounded,
-                              color: AppColors.cxWhite,
-                              size: 20.sp,
-                            ),
-                          ),
-                        )
-                      else
-                        Row(
-                          children: [
-                            GestureDetector(
-                              onTap: () => _removeFromCart(item),
-                              child: Container(
-                                padding: EdgeInsets.all(6.w),
-                                decoration: BoxDecoration(
-                                  color: AppColors.cxWarning.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(8.r),
-                                  border: Border.all(
-                                    color: AppColors.cxWarning,
-                                    width: 1.5,
-                                  ),
-                                ),
-                                child: Icon(
-                                  Icons.remove_rounded,
-                                  color: AppColors.cxWarning,
-                                  size: 16.sp,
-                                ),
-                              ),
-                            ),
-                            SizedBox(width: 8.w),
-                            Text(
-                              '$quantity',
+                      ],
+                      const Spacer(),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '$price UZS',
                               style: TextStyle(
-                                fontSize: 16.sp,
+                                fontSize: 15.sp,
                                 fontWeight: FontWeight.w700,
                                 color: theme.colorScheme.onSurface,
                               ),
                             ),
-                            SizedBox(width: 8.w),
+                          ),
+                          SizedBox(width: 8.w),
+                          if (quantity == 0)
                             GestureDetector(
-                              onTap: () => _addToCart(item),
+                              onTap: () => _handleProductClick(item),
                               child: Container(
-                                padding: EdgeInsets.all(6.w),
+                                padding: EdgeInsets.all(8.w),
                                 decoration: BoxDecoration(
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      AppColors.cxWarning,
-                                      AppColors.cxFEDA84,
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(8.r),
+                                  color: AppColors.cxWarning,
+                                  borderRadius: BorderRadius.circular(10.r),
                                 ),
                                 child: Icon(
                                   Icons.add_rounded,
                                   color: AppColors.cxWhite,
-                                  size: 16.sp,
+                                  size: 18.sp,
                                 ),
                               ),
+                            )
+                          else
+                            Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    GestureDetector(
+                                      onTap: () => _removeFromCart(item),
+                                      child: Container(
+                                        padding: EdgeInsets.all(6.w),
+                                        decoration: BoxDecoration(
+                                          color: isDark
+                                              ? theme.colorScheme.surfaceVariant
+                                              : AppColors.cxF5F7F9,
+                                          borderRadius: BorderRadius.circular(8.r),
+                                        ),
+                                        child: Icon(
+                                          Icons.remove_rounded,
+                                          color: theme.colorScheme.onSurface,
+                                          size: 16.sp,
+                                        ),
+                                      ),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    Text(
+                                      '$quantity',
+                                      style: TextStyle(
+                                        fontSize: 14.sp,
+                                        fontWeight: FontWeight.w700,
+                                        color: theme.colorScheme.onSurface,
+                                      ),
+                                    ),
+                                    SizedBox(width: 8.w),
+                                    GestureDetector(
+                                      onTap: () => _addToCart(item),
+                                      child: Container(
+                                        padding: EdgeInsets.all(6.w),
+                                        decoration: BoxDecoration(
+                                          color: AppColors.cxWarning,
+                                          borderRadius: BorderRadius.circular(8.r),
+                                        ),
+                                        child: Icon(
+                                          Icons.add_rounded,
+                                          color: AppColors.cxWhite,
+                                          size: 16.sp,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
+                        ],
+                      ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
-    );
+        );
   }
 
   Widget _buildCategoryFooter(ThemeData theme, bool isDark) {
     return Container(
-      height: 70.h,
+      height: 64.h,
       decoration: BoxDecoration(
         color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24.r),
-          topRight: Radius.circular(24.r),
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
-        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 10.h),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 12.h),
         itemCount: _categories.length,
         itemBuilder: (context, index) {
           final category = _categories[index];
@@ -1666,80 +1626,51 @@ class _BreakPageState extends State<BreakPage>
               });
             },
             child: Container(
-              margin: EdgeInsets.only(right: 12.w),
-              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 6.h),
+              margin: EdgeInsets.only(right: 10.w),
+              padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
               decoration: BoxDecoration(
                 color: isSelected
-                    ? (isDark
-                          ? const Color(0xFF6366F1)
-                          : const Color(0xFF0071E3))
-                    : theme.colorScheme.surfaceVariant.withOpacity(0.5),
+                    ? AppColors.cxWarning
+                    : (isDark
+                        ? theme.colorScheme.surfaceVariant.withOpacity(0.5)
+                        : AppColors.cxF5F7F9),
                 borderRadius: BorderRadius.circular(12.r),
-                border: Border.all(
-                  color: isSelected
-                      ? (isDark
-                            ? const Color(0xFF6366F1)
-                            : const Color(0xFF0071E3))
-                      : theme.colorScheme.outline.withOpacity(0.2),
-                  width: isSelected ? 1.5 : 1,
-                ),
-                boxShadow: isSelected
-                    ? [
-                        BoxShadow(
-                          color:
-                              (isDark
-                                      ? const Color(0xFF6366F1)
-                                      : const Color(0xFF0071E3))
-                                  .withOpacity(0.3),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
-                        ),
-                      ]
-                    : null,
               ),
-              child: Column(
+              child: Row(
                 mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     category.posCategory?.name ?? 'Category',
                     style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w700,
+                      fontSize: 13.sp,
+                      fontWeight: FontWeight.w600,
                       color: isSelected
                           ? AppColors.cxWhite
                           : theme.colorScheme.onSurface,
-                      height: 1.2,
                     ),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  SizedBox(height: 2.h),
+                  SizedBox(width: 6.w),
                   Container(
                     padding: EdgeInsets.symmetric(
                       horizontal: 6.w,
-                      vertical: 1.h,
+                      vertical: 2.h,
                     ),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? AppColors.cxWhite.withOpacity(0.3)
-                          : (isDark
-                                    ? const Color(0xFF6366F1)
-                                    : const Color(0xFF0071E3))
-                                .withOpacity(0.2),
+                          ? AppColors.cxWhite.withOpacity(0.25)
+                          : theme.colorScheme.onSurface.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(6.r),
                     ),
                     child: Text(
                       '$itemCount',
                       style: TextStyle(
-                        fontSize: 9.sp,
+                        fontSize: 11.sp,
                         fontWeight: FontWeight.w700,
                         color: isSelected
                             ? AppColors.cxWhite
-                            : (isDark
-                                  ? const Color(0xFF6366F1)
-                                  : const Color(0xFF0071E3)),
-                        height: 1.2,
+                            : theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
                   ),
@@ -1772,15 +1703,11 @@ class _BreakPageState extends State<BreakPage>
       padding: EdgeInsets.all(20.w),
       decoration: BoxDecoration(
         color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
-        borderRadius: BorderRadius.only(
-          topLeft: Radius.circular(24.r),
-          topRight: Radius.circular(24.r),
-        ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.4 : 0.1),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, -2),
           ),
         ],
       ),
@@ -1791,30 +1718,26 @@ class _BreakPageState extends State<BreakPage>
             Container(
               width: double.infinity,
               margin: EdgeInsets.only(bottom: 12.h),
-              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+              padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 10.h),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(10.r),
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.3),
-                  width: 1,
-                ),
+                color: Colors.orange.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12.r),
               ),
               child: Row(
                 children: [
                   Icon(
-                    Icons.access_time_rounded,
-                    color: Colors.orange,
+                    Icons.info_outline_rounded,
+                    color: Colors.orange.shade700,
                     size: 18.sp,
                   ),
-                  SizedBox(width: 8.w),
+                  SizedBox(width: 10.w),
                   Expanded(
                     child: Text(
                       restrictionMessage,
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w600,
-                        color: Colors.orange.shade800,
+                        color: Colors.orange.shade700,
                       ),
                     ),
                   ),
@@ -1831,8 +1754,8 @@ class _BreakPageState extends State<BreakPage>
                     Text(
                       '$itemCount ${itemCount == 1 ? 'item' : 'items'}',
                       style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w600,
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
                         color: theme.colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -1840,11 +1763,9 @@ class _BreakPageState extends State<BreakPage>
                     Text(
                       '$total UZS',
                       style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.w800,
-                        color: isDark
-                            ? const Color(0xFF6366F1)
-                            : const Color(0xFF0071E3),
+                        fontSize: 22.sp,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
                       ),
                     ),
                   ],
@@ -1859,43 +1780,18 @@ class _BreakPageState extends State<BreakPage>
                   child: Container(
                     padding: EdgeInsets.symmetric(vertical: 16.h),
                     decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: canOrder
-                            ? (isDark
-                                  ? [
-                                      const Color(0xFF6366F1),
-                                      const Color(0xFF8B5CF6),
-                                    ]
-                                  : [
-                                      const Color(0xFF0071E3),
-                                      const Color(0xFF5E5CE6),
-                                    ])
-                            : [Colors.grey.shade400, Colors.grey.shade500],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(16.r),
-                      boxShadow: canOrder
-                          ? [
-                              BoxShadow(
-                                color:
-                                    (isDark
-                                            ? const Color(0xFF6366F1)
-                                            : const Color(0xFF0071E3))
-                                        .withOpacity(0.4),
-                                blurRadius: 12,
-                                offset: const Offset(0, 6),
-                              ),
-                            ]
-                          : null,
+                      color: canOrder
+                          ? AppColors.cxWarning
+                          : theme.colorScheme.surfaceVariant,
+                      borderRadius: BorderRadius.circular(14.r),
                     ),
                     child: _isSubmittingOrder
                         ? Center(
                             child: SizedBox(
-                              height: 24.h,
-                              width: 24.w,
+                              height: 20.h,
+                              width: 20.w,
                               child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
+                                strokeWidth: 2,
                                 valueColor: AlwaysStoppedAnimation<Color>(
                                   AppColors.cxWhite,
                                 ),

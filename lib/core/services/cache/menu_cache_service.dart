@@ -26,8 +26,8 @@ class MenuCacheService {
   DateTime? _lastFetchTime;
   bool _isInitialized = false;
 
-  // Cache duration: 30 minutes (menu doesn't change frequently)
-  static const Duration _cacheDuration = Duration(minutes: 30);
+  // Cache duration: 3 days (menu doesn't change frequently)
+  static const Duration _cacheDuration = Duration(days: 3);
 
   // Storage keys
   static const String _menuItemsKey = 'cached_menu_items';
@@ -189,6 +189,48 @@ class MenuCacheService {
     }
 
     print('🗑️ Cache cleared');
+  }
+
+  /// Preload menu data in background (call after app launch/login)
+  /// This fetches fresh data and caches it for 3 days
+  Future<void> preloadMenuData(Function getInventoryMenu, Function getPosCategories) async {
+    print('🔧 [CACHE PRELOAD] preloadMenuData() method called');
+    try {
+      print('🔧 [CACHE PRELOAD] Initializing cache...');
+      // Initialize cache first to load any existing data
+      await initialize();
+      print('🔧 [CACHE PRELOAD] Cache initialized. isCacheValid: $isCacheValid');
+      
+      // If cache is still valid, no need to fetch
+      if (isCacheValid) {
+        print('✅ [CACHE PRELOAD] Cache is still valid, skipping preload');
+        return;
+      }
+      
+      print('🔄 [CACHE PRELOAD] Cache expired or invalid - starting background fetch...');
+      final startTime = DateTime.now();
+      
+      print('📡 [CACHE PRELOAD] Calling API methods...');
+      // Fetch fresh data in parallel
+      final results = await Future.wait([
+        getInventoryMenu(),
+        getPosCategories(),
+      ] as Iterable<Future<dynamic>>);
+      
+      final items = results[0] as List<InventoryItem>;
+      final categories = results[1] as List<PosActiveCategory>;
+      
+      // Cache the fresh data
+      cacheData(items, categories);
+      
+      final duration = DateTime.now().difference(startTime);
+      print('✅ [CACHE PRELOAD] Completed in ${duration.inMilliseconds}ms');
+      print('   - Cached ${items.length} items and ${categories.length} categories');
+      print('   - Cache valid for 3 days');
+    } catch (e) {
+      print('❌ [CACHE PRELOAD] Error: $e');
+      // Don\'t throw - preload failure shouldn\'t break the app
+    }
   }
 }
 

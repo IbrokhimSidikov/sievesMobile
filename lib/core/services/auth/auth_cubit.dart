@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_manager.dart';
 import 'auth_state.dart';
+import '../cache/menu_cache_service.dart';
 
 /// Cubit for managing authentication state throughout the app
 class AuthCubit extends Cubit<AuthState> {
   final AuthManager _authManager;
+  final MenuCacheService _cacheService = MenuCacheService();
 
   AuthCubit(this._authManager) : super(const AuthInitial()) {
     // Set up callback for when session expires automatically
@@ -34,6 +36,9 @@ class AuthCubit extends Cubit<AuthState> {
       if (isAuthenticated && _authManager.currentIdentity != null) {
         print('✅ Session restored successfully');
         emit(AuthAuthenticated(_authManager.currentIdentity!));
+        
+        // Preload menu data in background after successful authentication
+        _preloadMenuData();
       } else {
         print('ℹ️ No valid session found');
         emit(const AuthUnauthenticated());
@@ -56,6 +61,9 @@ class AuthCubit extends Cubit<AuthState> {
       if (success && _authManager.currentIdentity != null) {
         print('✅ Login successful');
         emit(AuthAuthenticated(_authManager.currentIdentity!));
+        
+        // Preload menu data in background after successful login
+        _preloadMenuData();
       } else {
         print('❌ Login failed');
         emit(const AuthError('Login failed. Please try again.'));
@@ -121,5 +129,24 @@ class AuthCubit extends Cubit<AuthState> {
       print('❌ Error refreshing identity: $e');
       // Keep the current state on error
     }
+  }
+
+  /// Preload menu data in background (non-blocking)
+  void _preloadMenuData() {
+    print('🚀 [AuthCubit] _preloadMenuData() called - starting background preload');
+    // Run in background without blocking the UI
+    Future.microtask(() async {
+      try {
+        print('📥 [AuthCubit] Executing preloadMenuData...');
+        await _cacheService.preloadMenuData(
+          _authManager.apiService.getInventoryMenu,
+          _authManager.apiService.getPosCategories,
+        );
+        print('✅ [AuthCubit] Preload completed successfully');
+      } catch (e) {
+        print('❌ [AuthCubit] Menu preload error: $e');
+        // Silently fail - this is a background optimization
+      }
+    });
   }
 }

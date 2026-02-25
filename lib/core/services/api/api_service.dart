@@ -888,7 +888,7 @@ class ApiService {
         'expand':
             'inventoryPriceList,photo,changeableContains.default.photo,changeableContains.default.inventoryPriceList,changeableCategories.posCategory',
         // Remove limit to fetch all items in one request
-        'per-page': '500', // Increase to get all items at once
+        // 'per-page': '500', // Increase to get all items at once
       };
 
       final uri = Uri.parse(
@@ -1200,6 +1200,109 @@ class ApiService {
     } catch (e) {
       print('❌ Exception marking story as viewed: $e');
       return false;
+    }
+  }
+
+  // Get matrix qualification fields
+  Future<List<Map<String, dynamic>>?> getMatrixQualificationFields() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/matrix-qualification');
+
+      print('📊 [API] Fetching matrix qualification fields: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print('✅ [API] Fetched matrix qualification fields successfully');
+        
+        // Handle both array and object responses
+        if (jsonData is List) {
+          return List<Map<String, dynamic>>.from(jsonData);
+        } else if (jsonData is Map && jsonData.containsKey('models')) {
+          return List<Map<String, dynamic>>.from(jsonData['models']);
+        } else if (jsonData is Map && jsonData.containsKey('data')) {
+          return List<Map<String, dynamic>>.from(jsonData['data']);
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return null;
+        }
+      } else {
+        print(
+          '❌ Error getting matrix qualification fields: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting matrix qualification fields: $e');
+      return null;
+    }
+  }
+
+  // Submit matrix qualification results
+  Future<bool> submitMatrixQualificationResults({
+    required int employeeId,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/matrix-qualification/results/submit');
+
+      final body = {
+        'employee_id': employeeId,
+        'items': items,
+      };
+
+      print('📊 [API] Submitting matrix qualification results: $body');
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ [API] Matrix qualification results submitted successfully');
+        return true;
+      } else {
+        print(
+          '❌ Error submitting matrix qualification results: ${response.statusCode} - ${response.body}',
+        );
+        return false;
+      }
+    } catch (e) {
+      print('❌ Exception submitting matrix qualification results: $e');
+      return false;
+    }
+  }
+
+  // Get user's qualification results for employee
+  Future<List<Map<String, dynamic>>?> getMyQualificationResults(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/matrix-qualification/employee/$employeeId');
+
+      print('📊 [API] Fetching qualification results for employee: $employeeId');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final jsonData = jsonDecode(response.body);
+        print('✅ [API] Fetched qualification results successfully');
+        
+        if (jsonData is List) {
+          return List<Map<String, dynamic>>.from(jsonData);
+        } else {
+          print('❌ Unexpected response format: $jsonData');
+          return null;
+        }
+      } else {
+        print(
+          '❌ Error getting qualification results: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting qualification results: $e');
+      return null;
     }
   }
 }

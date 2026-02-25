@@ -6,9 +6,12 @@ import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
 import '../../features/break/pages/break_page.dart';
 import '../../features/checklist/pages/checklist.dart';
+import '../../features/employee-productivity/pages/employee_productivity.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
 import '../../features/lms/pages/lms_page.dart';
+import '../../features/matrix-qualification/pages/matrix_qualification_page.dart';
+import '../../features/matrix-qualification/pages/qualification_display_page.dart';
 import '../../features/productivity-timer/pages/productivity_timer.dart';
 import '../../features/lms/pages/course_viewer_page.dart';
 import '../../features/lms/pages/test_detail_page.dart';
@@ -48,6 +51,9 @@ class AppRoutes {
   static const String faceVerification = '/faceVerification';
   static const String wallet = '/wallet';
   static const String calendar = '/calendar';
+  static const String matrixQualificationPage = '/matrixQualificationPage';
+  static const String employeeProductivity = '/employeeProductivity';
+  static const String qualificationDisplayPage = '/qualificationDisplayPage';
 
   static GoRouter createRouter(String initialLocation, {GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
@@ -201,6 +207,22 @@ class AppRoutes {
           path: '/calendar',
           name: calendar,
           builder: (context, state) => const CalendarPage()
+        ),
+
+        GoRoute(
+          path: '/matrixQualificationPage',
+          name: matrixQualificationPage,
+          builder: (context, state) => const MatrixQualificationPage()
+        ),
+        GoRoute(
+          path: '/employeeProductivity',
+          name: employeeProductivity,
+          builder: (context, state) => const EmployeeProductivity()
+        ),
+        GoRoute(
+          path: '/qualificationDisplayPage',
+          name: qualificationDisplayPage,
+          builder: (context, state) => const QualificationDisplayPage()
         ),
       ]);
   }

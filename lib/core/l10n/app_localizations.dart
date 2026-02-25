@@ -223,6 +223,14 @@ class AppLocalizations {
       'previous':'Previous',
       'next':'Next',
       'loadingDocument':'Loading document...',
+      //Employee Productivity
+      'employeeProductivity':'Employee Productivity',
+      'employeeProductivitySubtitle':'Choose your productivity tool',
+      'productivityTimerCard':'Productivity Timer',
+      'productivityTimerCardSubtitle':'Track your work time and boost efficiency',
+      'matrixQualification':'Matrix Qualification',
+      'matrixQualificationSubtitle':'Assess and improve your skill matrix',
+      'qualificationDisplayPage':'Matrix Qualification',
 
     },
     'uz': {
@@ -438,6 +446,15 @@ class AppLocalizations {
       'previous':'Oldingi',
       'next':'Keyingi',
       'loadingDocument':'Hujjat yuklanmoqda...',
+      //Employee Productivity
+      'employeeProductivity':'Xodim samaradorligi',
+      'employeeProductivitySubtitle':'Samaradorlik vositasini tanlang',
+      'productivityTimerCard':'Tayyorlash sifati',
+      'productivityTimerCardSubtitle':'Ish vaqtingizni kuzating va samaradorlikni oshiring',
+      'matrixQualification':'Matritsa malakasi',
+      'matrixQualificationSubtitle':'Ko\'nikma matritsangizni baholang va yaxshilang',
+      'qualificationDisplayPage':'Matritsa malakasi',
+
 
     },
     'ru': {
@@ -653,7 +670,14 @@ class AppLocalizations {
       'previous':'Назад',
       'next':'Вперёд',
       'loadingDocument':'Загрузка документа...',
-
+      //Employee Productivity
+      'employeeProductivity':'Продуктивность сотрудников',
+      'employeeProductivitySubtitle':'Выберите инструмент продуктивности',
+      'productivityTimerCard':'Таймер продуктивности',
+      'productivityTimerCardSubtitle':'Отслеживайте рабочее время и повышайте эффективность',
+      'matrixQualification':'Матрица квалификации',
+      'matrixQualificationSubtitle':'Оцените и улучшите свою матрицу навыков',
+      'qualificationDisplayPage':'Матричная квалификация'
 
     },
   };
@@ -844,5 +868,13 @@ class AppLocalizations {
   String get submitChecklist => translate('submitChecklist');
   String get submittingChecklist => translate('submittingChecklist');
   String get overallProgress => translate('overallProgress');
+  //Employee Productivity
+  String get employeeProductivity => translate('employeeProductivity');
+  String get employeeProductivitySubtitle => translate('employeeProductivitySubtitle');
+  String get productivityTimerCard => translate('productivityTimerCard');
+  String get productivityTimerCardSubtitle => translate('productivityTimerCardSubtitle');
+  String get matrixQualification => translate('matrixQualification');
+  String get matrixQualificationSubtitle => translate('matrixQualificationSubtitle');
+  String get qualificationDisplayPage => translate('qualificationDisplayPage');
 
 }

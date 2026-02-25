@@ -44,12 +44,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _ModuleItem(localizations.calendar, Icons.calendar_month_outlined, const Color(0xFF8B5CF6), '/calendar'),
       _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, '/wallet'),
+      _ModuleItem(localizations.qualificationDisplayPage, Icons.verified_user_outlined, AppColors.cxPrimary, '/qualificationDisplayPage'),
       if (_authManager.hasBreakAccess)
         _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, AppColors.cxFF9800, '/breakOrder'),
       if (_authManager.hasBreakAccess)
       _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, const Color(0xFF64B6FF), '/faceVerification'),
       if (_authManager.hasStopwatchAccess)
-        _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/productivityTimer'),
+        _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/employeeProductivity'),
       _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
 
     ];
