@@ -231,6 +231,19 @@ class AppLocalizations {
       'matrixQualification':'Matrix Qualification',
       'matrixQualificationSubtitle':'Assess and improve your skill matrix',
       'qualificationDisplayPage':'Matrix Qualification',
+      'trainingTest':'HR Training test',
+      'hr':'HR',
+      'hrSubtitle':'Manage employees, training, and qualifications',
+      'hrTitle': 'Training & Development',
+      'calendarSubtitle1':'Track upcoming training sessions and schedules',
+      'trainingTestSubtitle':'Manage HR training exams, schedules, and employee results',
+      'trainingCourses':'Training Courses',
+      'availableCourses':'Available training courses',
+      'courseTheme':'Course Theme',
+      'loadingCourses':'Loading courses...',
+      'noCourses':'No training courses available',
+      'errorLoadingCourses':'Failed to load training courses',
+      'coursesFound':'courses found',
 
     },
     'uz': {
@@ -453,11 +466,51 @@ class AppLocalizations {
       'productivityTimerCardSubtitle':'Ish vaqtingizni kuzating va samaradorlikni oshiring',
       'matrixQualification':'Matritsa malakasi',
       'matrixQualificationSubtitle':'Ko\'nikma matritsangizni baholang va yaxshilang',
-      'qualificationDisplayPage':'Matritsa malakasi',
+      'qualificationDisplayPage':'Baholash me\'zoni',
+      'trainingTest':'HR o‘quv testi',
+      'hr':'HR',
+      'hrTitle':'Ta’lim va rivojlanish',
+      'hrSubtitle':'Xodimlar, o‘quv jarayoni va malakalarni boshqarish',
+      'calendarSubtitle1':'Yaqinlashayotgan o‘quv mashg‘ulotlari va jadvalni kuzatish',
+      'trainingTestSubtitle':'HR o\'quv imtihonlari, jadvali va xodimlar natijalarini boshqarish',
+      'trainingCourses':'O\'quv kurslari',
+      'availableCourses':'Mavjud o\'quv kurslari',
+      'courseTheme':'Kurs mavzusi',
+      'loadingCourses':'Kurslar yuklanmoqda...',
+      'noCourses':'O\'quv kurslari mavjud emas',
+      'errorLoadingCourses':'Kurslarni yuklashda xatolik',
+      'coursesFound':'ta kurs topildi',
+      'trainingTest':'Training Test',
+      'hr':'HR',
+      'hrTitle':'Training and Development',
+      'hrSubtitle':'Manage employees, training process and skills',
+      'calendarSubtitle1':'Upcoming training sessions and schedule',
+      'trainingTestSubtitle':'HR training tests, schedule and employee results',
+      'trainingCourses':'Training Courses',
+      'availableCourses':'Available Training Courses',
+      'courseTheme':'Course Theme',
+      'loadingCourses':'Loading Courses...',
+      'noCourses':'No Training Courses Available',
+      'errorLoadingCourses':'Error Loading Courses',
+      'coursesFound':'courses found',
+
 
 
     },
     'ru': {
+      'trainingTest':'Тестирование',
+      'hr':'HR',
+      'hrTitle':'Обучение и развитие',
+      'hrSubtitle':'Управление сотрудниками, процессом обучения и навыками',
+      'calendarSubtitle1':'Ближайшие учебные занятия и расписание',
+      'trainingTestSubtitle':'Тесты HR, расписание и результаты сотрудников',
+      'trainingCourses':'Курсы обучения',
+      'availableCourses':'Доступные курсы обучения',
+      'courseTheme':'Тема курса',
+      'loadingCourses':'Загрузка курсов...',
+      'noCourses':'Курсы обучения не найдены',
+      'errorLoadingCourses':'Ошибка загрузки курсов',
+      'coursesFound':'курсов найдено',
       'title': 'Sieves',
       'welcome': 'Добро пожаловать',
       'login': 'Войти',
@@ -677,8 +730,20 @@ class AppLocalizations {
       'productivityTimerCardSubtitle':'Отслеживайте рабочее время и повышайте эффективность',
       'matrixQualification':'Матрица квалификации',
       'matrixQualificationSubtitle':'Оцените и улучшите свою матрицу навыков',
-      'qualificationDisplayPage':'Матричная квалификация'
-
+      'qualificationDisplayPage':'Матричная квалификация',
+      'trainingTest':'Тест по обучению HR',
+      'hr':'HR',
+      'hrTitle':'Обучение и развитие',
+      'hrSubtitle':'Управление сотрудниками, обучением и квалификациями',
+      'calendarSubtitle1':'Отслеживание предстоящих обучающих сессий и расписаний',
+      'trainingTestSubtitle':'Управление HR экзаменами, расписанием и результатами сотрудников',
+      'trainingCourses':'Учебные курсы',
+      'availableCourses':'Доступные учебные курсы',
+      'courseTheme':'Тема курса',
+      'loadingCourses':'Загрузка курсов...',
+      'noCourses':'Нет доступных учебных курсов',
+      'errorLoadingCourses':'Не удалось загрузить курсы',
+      'coursesFound':'курсов найдено',
     },
   };
 
@@ -876,5 +941,19 @@ class AppLocalizations {
   String get matrixQualification => translate('matrixQualification');
   String get matrixQualificationSubtitle => translate('matrixQualificationSubtitle');
   String get qualificationDisplayPage => translate('qualificationDisplayPage');
+  String get trainingTest => translate('trainingTest');
+  String get hr => translate('hr');
+  String get hrTitle => translate('hrTitle');
+  String get hrSubtitle => translate('hrSubtitle');
+  String get calendarSubtitle1 => translate('calendarSubtitle1');
+  String get trainingTestSubtitle => translate('trainingTestSubtitle');
+  String get trainingCourses => translate('trainingCourses');
+  String get availableCourses => translate('availableCourses');
+  String get courseTheme => translate('courseTheme');
+  String get loadingCourses => translate('loadingCourses');
+  String get noCourses => translate('noCourses');
+  String get errorLoadingCourses => translate('errorLoadingCourses');
+  String get coursesFound => translate('coursesFound');
+
 
 }

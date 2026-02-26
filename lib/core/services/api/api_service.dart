@@ -9,6 +9,7 @@ import '../../model/break_order_model.dart';
 import '../../model/history_model.dart';
 import '../../model/inventory_model.dart';
 import '../../model/story_model.dart';
+import '../../../features/training-test/data/training_course_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
@@ -1303,6 +1304,33 @@ class ApiService {
     } catch (e) {
       print('❌ Exception getting qualification results: $e');
       return null;
+    }
+  }
+
+  // Fetch training courses
+  Future<List<TrainingCourse>> fetchTrainingCourses() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course');
+      
+      print('📚 [API] Fetching training courses from: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      print('📚 [API] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        final courses = data.map((json) => TrainingCourse.fromJson(json)).toList();
+        
+        print('✅ [API] Successfully fetched ${courses.length} training courses');
+        return courses;
+      } else {
+        print('❌ Error fetching training courses: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to load training courses: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Exception fetching training courses: $e');
+      rethrow;
     }
   }
 }

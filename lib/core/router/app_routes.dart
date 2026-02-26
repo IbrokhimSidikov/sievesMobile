@@ -9,6 +9,7 @@ import '../../features/checklist/pages/checklist.dart';
 import '../../features/employee-productivity/pages/employee_productivity.dart';
 import '../../features/history/pages/history.dart';
 // import '../../features/login/pages/login.dart';
+import '../../features/hr/pages/hr_page.dart';
 import '../../features/lms/pages/lms_page.dart';
 import '../../features/matrix-qualification/pages/matrix_qualification_page.dart';
 import '../../features/matrix-qualification/pages/qualification_display_page.dart';
@@ -25,6 +26,7 @@ import '../../features/notification/pages/notifications_new.dart';
 import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
 import '../../features/face-verification/pages/face_verification_page.dart';
+import '../../features/training-test/pages/training_test_page.dart';
 import '../../features/wallet/pages/wallet_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
 import '../services/auth/auth_manager.dart';
@@ -54,6 +56,8 @@ class AppRoutes {
   static const String matrixQualificationPage = '/matrixQualificationPage';
   static const String employeeProductivity = '/employeeProductivity';
   static const String qualificationDisplayPage = '/qualificationDisplayPage';
+  static const String trainingTestPage = '/trainingTestPage';
+  static const String hrPage = '/hrPage';
 
   static GoRouter createRouter(String initialLocation, {GlobalKey<NavigatorState>? navigatorKey}) {
     return GoRouter(
@@ -223,6 +227,16 @@ class AppRoutes {
           path: '/qualificationDisplayPage',
           name: qualificationDisplayPage,
           builder: (context, state) => const QualificationDisplayPage()
+        ),
+        GoRoute(
+          path: '/trainingTestPage',
+          name: trainingTestPage,
+          builder: (context, state) => const TrainingTestPage()
+        ),
+        GoRoute(
+          path: '/hrPage',
+          name: hrPage,
+          builder: (context, state) => const HrPage()
         ),
       ]);
   }
