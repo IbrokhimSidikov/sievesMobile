@@ -5,6 +5,7 @@ import '../../../core/l10n/app_localizations.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../data/training_course_model.dart';
+import 'test_session_page.dart';
 
 class TrainingTestPage extends StatefulWidget {
   const TrainingTestPage({super.key});
@@ -59,19 +60,25 @@ class _TrainingTestPageState extends State<TrainingTestPage> {
     final l10n = AppLocalizations.of(context);
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
+    final theme = Theme.of(context);
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0F0F14) : AppColors.cxF5F7F9,
       appBar: AppBar(
-        title: Text(
-          l10n.trainingCourses,
-          style: TextStyle(
-            fontSize: 20.sp,
-            fontWeight: FontWeight.w600,
-          ),
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+        leading: IconButton(
+          icon: Icon(Icons.arrow_back, color: theme.colorScheme.onSurface),
+          onPressed: () => Navigator.pop(context),
         ),
-        centerTitle: false,
-      ),
+        title: Text(
+          l10n.translate('trainingTest'),
+          style: TextStyle(
+            fontSize: 24.sp,
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.onSurface,
+          ),
+        ),),
       body: _isLoading
           ? _buildLoadingState(l10n)
           : _hasError
@@ -389,11 +396,12 @@ class _TrainingTestPageState extends State<TrainingTestPage> {
         color: Colors.transparent,
         child: InkWell(
           onTap: () {
-            // TODO: Navigate to course details or start test
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Opening: ${course.name}'),
-                duration: const Duration(seconds: 2),
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => TestSessionPage(
+                  courseId: course.id,
+                  courseName: course.name,
+                ),
               ),
             );
           },

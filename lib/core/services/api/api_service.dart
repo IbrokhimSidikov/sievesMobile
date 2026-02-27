@@ -10,6 +10,8 @@ import '../../model/history_model.dart';
 import '../../model/inventory_model.dart';
 import '../../model/story_model.dart';
 import '../../../features/training-test/data/training_course_model.dart';
+import '../../../features/training-test/data/test_models.dart';
+import '../../../features/training-test/data/test_result_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
@@ -1330,6 +1332,138 @@ class ApiService {
       }
     } catch (e) {
       print('❌ Exception fetching training courses: $e');
+      rethrow;
+    }
+  }
+
+  // Fetch course details with tests
+  Future<CourseWithTests> fetchCourseWithTests(int courseId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course/$courseId');
+      
+      print('📝 [API] Fetching course details with tests from: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      print('📝 [API] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        final course = CourseWithTests.fromJson(data);
+        
+        print('✅ [API] Successfully fetched course with ${course.tests.length} tests');
+        return course;
+      } else {
+        print('❌ Error fetching course details: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to load course details: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Exception fetching course details: $e');
+      rethrow;
+    }
+  }
+
+  // Start training course session
+  Future<int> startTrainingSession(int courseId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course/session/start');
+      
+      print('🎯 [API] Starting training session for course: $courseId');
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({'course_id': courseId}),
+      );
+
+      print('🎯 [API] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final sessionId = data['session_id'] ?? data['id'];
+        
+        print('✅ [API] Successfully started session with ID: $sessionId');
+        return sessionId;
+      } else {
+        print('❌ Error starting session: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to start session: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Exception starting session: $e');
+      rethrow;
+    }
+  }
+
+  // Submit training course session
+  Future<Map<String, dynamic>> submitTrainingSession({
+    required int sessionId,
+    required List<Map<String, dynamic>> matchAnswers,
+    required List<Map<String, dynamic>> optionAnswers,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course/session/submit');
+      
+      final body = {
+        'session_id': sessionId,
+        'match_answers': matchAnswers,
+        'option_answers': optionAnswers,
+      };
+
+      print('📤 [API] Submitting training session: $sessionId');
+      print('📤 [API] Match answers: ${matchAnswers.length}, Option answers: ${optionAnswers.length}');
+      
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode(body),
+      );
+
+      print('📤 [API] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        
+        print('✅ [API] Successfully submitted session');
+        return data;
+      } else {
+        print('❌ Error submitting session: ${response.statusCode} - ${response.body}');
+        throw Exception('Failed to submit session: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Exception submitting session: $e');
+      rethrow;
+    }
+  }
+
+  Future<TestSessionResult> fetchSessionResult(int sessionId) async {
+    try {
+      final url = 'https://api.v3.sievesapp.com/training-course/session/$sessionId/result';
+      print('📊 Fetching session result for session ID: $sessionId');
+      print('📊 URL: $url');
+      
+      final headers = await _getHeaders();
+      print('📊 Headers: ${headers.keys.toList()}');
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: headers,
+      );
+
+      print('📊 Session result response status: ${response.statusCode}');
+      print('📊 Response body: ${response.body}');
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        print('✅ Session result fetched successfully');
+        return TestSessionResult.fromJson(data);
+      } else {
+        print('❌ Failed to fetch session result: ${response.statusCode}');
+        print('❌ Error response: ${response.body}');
+        throw Exception('Failed to fetch session result: HTTP ${response.statusCode}');
+      }
+    } catch (e) {
+      print('❌ Exception fetching session result: $e');
       rethrow;
     }
   }
