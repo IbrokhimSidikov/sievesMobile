@@ -22,7 +22,12 @@ class _ChecklistDetailPageState extends State<ChecklistDetailPage> {
   @override
   void initState() {
     super.initState();
-    context.read<ChecklistCubit>().loadChecklist(widget.checklistId);
+    final currentState = context.read<ChecklistCubit>().state;
+    final alreadyLoaded = currentState is ChecklistLoaded &&
+        currentState.checklist.id == widget.checklistId;
+    if (!alreadyLoaded) {
+      context.read<ChecklistCubit>().loadChecklist(widget.checklistId);
+    }
   }
 
   @override

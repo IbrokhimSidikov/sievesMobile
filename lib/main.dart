@@ -17,6 +17,8 @@ import 'core/router/app_routes.dart';
 import 'core/services/auth/auth_cubit.dart';
 import 'core/services/auth/auth_manager.dart';
 import 'core/services/auth/auth_state.dart';
+import 'features/checklist/cubit/checklist_cubit.dart';
+import 'features/checklist/cubit/checklist_list_cubit.dart';
 import 'core/services/version/version_service.dart';
 import 'core/services/theme/theme_cubit.dart';
 import 'core/services/notification/notification_service.dart';
@@ -214,6 +216,9 @@ class _MyAppState extends State<MyApp> {
         BlocProvider(create: (context) => AuthCubit(AuthManager())),
         // Provide ThemeCubit for theme switching
         BlocProvider(create: (context) => ThemeCubit()),
+        // Provide checklist cubits at app level so state persists across navigation
+        BlocProvider(create: (context) => ChecklistListCubit(AuthManager())),
+        BlocProvider(create: (context) => ChecklistCubit(AuthManager())),
       ],
       child: ScreenUtilInit(
         designSize: const Size(393, 852),

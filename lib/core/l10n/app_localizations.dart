@@ -244,6 +244,24 @@ class AppLocalizations {
       'noCourses':'No training courses available',
       'errorLoadingCourses':'Failed to load training courses',
       'coursesFound':'courses found',
+      // Test Session
+      'question':'Question',
+      'multipleChoice':'Multiple Choice',
+      'matching':'Matching',
+      'progress':'Progress',
+      'noTestsAvailable':'No tests available',
+      'answerAllQuestions':'Please answer all questions before submitting the test.',
+      'sessionNotStarted':'Session not started. Please try again.',
+      'failedToSubmitTest':'Failed to submit test',
+      'matchEachItem':'Match each item with its pair',
+      'tapCardToChoose':'Tap a card to choose the matching answer',
+      'tapToSelectMatch':'Tap to select a match...',
+      'chooseAMatch':'Choose a match',
+      'clearMatch':'Clear',
+      'selectCorrectMatch':'Select the correct match below',
+      'used':'Used',
+      'submitTest':'Submit Test',
+      'submittingTest':'Submitting...',
 
     },
     'uz': {
@@ -480,21 +498,24 @@ class AppLocalizations {
       'noCourses':'O\'quv kurslari mavjud emas',
       'errorLoadingCourses':'Kurslarni yuklashda xatolik',
       'coursesFound':'ta kurs topildi',
-      'trainingTest':'Training Test',
-      'hr':'HR',
-      'hrTitle':'Training and Development',
-      'hrSubtitle':'Manage employees, training process and skills',
-      'calendarSubtitle1':'Upcoming training sessions and schedule',
-      'trainingTestSubtitle':'HR training tests, schedule and employee results',
-      'trainingCourses':'Training Courses',
-      'availableCourses':'Available Training Courses',
-      'courseTheme':'Course Theme',
-      'loadingCourses':'Loading Courses...',
-      'noCourses':'No Training Courses Available',
-      'errorLoadingCourses':'Error Loading Courses',
-      'coursesFound':'courses found',
-
-
+      // Test Session
+      'question':'Savol',
+      'multipleChoice':'Bir javobli',
+      'matching':'Moslashtirish',
+      'progress':'Jarayon',
+      'noTestsAvailable':'Testlar mavjud emas',
+      'answerAllQuestions':'Testni yuborishdan oldin barcha savollarga javob bering.',
+      'sessionNotStarted':'Sessiya boshlanmadi. Qayta urinib ko\'ring.',
+      'failedToSubmitTest':'Testni yuborishda xatolik',
+      'matchEachItem':'Har bir elementni juftiga moslashtiring',
+      'tapCardToChoose':'Mos javobni tanlash uchun kartani bosing',
+      'tapToSelectMatch':'Moslikni tanlash uchun bosing...',
+      'chooseAMatch':'Moslikni tanlang',
+      'clearMatch':'Tozalash',
+      'selectCorrectMatch':'Quyida to\'g\'ri moslikni tanlang',
+      'used':'Ishlatilgan',
+      'submitTest':'Testni yuborish',
+      'submittingTest':'Yuborilmoqda...',
 
     },
     'ru': {
@@ -744,6 +765,24 @@ class AppLocalizations {
       'noCourses':'Нет доступных учебных курсов',
       'errorLoadingCourses':'Не удалось загрузить курсы',
       'coursesFound':'курсов найдено',
+      // Test Session
+      'question':'Вопрос',
+      'multipleChoice':'Один ответ',
+      'matching':'Сопоставление',
+      'progress':'Прогресс',
+      'noTestsAvailable':'Тесты недоступны',
+      'answerAllQuestions':'Пожалуйста, ответьте на все вопросы перед отправкой теста.',
+      'sessionNotStarted':'Сессия не начата. Попробуйте снова.',
+      'failedToSubmitTest':'Не удалось отправить тест',
+      'matchEachItem':'Сопоставьте каждый элемент с его парой',
+      'tapCardToChoose':'Нажмите на карточку, чтобы выбрать ответ',
+      'tapToSelectMatch':'Нажмите для выбора...',
+      'chooseAMatch':'Выберите соответствие',
+      'clearMatch':'Очистить',
+      'selectCorrectMatch':'Выберите правильное соответствие ниже',
+      'used':'Использовано',
+      'submitTest':'Отправить тест',
+      'submittingTest':'Отправка...',
     },
   };
 
@@ -954,6 +993,26 @@ class AppLocalizations {
   String get noCourses => translate('noCourses');
   String get errorLoadingCourses => translate('errorLoadingCourses');
   String get coursesFound => translate('coursesFound');
+  // Test Session
+  String get question => translate('question');
+  String get multipleChoice => translate('multipleChoice');
+  String get matching => translate('matching');
+  String get progress => translate('progress');
+  String get noTestsAvailable => translate('noTestsAvailable');
+  String get answerAllQuestions => translate('answerAllQuestions');
+  String get sessionNotStarted => translate('sessionNotStarted');
+  String get failedToSubmitTest => translate('failedToSubmitTest');
+  String get matchEachItem => translate('matchEachItem');
+  String get tapCardToChoose => translate('tapCardToChoose');
+  String get tapToSelectMatch => translate('tapToSelectMatch');
+  String get chooseAMatch => translate('chooseAMatch');
+  String get clearMatch => translate('clearMatch');
+  String get selectCorrectMatch => translate('selectCorrectMatch');
+  String get used => translate('used');
+  String get submitTest => translate('submitTest');
+  String get submittingTest => translate('submittingTest');
+  String get previous => translate('previous');
+  String get next => translate('next');
 
 
 }

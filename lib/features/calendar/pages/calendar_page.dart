@@ -247,11 +247,18 @@ class _CalendarPageState extends State<CalendarPage> {
       _isLoadingThemes = true;
     });
 
+    // Create static training themes
+    final staticThemes = [
+      TrainingTheme(id: -1, name: 'Marketing (xostess)'),
+      TrainingTheme(id: -2, name: 'Marketing (kassa)'),
+    ];
+
     try {
       final accessToken = await _authManager.authService.getAccessToken();
       if (accessToken == null) {
         if (!mounted) return;
         setState(() {
+          _trainingThemes = staticThemes;
           _isLoadingThemes = false;
         });
         return;
@@ -269,14 +276,16 @@ class _CalendarPageState extends State<CalendarPage> {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = json.decode(response.body);
+        final fetchedThemes = data.map((json) => TrainingTheme.fromJson(json)).toList();
         setState(() {
-          _trainingThemes = data.map((json) => TrainingTheme.fromJson(json)).toList();
+          _trainingThemes = [...staticThemes, ...fetchedThemes];
           _isLoadingThemes = false;
         });
         // Update dialog if it's open
         _dialogSetState?.call(() {});
       } else {
         setState(() {
+          _trainingThemes = staticThemes;
           _isLoadingThemes = false;
         });
         // Update dialog if it's open
@@ -286,6 +295,7 @@ class _CalendarPageState extends State<CalendarPage> {
       print('Error loading training themes: $e');
       if (!mounted) return;
       setState(() {
+        _trainingThemes = staticThemes;
         _isLoadingThemes = false;
       });
       // Update dialog if it's open

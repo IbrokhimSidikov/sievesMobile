@@ -33,7 +33,10 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    context.read<ChecklistListCubit>().loadChecklists();
+    final listState = context.read<ChecklistListCubit>().state;
+    if (listState is! ChecklistListLoaded) {
+      context.read<ChecklistListCubit>().loadChecklists();
+    }
     _loadSubmissions();
   }
 
@@ -834,10 +837,11 @@ class _ChecklistListPageState extends State<ChecklistListPage> with SingleTicker
 
     return GestureDetector(
       onTap: () async {
+        final checklistCubit = context.read<ChecklistCubit>();
         final result = await Navigator.of(context).push(
           MaterialPageRoute(
-            builder: (context) => BlocProvider(
-              create: (context) => ChecklistCubit(AuthManager()),
+            builder: (context) => BlocProvider.value(
+              value: checklistCubit,
               child: ChecklistDetailPage(
                 checklistId: checklist.id,
               ),
