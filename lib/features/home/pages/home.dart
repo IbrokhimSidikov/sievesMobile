@@ -37,21 +37,21 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
     final allModules = [
-      _ModuleItem(localizations.profile, Icons.person_outline, AppColors.cxPrimary, '/profile'),
-      _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, AppColors.cxSuccess, '/attendance'),
-      _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, AppColors.cxWarning, '/breakRecords'),
-      _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, AppColors.cx4AC1A7, '/lmsPage'),
-      _ModuleItem(localizations.hr, Icons.menu_book_outlined, const Color(0xFF8B5CF6), '/hrPage'),
-      _ModuleItem(localizations.history, Icons.history_outlined, AppColors.cxBlue, '/history'),
-      _ModuleItem(localizations.lWallet, Icons.wallet_outlined, AppColors.cxPurple, '/wallet'),
-      _ModuleItem(localizations.qualificationDisplayPage, Icons.verified_user_outlined, AppColors.cxPrimary, '/qualificationDisplayPage'),
+      _ModuleItem(localizations.profile, Icons.person_outline, const Color(0xFF8D7B6B), '/profile'),
+      _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, const Color(0xFF7A6A5A), '/attendance'),
+      _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, const Color(0xFF9C8878), '/breakRecords'),
+      _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, const Color(0xFF7B7060), '/lmsPage'),
+      _ModuleItem(localizations.hr, Icons.menu_book_outlined, const Color(0xFF8A7868), '/hrPage'),
+      _ModuleItem(localizations.history, Icons.history_outlined, const Color(0xFF6E6050), '/history'),
+      _ModuleItem(localizations.lWallet, Icons.wallet_outlined, const Color(0xFF957A6A), '/wallet'),
+      _ModuleItem(localizations.qualificationDisplayPage, Icons.verified_user_outlined, const Color(0xFF7C6C5C), '/qualificationDisplayPage'),
       if (_authManager.hasBreakAccess)
-        _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, AppColors.cxFF9800, '/breakOrder'),
+        _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, const Color(0xFF9E8272), '/breakOrder'),
       if (_authManager.hasBreakAccess)
-      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, const Color(0xFF64B6FF), '/faceVerification'),
+      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, const Color(0xFF856E5E), '/faceVerification'),
       if (_authManager.hasStopwatchAccess)
-        _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFFFF6B6B), '/employeeProductivity'),
-      _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF4ECDC4), '/checklist'),
+        _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFF7A6555), '/employeeProductivity'),
+      _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF887060), '/checklist'),
 
     ];
     return allModules;
@@ -331,68 +331,240 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           ),
         ],
       ),
-      body: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.sp, vertical: 12.sp),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Greeting Section
-            // Text(
-            //   AppLocalizations.of(context).dear,
-            //   style: TextStyle(
-            //     fontSize: 18.sp,
-            //     fontWeight: FontWeight.w400,
-            //     color: theme.colorScheme.onSurfaceVariant,
-            //   ),
-            // ),
-            SizedBox(height: 4.sp),
-            Row(
-              children: [
-
-                Padding(
-                  padding: EdgeInsets.only(right: 22.w),
-                  child: _buildUserAvatar(),
-                ),
-                Expanded(
-                  child: Text(
-                    _getUserDisplayName(),
-                    textAlign: TextAlign.left,
-                    style: TextStyle(
-                      fontSize: 22.sp,
-                      fontWeight: FontWeight.w600,
-                      color: theme.colorScheme.onSurface,
-                    ),
+      body: CustomScrollView(
+        controller: _scrollController,
+        physics: const BouncingScrollPhysics(),
+        slivers: [
+          SliverPadding(
+            padding: EdgeInsets.symmetric(horizontal: 20.sp, vertical: 12.sp),
+            sliver: SliverToBoxAdapter(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: 4.sp),
+                  Row(
+                    children: [
+                      Padding(
+                        padding: EdgeInsets.only(right: 16.w),
+                        child: _buildUserAvatar(),
+                      ),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _getUserDisplayName(),
+                              style: TextStyle(
+                                fontSize: 20.sp,
+                                fontWeight: FontWeight.w600,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                            SizedBox(height: 4.h),
+                            _buildStatusBadge(theme),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
-            ),
-
-            SizedBox(height: 24.sp),
-
-            // Uniform Grid Layout
-            Expanded(
-              child: GridView.builder(
-                controller: _scrollController,
-                physics: const BouncingScrollPhysics(),
-                padding: EdgeInsets.only(top: 8.sp, bottom: 32.sp),
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  childAspectRatio: 1.0,
-                  crossAxisSpacing: 12.sp,
-                  mainAxisSpacing: 12.sp,
-                ),
-                itemCount: modules.length,
-                itemBuilder: (context, index) {
-                  return _PremiumCard(
-                    module: modules[index],
-                    onTap: () => _navigateToModule(modules[index]),
-                  );
-                },
+                  SizedBox(height: 24.sp),
+                ],
               ),
             ),
+          ),
+          SliverPadding(
+            padding: EdgeInsets.fromLTRB(20.sp, 0, 20.sp, 40.sp),
+            sliver: SliverToBoxAdapter(
+              child: _buildBentoGrid(theme),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBentoGrid(ThemeData theme) {
+    final mods = modules;
+    if (mods.isEmpty) return const SizedBox.shrink();
+
+    final gap = 12.sp;
+
+    // Helper to safely get module at index
+    _ModuleItem? at(int i) => i < mods.length ? mods[i] : null;
+
+    // Build rows progressively consuming the modules list
+    final rows = <Widget>[];
+    int i = 0;
+
+    // ── Row 1: large (2/3) + two smalls stacked (1/3) ──
+    if (i < mods.length) {
+      final a = at(i++);
+      final b = at(i++);
+      final c = at(i++);
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (a != null)
+                Expanded(
+                  flex: 2,
+                  child: _BentoCard(
+                    module: a,
+                    onTap: () => _navigateToModule(a),
+                    size: _BentoSize.large,
+                  ),
+                ),
+              if (b != null || c != null) SizedBox(width: gap),
+              if (b != null || c != null)
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    children: [
+                      if (b != null)
+                        Expanded(
+                          child: _BentoCard(
+                            module: b,
+                            onTap: () => _navigateToModule(b),
+                            size: _BentoSize.small,
+                          ),
+                        ),
+                      if (b != null && c != null) SizedBox(height: gap),
+                      if (c != null)
+                        Expanded(
+                          child: _BentoCard(
+                            module: c,
+                            onTap: () => _navigateToModule(c),
+                            size: _BentoSize.small,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+      rows.add(SizedBox(height: gap));
+    }
+
+    // ── Row 2: two medium equal cards ──
+    if (i < mods.length) {
+      final a = at(i++);
+      final b = at(i++);
+      rows.add(
+        Row(
+          children: [
+            if (a != null)
+              Expanded(
+                child: _BentoCard(
+                  module: a,
+                  onTap: () => _navigateToModule(a),
+                  size: _BentoSize.medium,
+                ),
+              ),
+            if (a != null && b != null) SizedBox(width: gap),
+            if (b != null)
+              Expanded(
+                child: _BentoCard(
+                  module: b,
+                  onTap: () => _navigateToModule(b),
+                  size: _BentoSize.medium,
+                ),
+              ),
           ],
         ),
-      ),
+      );
+      rows.add(SizedBox(height: gap));
+    }
+
+    // ── Row 3: small (1/3) + large (2/3) — mirrored ──
+    if (i < mods.length) {
+      final a = at(i++);
+      final b = at(i++);
+      final c = at(i++);
+      rows.add(
+        IntrinsicHeight(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (a != null || b != null)
+                Expanded(
+                  flex: 1,
+                  child: Column(
+                    children: [
+                      if (a != null)
+                        Expanded(
+                          child: _BentoCard(
+                            module: a,
+                            onTap: () => _navigateToModule(a),
+                            size: _BentoSize.small,
+                          ),
+                        ),
+                      if (a != null && b != null) SizedBox(height: gap),
+                      if (b != null)
+                        Expanded(
+                          child: _BentoCard(
+                            module: b,
+                            onTap: () => _navigateToModule(b),
+                            size: _BentoSize.small,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              if (c != null) SizedBox(width: gap),
+              if (c != null)
+                Expanded(
+                  flex: 2,
+                  child: _BentoCard(
+                    module: c,
+                    onTap: () => _navigateToModule(c),
+                    size: _BentoSize.large,
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+      rows.add(SizedBox(height: gap));
+    }
+
+    // ── Remaining: full-width wide cards ──
+    while (i < mods.length) {
+      final a = at(i++);
+      final b = at(i++);
+      if (a != null || b != null) {
+        rows.add(
+          Row(
+            children: [
+              if (a != null)
+                Expanded(
+                  child: _BentoCard(
+                    module: a,
+                    onTap: () => _navigateToModule(a),
+                    size: _BentoSize.wide,
+                  ),
+                ),
+              if (a != null && b != null) SizedBox(width: gap),
+              if (b != null)
+                Expanded(
+                  child: _BentoCard(
+                    module: b,
+                    onTap: () => _navigateToModule(b),
+                    size: _BentoSize.wide,
+                  ),
+                ),
+            ],
+          ),
+        );
+        rows.add(SizedBox(height: gap));
+      }
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: rows,
     );
   }
 
@@ -625,32 +797,40 @@ class _ModuleItem {
   _ModuleItem(this.title, this.icon, this.color, this.route);
 }
 
-// Premium Uniform Card Widget
-class _PremiumCard extends StatefulWidget {
+// Bento card size variants
+enum _BentoSize { large, medium, small, wide }
+
+// ────────────────────────────────────────────
+//  Bento Card
+// ────────────────────────────────────────────
+class _BentoCard extends StatefulWidget {
   final _ModuleItem module;
   final VoidCallback onTap;
+  final _BentoSize size;
 
-  const _PremiumCard({
+  const _BentoCard({
     required this.module,
     required this.onTap,
+    required this.size,
   });
 
   @override
-  State<_PremiumCard> createState() => _PremiumCardState();
+  State<_BentoCard> createState() => _BentoCardState();
 }
 
-class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderStateMixin {
+class _BentoCardState extends State<_BentoCard>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
-  late Animation<double> _scaleAnimation;
+  late Animation<double> _scaleAnim;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
-      duration: const Duration(milliseconds: 150),
+      duration: const Duration(milliseconds: 140),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.94).animate(
       CurvedAnimation(parent: _controller, curve: Curves.easeOut),
     );
   }
@@ -661,11 +841,28 @@ class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderSta
     super.dispose();
   }
 
+  // Height per size variant
+  double get _height {
+    switch (widget.size) {
+      case _BentoSize.large:
+        return 180.sp;
+      case _BentoSize.medium:
+        return 130.sp;
+      case _BentoSize.small:
+        return 84.sp;
+      case _BentoSize.wide:
+        return 110.sp;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+    final color = widget.module.color;
+    final isLarge = widget.size == _BentoSize.large;
+    final isSmall = widget.size == _BentoSize.small;
+
     return GestureDetector(
       onTapDown: (_) => _controller.forward(),
       onTapUp: (_) {
@@ -674,149 +871,85 @@ class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderSta
       },
       onTapCancel: () => _controller.reverse(),
       child: ScaleTransition(
-        scale: _scaleAnimation,
+        scale: _scaleAnim,
         child: Container(
+          height: _height,
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(22.r),
             gradient: LinearGradient(
               colors: isDark
                   ? [
-                      widget.module.color.withOpacity(0.25),
-                      widget.module.color.withOpacity(0.12),
+                      color.withOpacity(0.28),
+                      color.withOpacity(0.12),
                     ]
                   : [
-                      widget.module.color.withOpacity(0.9),
-                      widget.module.color.withOpacity(0.75),
+                      color.withOpacity(0.18),
+                      color.withOpacity(0.10),
                     ],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
-            border: isDark
-                ? Border.all(
-                    color: widget.module.color.withOpacity(0.25),
-                    width: 1.5,
-                  )
-                : null,
+            border: Border.all(
+              color: isDark
+                  ? color.withOpacity(0.22)
+                  : color.withOpacity(0.18),
+              width: 1.2,
+            ),
             boxShadow: [
               BoxShadow(
-                color: widget.module.color.withOpacity(isDark ? 0.12 : 0.25),
+                color: color.withOpacity(isDark ? 0.14 : 0.10),
                 blurRadius: 16,
-                offset: const Offset(0, 8),
+                offset: const Offset(0, 6),
                 spreadRadius: -4,
               ),
-              if (!isDark)
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.08),
-                  blurRadius: 24,
-                  offset: const Offset(0, 12),
-                  spreadRadius: -6,
-                ),
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
+                blurRadius: 8,
+                offset: const Offset(0, 2),
+              ),
             ],
           ),
           child: ClipRRect(
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(22.r),
             child: Stack(
               children: [
-                // Glassmorphism overlay
-                if (isDark)
-                  Positioned.fill(
-                    child: Container(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            Colors.white.withOpacity(0.04),
-                            Colors.transparent,
-                            Colors.black.withOpacity(0.08),
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                      ),
-                    ),
-                  ),
-                
-                // Decorative circle
+                // ── Background decorative circles ──
                 Positioned(
-                  top: -25,
-                  right: -25,
+                  top: -28.sp,
+                  right: -28.sp,
                   child: Container(
-                    width: 70.sp,
-                    height: 70.sp,
+                    width: isLarge ? 110.sp : 70.sp,
+                    height: isLarge ? 110.sp : 70.sp,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isDark
-                          ? Colors.white.withOpacity(0.04)
-                          : Colors.white.withOpacity(0.12),
+                          ? Colors.white.withOpacity(0.05)
+                          : color.withOpacity(0.07),
                     ),
                   ),
                 ),
-                
-                // Content
-                Padding(
-                  padding: EdgeInsets.all(16.sp),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      // Icon
-                      Container(
-                        width: 48.sp,
-                        height: 48.sp,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14.r),
-                          color: isDark
-                              ? Colors.white.withOpacity(0.12)
-                              : Colors.white.withOpacity(0.22),
-                          border: Border.all(
-                            color: isDark
-                                ? Colors.white.withOpacity(0.15)
-                                : Colors.white.withOpacity(0.25),
-                            width: 0.8,
-                          ),
-                        ),
-                        child: Icon(
-                          widget.module.icon,
-                          size: 24.sp,
-                          color: Colors.white,
-                        ),
+                if (!isSmall)
+                  Positioned(
+                    bottom: -20.sp,
+                    left: -20.sp,
+                    child: Container(
+                      width: isLarge ? 80.sp : 50.sp,
+                      height: isLarge ? 80.sp : 50.sp,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: isDark
+                            ? Colors.white.withOpacity(0.03)
+                            : color.withOpacity(0.05),
                       ),
-                      
-                      // Title
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.module.title,
-                            style: TextStyle(
-                              fontSize: 20.sp,
-                              fontWeight: FontWeight.w700,
-                              color: isDark
-                                  ? Colors.white
-                                  : Colors.white,
-                              letterSpacing: -0.3,
-                              height: 1.2,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          SizedBox(height: 4.sp),
-                          Text(
-                            _getSubtitle(widget.module.title),
-                            style: TextStyle(
-                              fontSize: 12.sp,
-                              fontWeight: FontWeight.w500,
-                              color: isDark
-                                  ? Colors.white.withOpacity(0.65)
-                                  : Colors.white.withOpacity(0.85),
-                              height: 1.3,
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
+
+                // ── Content ──
+                Padding(
+                  padding: EdgeInsets.all(isSmall ? 10.sp : 16.sp),
+                  child: isSmall
+                      ? _buildSmallContent(isDark, color)
+                      : _buildFullContent(isDark, color, isLarge),
                 ),
               ],
             ),
@@ -826,20 +959,134 @@ class _PremiumCardState extends State<_PremiumCard> with SingleTickerProviderSta
     );
   }
 
-  String _getSubtitle(String title) {
-    final localizations = AppLocalizations.of(context);
-    if (title == localizations.profile) return localizations.profileSubtitle;
-    if (title == localizations.attendance) return localizations.attendanceSubtitle;
-    if (title == localizations.breakOrder) return localizations.breakOrderSubtitle;
-    if (title == localizations.breakRecords) return localizations.breakRecordsSubtitle;
-    if (title == localizations.history) return localizations.historySubtitle;
-    if (title == localizations.lWallet) return localizations.lWalletSubtitle;
-    if (title == localizations.learning) return localizations.learningSubtitle;
-    if (title == localizations.testHistory) return localizations.testHistorySubtitle;
-    if (title == localizations.productivityTimer) return localizations.productivityTimerSubtitle;
-    if (title == localizations.checklist) return localizations.checklistSubtitle;
-    if (title == localizations.faceVerification) return localizations.faceIdSubtitle;
-    if (title == localizations.calendar) return localizations.calendarSubtitle;
-    return "Tap to explore";
+  // Small card: icon + title side by side
+  Widget _buildSmallContent(bool isDark, Color color) {
+    final iconColor = isDark ? Colors.white : _darken(color, 0.25);
+    final textColor = isDark ? Colors.white : _darken(color, 0.30);
+    return Row(
+      children: [
+        Container(
+          width: 34.sp,
+          height: 34.sp,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(10.r),
+            color: isDark
+                ? Colors.white.withOpacity(0.14)
+                : color.withOpacity(0.14),
+          ),
+          child: Icon(
+            widget.module.icon,
+            size: 18.sp,
+            color: iconColor,
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Expanded(
+          child: Text(
+            widget.module.title,
+            style: TextStyle(
+              fontSize: 11.5.sp,
+              fontWeight: FontWeight.w700,
+              color: textColor,
+              height: 1.25,
+              letterSpacing: -0.1,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Large / medium / wide card: full layout with icon top, title bottom
+  Widget _buildFullContent(bool isDark, Color color, bool isLarge) {
+    final iconColor = isDark ? Colors.white : _darken(color, 0.25);
+    final titleColor = isDark ? Colors.white : _darken(color, 0.35);
+    final subtitleColor = isDark
+        ? Colors.white.withOpacity(0.70)
+        : _darken(color, 0.20).withOpacity(0.75);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Icon box
+        Container(
+          width: isLarge ? 52.sp : 44.sp,
+          height: isLarge ? 52.sp : 44.sp,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(isLarge ? 16.r : 13.r),
+            color: isDark
+                ? Colors.white.withOpacity(0.14)
+                : color.withOpacity(0.14),
+            border: Border.all(
+              color: isDark
+                  ? Colors.white.withOpacity(0.18)
+                  : color.withOpacity(0.22),
+              width: 0.8,
+            ),
+          ),
+          child: Icon(
+            widget.module.icon,
+            size: isLarge ? 26.sp : 22.sp,
+            color: iconColor,
+          ),
+        ),
+
+        // Title + subtitle
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              widget.module.title,
+              style: TextStyle(
+                fontSize: isLarge ? 18.sp : 14.sp,
+                fontWeight: FontWeight.w700,
+                color: titleColor,
+                letterSpacing: -0.3,
+                height: 1.2,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+            if (isLarge) ...[
+              SizedBox(height: 4.h),
+              Text(
+                _getSubtitle(widget.module.title, context),
+                style: TextStyle(
+                  fontSize: 11.sp,
+                  fontWeight: FontWeight.w500,
+                  color: subtitleColor,
+                  height: 1.3,
+                ),
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ],
+          ],
+        ),
+      ],
+    );
+  }
+
+  Color _darken(Color color, double amount) {
+    final hsl = HSLColor.fromColor(color);
+    return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
+  }
+
+  String _getSubtitle(String title, BuildContext context) {
+    final l = AppLocalizations.of(context);
+    if (title == l.profile) return l.profileSubtitle;
+    if (title == l.attendance) return l.attendanceSubtitle;
+    if (title == l.breakOrder) return l.breakOrderSubtitle;
+    if (title == l.breakRecords) return l.breakRecordsSubtitle;
+    if (title == l.history) return l.historySubtitle;
+    if (title == l.lWallet) return l.lWalletSubtitle;
+    if (title == l.learning) return l.learningSubtitle;
+    if (title == l.productivityTimer) return l.productivityTimerSubtitle;
+    if (title == l.checklist) return l.checklistSubtitle;
+    if (title == l.faceVerification) return l.faceIdSubtitle;
+    if (title == l.calendar) return l.calendarSubtitle;
+    return 'Tap to explore';
   }
 }

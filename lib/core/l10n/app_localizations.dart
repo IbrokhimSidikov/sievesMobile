@@ -262,6 +262,13 @@ class AppLocalizations {
       'used':'Used',
       'submitTest':'Submit Test',
       'submittingTest':'Submitting...',
+      // Home Categories
+      'catPersonal':'Personal',
+      'catAttendance':'Attendance',
+      'catBreak':'Break',
+      'catFinance':'Finance',
+      'catLearning':'Learning & HR',
+      'catTasks':'Tasks',
 
     },
     'uz': {
@@ -516,6 +523,13 @@ class AppLocalizations {
       'used':'Ishlatilgan',
       'submitTest':'Testni yuborish',
       'submittingTest':'Yuborilmoqda...',
+      // Home Categories
+      'catPersonal':'Shaxsiy',
+      'catAttendance':'Davomat',
+      'catBreak':'Break',
+      'catFinance':'Moliya',
+      'catLearning':'O\'quv & HR',
+      'catTasks':'Vazifalar',
 
     },
     'ru': {
@@ -783,6 +797,13 @@ class AppLocalizations {
       'used':'Использовано',
       'submitTest':'Отправить тест',
       'submittingTest':'Отправка...',
+      // Home Categories
+      'catPersonal':'Личное',
+      'catAttendance':'Посещаемость',
+      'catBreak':'Перерыв',
+      'catFinance':'Финансы',
+      'catLearning':'Обучение & HR',
+      'catTasks':'Задачи',
     },
   };
 
@@ -1013,6 +1034,13 @@ class AppLocalizations {
   String get submittingTest => translate('submittingTest');
   String get previous => translate('previous');
   String get next => translate('next');
+  // Home Categories
+  String get catPersonal => translate('catPersonal');
+  String get catAttendance => translate('catAttendance');
+  String get catBreak => translate('catBreak');
+  String get catFinance => translate('catFinance');
+  String get catLearning => translate('catLearning');
+  String get catTasks => translate('catTasks');
 
 
 }
