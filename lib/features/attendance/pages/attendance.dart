@@ -128,14 +128,25 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
         );
         
         if (cachedEntries != null && cachedEntries.isNotEmpty) {
-          print('✅ Loaded ${cachedEntries.length} entries from cache');
-          setState(() {
-            workEntries = cachedEntries;
-            isLoading = false;
-            _isFromCache = true;
-            hasMoreData = false; // Cache contains all data
-          });
-          return;
+          // Invalidate cache if any entry has a photo ID but no photo object
+          // (cache was built before expand=checkInPhoto,checkOutPhoto was added)
+          final staleCache = cachedEntries.any((e) =>
+              (e.checkInPhotoId != null && e.checkInPhoto == null) ||
+              (e.checkOutPhotoId != null && e.checkOutPhoto == null));
+
+          if (!staleCache) {
+            print('✅ Loaded ${cachedEntries.length} entries from cache');
+            setState(() {
+              workEntries = cachedEntries;
+              isLoading = false;
+              _isFromCache = true;
+              hasMoreData = false;
+            });
+            return;
+          }
+
+          print('⚠️ Cache is stale (missing photo objects), fetching fresh data');
+          await _cacheService.clearCache(employeeId, startDate, endDate);
         }
       }
       
@@ -666,8 +677,6 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
           _buildHeaderCell(AppLocalizations.of(context).date, flex: 2),
           _buildHeaderCell(AppLocalizations.of(context).checkIn, flex: 2),
           _buildHeaderCell(AppLocalizations.of(context).checkOut, flex: 2),
-          _buildHeaderCell(AppLocalizations.of(context).status, flex: 2),
-          _buildHeaderCell(AppLocalizations.of(context).mood, flex: 2),
         ],
       ),
     );
@@ -690,32 +699,333 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
     );
   }
 
+  void _showPhotoDialog(WorkEntry entry) {
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        final theme = Theme.of(ctx);
+        final isDark = theme.brightness == Brightness.dark;
+        final isOpen = entry.status?.toLowerCase() == 'open';
+        
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 40.h),
+          child: Container(
+            decoration: BoxDecoration(
+              color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+              borderRadius: BorderRadius.circular(24.r),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.2),
+                  blurRadius: 30,
+                  offset: const Offset(0, 10),
+                ),
+              ],
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Header
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [AppColors.cx43C19F, AppColors.cx4AC1A7],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(24.r),
+                      topRight: Radius.circular(24.r),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.photo_library_rounded, color: AppColors.cxWhite, size: 20.sp),
+                      SizedBox(width: 10.w),
+                      Expanded(
+                        child: Text(
+                          entry.formattedDate,
+                          style: TextStyle(
+                            color: AppColors.cxWhite,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(ctx).pop(),
+                        child: Container(
+                          padding: EdgeInsets.all(6.w),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(Icons.close_rounded, color: AppColors.cxWhite, size: 16.sp),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Photos - Always show both cards
+                Padding(
+                  padding: EdgeInsets.all(20.w),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildPhotoCard(
+                          label: AppLocalizations.of(ctx).checkIn,
+                          time: entry.formattedCheckInTime,
+                          url: entry.checkInPhoto?.fullUrl,
+                          color: AppColors.cxEmeraldGreen,
+                          icon: Icons.login_rounded,
+                          showStatusBadge: false,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: _buildPhotoCard(
+                          label: AppLocalizations.of(ctx).checkOut,
+                          time: entry.formattedCheckOutTime,
+                          url: entry.checkOutPhoto?.fullUrl,
+                          color: AppColors.cxRoyalBlue,
+                          icon: Icons.logout_rounded,
+                          showStatusBadge: isOpen,
+                          statusText: isOpen ? AppLocalizations.of(ctx).open : null,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPhotoCard({
+    required String label,
+    required String time,
+    required String? url,
+    required Color color,
+    required IconData icon,
+    bool showStatusBadge = false,
+    String? statusText,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    return Column(
+      children: [
+        // Label badge
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(color: color.withOpacity(0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, size: 12.sp, color: color),
+              SizedBox(width: 4.w),
+              Text(
+                label,
+                style: TextStyle(fontSize: 11.sp, fontWeight: FontWeight.w600, color: color),
+              ),
+              if (time.isNotEmpty && time != '-') ...[
+                SizedBox(width: 4.w),
+                Text(
+                  time,
+                  style: TextStyle(fontSize: 10.sp, color: color.withOpacity(0.8)),
+                ),
+              ],
+            ],
+          ),
+        ),
+        SizedBox(height: 8.h),
+        // Photo with optional status badge
+        Stack(
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(16.r),
+              child: url != null
+                  ? Image.network(
+                      url,
+                      fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: 180.h,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: double.infinity,
+                          height: 180.h,
+                          color: isDark ? theme.colorScheme.surfaceVariant : AppColors.cxF5F7F9,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!
+                                  : null,
+                              color: color,
+                              strokeWidth: 2,
+                            ),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: double.infinity,
+                        height: 180.h,
+                        color: isDark ? theme.colorScheme.surfaceVariant : AppColors.cxF5F7F9,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.broken_image_rounded, size: 36.sp, color: AppColors.cxSilverTint),
+                            SizedBox(height: 8.h),
+                            Text(
+                              'Failed to load',
+                              style: TextStyle(fontSize: 11.sp, color: AppColors.cxSilverTint),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : Container(
+                      width: double.infinity,
+                      height: 180.h,
+                      color: isDark ? theme.colorScheme.surfaceVariant : AppColors.cxF5F7F9,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.no_photography_rounded, size: 36.sp, color: AppColors.cxSilverTint),
+                          SizedBox(height: 8.h),
+                          Text(
+                            'No photo',
+                            style: TextStyle(fontSize: 11.sp, color: AppColors.cxSilverTint),
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+            // Status badge overlay (for "OPEN" status on checkout placeholder)
+            if (showStatusBadge && statusText != null)
+              Positioned(
+                top: 8.h,
+                right: 8.w,
+                child: Container(
+                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxCrimsonRed,
+                    borderRadius: BorderRadius.circular(12.r),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    statusText,
+                    style: TextStyle(
+                      fontSize: 10.sp,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.cxWhite,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+
   Widget _buildTableRow(WorkEntry entry, int index) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isEvenRow = index % 2 == 0;
-    final isOpenStatus = entry.isOpen;
-    
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-      decoration: BoxDecoration(
-        color: isEvenRow 
-            ? (isDark ? theme.colorScheme.surface : AppColors.cxWhite)
-            : (isDark ? theme.colorScheme.surface.withOpacity(0.5) : AppColors.cxF5F7F9.withOpacity(0.3)),
-        border: Border(
-          bottom: BorderSide(
-            color: theme.colorScheme.outline.withOpacity(0.3),
-            width: 0.5,
+    final isOpen = entry.status?.toLowerCase() == 'open';
+    final hasPhotos = entry.checkInPhoto != null || entry.checkOutPhoto != null ||
+        entry.checkInPhotoId != null || entry.checkOutPhotoId != null;
+
+    // Status-based row color with better contrast
+    Color rowColor;
+    if (isDark) {
+      rowColor = isOpen 
+          ? AppColors.cxCrimsonRed.withOpacity(0.25)
+          : AppColors.cxEmeraldGreen.withOpacity(0.25);
+    } else {
+      rowColor = isOpen 
+          ? AppColors.cxCrimsonRed.withOpacity(0.15)
+          : AppColors.cxEmeraldGreen.withOpacity(0.15);
+    }
+
+    return InkWell(
+      onTap: () => _showPhotoDialog(entry),
+      child: Container(
+        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
+        decoration: BoxDecoration(
+          color: rowColor,
+          border: Border(
+            bottom: BorderSide(
+              color: theme.colorScheme.outline.withOpacity(0.3),
+              width: 0.5,
+            ),
           ),
         ),
+        child: Row(
+          children: [
+            _buildDataCell(entry.formattedDate, flex: 2),
+            _buildCheckInCell(entry, flex: 2),
+            _buildDataCell(entry.formattedCheckOutTime, flex: 2, isEmpty: entry.checkOutTime == null),
+            Expanded(
+              flex: 1,
+              child: Center(
+                child: hasPhotos
+                    ? Container(
+                        padding: EdgeInsets.all(3.w),
+                        decoration: BoxDecoration(
+                          color: AppColors.cx43C19F,
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(Icons.photo_camera_rounded, size: 8.sp, color: AppColors.cxWhite),
+                      )
+                    : SizedBox.shrink(),
+              ),
+            ),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildCheckInCell(WorkEntry entry, {int flex = 1}) {
+    final theme = Theme.of(context);
+    final isEmpty = entry.checkInTime == null;
+    
+    return Expanded(
+      flex: flex,
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          _buildDataCell(entry.formattedDate, flex: 2),
-          _buildDataCell(entry.formattedCheckInTime, flex: 2, isEmpty: entry.checkInTime == null),
-          _buildDataCell(entry.formattedCheckOutTime, flex: 2, isEmpty: entry.checkOutTime == null),
-          _buildStatusCell(entry.displayStatus, flex: 2),
-          _buildMoodCell(entry.moodEmoji, flex: 1),
+          Text(
+            isEmpty ? '-' : entry.formattedCheckInTime,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w500,
+              color: isEmpty ? theme.colorScheme.onSurfaceVariant.withOpacity(0.5) : theme.colorScheme.onSurface,
+            ),
+          ),
+          if (!isEmpty) ...[
+            SizedBox(width: 4.w),
+            Text(
+              entry.moodEmoji,
+              style: TextStyle(fontSize: 14.sp),
+            ),
+          ],
         ],
       ),
     );

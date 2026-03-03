@@ -1,3 +1,45 @@
+class WorkEntryPhoto {
+  final int? id;
+  final String? path;
+  final String? thumbnail;
+  final String? name;
+  final String? format;
+
+  WorkEntryPhoto({
+    this.id,
+    this.path,
+    this.thumbnail,
+    this.name,
+    this.format,
+  });
+
+  factory WorkEntryPhoto.fromJson(Map<String, dynamic> json) {
+    return WorkEntryPhoto(
+      id: json['id'],
+      path: json['path'],
+      thumbnail: json['thumbnail'],
+      name: json['name'],
+      format: json['format'],
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'path': path,
+      'thumbnail': thumbnail,
+      'name': name,
+      'format': format,
+    };
+  }
+
+  String? get fullUrl {
+    if (name == null) return null;
+    final ext = format ?? 'jpg';
+    return 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/work-entries/full/$name.$ext';
+  }
+}
+
 class WorkEntry {
   final int? id;
   final int? employeeId;
@@ -10,6 +52,8 @@ class WorkEntry {
   final int? checkInPhotoId;
   final int? checkOutPhotoId;
   final DateTime? createdAt;
+  final WorkEntryPhoto? checkInPhoto;
+  final WorkEntryPhoto? checkOutPhoto;
 
   WorkEntry({
     this.id,
@@ -23,6 +67,8 @@ class WorkEntry {
     this.checkInPhotoId,
     this.checkOutPhotoId,
     this.createdAt,
+    this.checkInPhoto,
+    this.checkOutPhoto,
   });
 
   factory WorkEntry.fromJson(Map<String, dynamic> json) {
@@ -40,6 +86,12 @@ class WorkEntry {
       createdAt: json['created_at'] != null 
           ? DateTime.parse(json['created_at']) 
           : null,
+      checkInPhoto: json['checkInPhoto'] != null
+          ? WorkEntryPhoto.fromJson(json['checkInPhoto'])
+          : null,
+      checkOutPhoto: json['checkOutPhoto'] != null
+          ? WorkEntryPhoto.fromJson(json['checkOutPhoto'])
+          : null,
     );
   }
 
@@ -56,6 +108,8 @@ class WorkEntry {
       'check_in_photo_id': checkInPhotoId,
       'check_out_photo_id': checkOutPhotoId,
       'created_at': createdAt?.toIso8601String(),
+      'checkInPhoto': checkInPhoto?.toJson(),
+      'checkOutPhoto': checkOutPhoto?.toJson(),
     };
   }
 

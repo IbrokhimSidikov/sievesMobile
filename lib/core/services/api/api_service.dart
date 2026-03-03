@@ -267,6 +267,7 @@ class ApiService {
       final queryParams = {
         'employee_id': employeeId.toString(),
         'date_range': '$startDate,$endDate',
+        'expand': 'checkInPhoto,checkOutPhoto',
       };
 
       // Add pagination parameters if provided

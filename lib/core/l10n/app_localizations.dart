@@ -84,6 +84,7 @@ class AppLocalizations {
       'open':'Open',
       'closed':'Closed',
       'noEntries':'No work entries found for this month',
+      'noPhotosAvailable':'No photos available for this entry',
 
       //Break Records
       'availableBreakBalance':'Available Balance',
@@ -345,6 +346,7 @@ class AppLocalizations {
       'open':'Ochiq',
       'closed':'Yopiq',
       'noEntries':'Bu oy uchun ish yozuvlari topilmadi',
+      'noPhotosAvailable':'Bu yozuv uchun rasmlar mavjud emas',
 
       //Break Records
       'availableBreakBalance':'Mavjud balans',
@@ -619,6 +621,7 @@ class AppLocalizations {
       'open':'Открыт',
       'closed':'Закрыт',
       'noEntries':'За этот месяц рабочие записи не найдены',
+      'noPhotosAvailable':'Фотографии для этой записи недоступны',
 
       //Break Records
       'availableBreakBalance':'Доступный баланс',
@@ -884,6 +887,7 @@ class AppLocalizations {
   String get open => translate('open');
   String get closed => translate('closed');
   String get noEntries => translate('noEntries');
+  String get noPhotosAvailable => translate('noPhotosAvailable');
 
   //Break Records
   String get availableBreakBalance => translate('availableBreakBalance');

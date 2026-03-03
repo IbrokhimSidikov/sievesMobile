@@ -175,14 +175,9 @@ class _MyAppState extends State<MyApp> {
         home: Scaffold(
           body: Container(
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF6366F1),
-                  Color(0xFF8B5CF6),
-                  Color(0xFFEC4899),
-                ],
+              image: DecorationImage(
+                image: AssetImage('assets/images/clouds.png'),
+                fit: BoxFit.cover,
               ),
             ),
             child: Center(
@@ -195,6 +190,16 @@ class _MyAppState extends State<MyApp> {
                     'SIEVES MOBILE',
                     style: TextStyle(
                       fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
+                  SizedBox(height: 50),
+                  Text(
+                    '1.29.0',
+                    style: TextStyle(
+                      fontSize: 15,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                       letterSpacing: 0.5,
