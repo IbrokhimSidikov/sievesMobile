@@ -4,6 +4,7 @@ import '../../model/employee_model.dart';
 import '../../model/identity_model.dart';
 import '../api/api_service.dart';
 import 'auth_service.dart';
+import '../notification/notification_service.dart';
 
 class AuthManager {
   // Singleton pattern to share the same instance across the app
@@ -248,6 +249,9 @@ class AuthManager {
         // Save identity to secure storage for persistent login
         await _saveIdentity(identity);
         
+        // Send FCM token to backend for push notifications
+        await _sendFcmTokenToBackend();
+        
         // 🔍 LOG ALL AVAILABLE USER DATA
         print('');
         print('📊 ========== COMPLETE USER DATA AFTER LOGIN ==========');
@@ -319,6 +323,39 @@ class AuthManager {
     }
   }
 
+  // Send FCM token to backend after login
+  Future<void> _sendFcmTokenToBackend() async {
+    try {
+      print('📲 [AuthManager] Sending FCM token to backend...');
+      
+      final employeeId = currentEmployeeId;
+      if (employeeId == null) {
+        print('⚠️ [AuthManager] No employee ID available, cannot send FCM token');
+        return;
+      }
+      
+      // Get FCM token - fetches from Firebase directly if not cached yet
+      final notificationService = NotificationService();
+      final fcmToken = await notificationService.getOrFetchToken();
+      
+      if (fcmToken == null) {
+        print('⚠️ [AuthManager] FCM token unavailable even after fetch, skipping');
+        return;
+      }
+      
+      // POST token to backend
+      final success = await apiService.sendFcmToken(employeeId, fcmToken);
+      
+      if (success) {
+        print('✅ [AuthManager] FCM token sent successfully for employee $employeeId');
+      } else {
+        print('❌ [AuthManager] Failed to send FCM token');
+      }
+    } catch (e) {
+      print('❌ [AuthManager] Exception sending FCM token: $e');
+    }
+  }
+
   // Handle when token refresh fails (refresh token expired)
   Future<void> _handleTokenExpired() async {
     print('⏰ Refresh token expired - clearing session');
@@ -330,6 +367,19 @@ class AuthManager {
   // Logout
   Future<void> logout() async {
     print('📋 [AuthManager] Starting logout...');
+    
+    print('   → Deleting FCM token from backend and device...');
+    try {
+      final employeeId = currentEmployeeId;
+      if (employeeId != null) {
+        await apiService.deleteFcmToken(employeeId);
+      }
+      final notificationService = NotificationService();
+      await notificationService.deleteToken();
+      print('   ✅ FCM token deleted');
+    } catch (e) {
+      print('   ⚠️ Error deleting FCM token: $e');
+    }
     
     print('   → Calling AuthService.logout()...');
     await authService.logout();

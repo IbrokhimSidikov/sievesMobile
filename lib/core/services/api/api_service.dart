@@ -122,6 +122,62 @@ class ApiService {
     }
   }
 
+  // Send FCM token to backend for push notifications (on login)
+  Future<bool> sendFcmToken(int employeeId, String fcmToken) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/employee/$employeeId/fcm-token');
+
+      print('📲 [FCM] Sending FCM token to backend...');
+      print('   Employee ID: $employeeId');
+      print('   FCM Token: ${fcmToken.substring(0, 20)}...');
+
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({'fcm_token': fcmToken}),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ [FCM] FCM token sent successfully to backend');
+        return true;
+      } else {
+        print('❌ [FCM] Error sending FCM token: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ [FCM] Exception sending FCM token: $e');
+      return false;
+    }
+  }
+
+  // Delete FCM token from backend (on logout)
+  Future<bool> deleteFcmToken(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/employee/$employeeId/fcm-token');
+
+      print('🗑️ [FCM] Deleting FCM token from backend...');
+      print('   Employee ID: $employeeId');
+
+      final response = await _httpClient.delete(
+        uri,
+        headers: headers,
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 204) {
+        print('✅ [FCM] FCM token deleted from backend');
+        return true;
+      } else {
+        print('❌ [FCM] Error deleting FCM token: ${response.statusCode} - ${response.body}');
+        return false;
+      }
+    } catch (e) {
+      print('❌ [FCM] Exception deleting FCM token: $e');
+      return false;
+    }
+  }
+
   // Get employee details
   Future<Employee?> getEmployeeDetails(int employeeId) async {
     try {

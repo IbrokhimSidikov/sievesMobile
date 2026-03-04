@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../model/notification_model.dart';
 import 'notification_storage_service.dart';
+import '../api/api_service.dart';
+import '../auth/auth_manager.dart';
 
 /// Background message handler - must be top-level function
 @pragma('vm:entry-point')
@@ -58,6 +60,23 @@ class NotificationService {
   String? _fcmToken;
   String? get fcmToken => _fcmToken;
 
+  /// Returns cached token or fetches a fresh one from Firebase directly.
+  /// Use this after login when the token may not be cached yet.
+  Future<String?> getOrFetchToken() async {
+    if (_fcmToken != null) return _fcmToken;
+    try {
+      print('🔑 [FCM] Token not cached, fetching directly from Firebase...');
+      _fcmToken = await _messaging.getToken();
+      print('🔑 [FCM] Fetched token: $_fcmToken');
+    } catch (e) {
+      print('❌ [FCM] Error fetching token: $e');
+    }
+    return _fcmToken;
+  }
+  
+  // Reference to AuthManager for getting identity ID
+  final AuthManager _authManager = AuthManager();
+
   /// Initialize Firebase Cloud Messaging
   Future<void> initialize() async {
     try {
@@ -74,7 +93,8 @@ class NotificationService {
         _messaging.onTokenRefresh.listen((newToken) {
           print('🔄 FCM Token refreshed: $newToken');
           _fcmToken = newToken;
-          // TODO: Send new token to your backend
+          // Send refreshed token to backend
+          _sendTokenToBackend(newToken);
         });
         
         // Configure foreground notification presentation
@@ -133,8 +153,10 @@ class NotificationService {
       _fcmToken = await _messaging.getToken();
       print('🔑 FCM Token: $_fcmToken');
       
-      // TODO: Send this token to your backend server
-      // await _sendTokenToBackend(_fcmToken);
+      // Send this token to your backend server
+      if (_fcmToken != null) {
+        await _sendTokenToBackend(_fcmToken!);
+      }
     } catch (e) {
       print('❌ Error getting FCM token: $e');
       // Retry in background instead of blocking
@@ -149,7 +171,10 @@ class NotificationService {
       try {
         _fcmToken = await _messaging.getToken();
         print('🔑 FCM Token (background retry): $_fcmToken');
-        // TODO: Send this token to your backend server
+        // Send this token to your backend server
+        if (_fcmToken != null) {
+          await _sendTokenToBackend(_fcmToken!);
+        }
       } catch (e) {
         print('❌ Background retry failed: $e');
       }
@@ -274,6 +299,28 @@ class NotificationService {
       print('✅ Unsubscribed from topic: $topic');
     } catch (e) {
       print('❌ Error unsubscribing from topic $topic: $e');
+    }
+  }
+
+  /// Send FCM token to backend
+  Future<void> _sendTokenToBackend(String token) async {
+    try {
+      final employeeId = _authManager.currentEmployeeId;
+      if (employeeId == null) {
+        print('⚠️ [FCM] No employee ID available, cannot send token to backend');
+        return;
+      }
+
+      final apiService = _authManager.apiService;
+      final success = await apiService.sendFcmToken(employeeId, token);
+      
+      if (success) {
+        print('✅ [FCM] Token successfully sent to backend for employee $employeeId');
+      } else {
+        print('❌ [FCM] Failed to send token to backend');
+      }
+    } catch (e) {
+      print('❌ [FCM] Exception sending token to backend: $e');
     }
   }
 
