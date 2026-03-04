@@ -137,6 +137,232 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
     );
   }
 
+  void _showStarInfoDialog(AppLocalizations localizations, bool isDark, ThemeData theme) {
+    final starData = [
+      (
+        title: localizations.star1Title,
+        desc: localizations.star1Desc,
+        color: AppColors.cxCrimsonRed,
+        icon: Icons.school_rounded,
+      ),
+      (
+        title: localizations.star2Title,
+        desc: localizations.star2Desc,
+        color: AppColors.cxWarning,
+        icon: Icons.person_rounded,
+      ),
+      (
+        title: localizations.star3Title,
+        desc: localizations.star3Desc,
+        color: AppColors.cxAmberGold,
+        icon: Icons.bolt_rounded,
+      ),
+      (
+        title: localizations.star4Title,
+        desc: localizations.star4Desc,
+        color: AppColors.cxEmeraldGreen,
+        icon: Icons.groups_rounded,
+      ),
+      (
+        title: localizations.star5Title,
+        desc: localizations.star5Desc,
+        color: AppColors.cxRoyalBlue,
+        icon: Icons.trending_up_rounded,
+      ),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 30,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 12.h),
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? theme.colorScheme.onSurfaceVariant.withOpacity(0.3)
+                      : AppColors.cxPlatinumGray,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10.r),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.cxEmeraldGreen.withOpacity(0.2),
+                            AppColors.cxEmeraldGreen.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Icon(
+                        Icons.star_rounded,
+                        color: AppColors.cxEmeraldGreen,
+                        size: 22.sp,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            localizations.starRatingTitle,
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? theme.colorScheme.onSurface
+                                  : AppColors.cxDarkCharcoal,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            localizations.starRatingSubtitle,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: isDark
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : AppColors.cxSilverTint,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  child: Column(
+                    children: [
+                      ...starData.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: Container(
+                            padding: EdgeInsets.all(14.r),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : item.color.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(16.r),
+                              border: Border.all(
+                                color: item.color.withOpacity(isDark ? 0.35 : 0.25),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8.r),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        item.color.withOpacity(isDark ? 0.3 : 0.2),
+                                        item.color.withOpacity(isDark ? 0.15 : 0.08),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                  child: Icon(
+                                    item.icon,
+                                    color: item.color,
+                                    size: 20.sp,
+                                  ),
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          ...List.generate(i + 1, (_) => Padding(
+                                            padding: EdgeInsets.only(right: 2.w),
+                                            child: Icon(
+                                              Icons.star_rounded,
+                                              color: item.color,
+                                              size: 13.sp,
+                                            ),
+                                          )),
+                                        ],
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        item.title,
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: isDark
+                                              ? theme.colorScheme.onSurface
+                                              : AppColors.cxDarkCharcoal,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        item.desc,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          height: 1.4,
+                                          color: isDark
+                                              ? theme.colorScheme.onSurfaceVariant
+                                              : AppColors.cxGraphiteGray,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      SizedBox(height: 8.h),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHeader(AppLocalizations localizations, bool isDark, ThemeData theme) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
@@ -213,6 +439,25 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
                   ),
                 ),
               ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => _showStarInfoDialog(localizations, isDark, theme),
+            child: Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: AppColors.cxWhite.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: AppColors.cxWhite.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.cxWhite,
+                size: 20.sp,
+              ),
             ),
           ),
         ],

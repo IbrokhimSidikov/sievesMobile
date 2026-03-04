@@ -354,6 +354,232 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     );
   }
 
+  void _showStarInfoDialog(AppLocalizations localizations, bool isDark, ThemeData theme) {
+    final starData = [
+      (
+        title: localizations.star1Title,
+        desc: localizations.star1Desc,
+        color: AppColors.cxCrimsonRed,
+        icon: Icons.school_rounded,
+      ),
+      (
+        title: localizations.star2Title,
+        desc: localizations.star2Desc,
+        color: AppColors.cxWarning,
+        icon: Icons.person_rounded,
+      ),
+      (
+        title: localizations.star3Title,
+        desc: localizations.star3Desc,
+        color: AppColors.cxAmberGold,
+        icon: Icons.bolt_rounded,
+      ),
+      (
+        title: localizations.star4Title,
+        desc: localizations.star4Desc,
+        color: AppColors.cxEmeraldGreen,
+        icon: Icons.groups_rounded,
+      ),
+      (
+        title: localizations.star5Title,
+        desc: localizations.star5Desc,
+        color: AppColors.cxRoyalBlue,
+        icon: Icons.trending_up_rounded,
+      ),
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+          ),
+          decoration: BoxDecoration(
+            color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+            borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 30,
+                offset: const Offset(0, -5),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 12.h),
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? theme.colorScheme.onSurfaceVariant.withOpacity(0.3)
+                      : AppColors.cxPlatinumGray,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: 24.w),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(10.r),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.cxPurple.withOpacity(0.2),
+                            AppColors.cxPurple.withOpacity(0.1),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12.r),
+                      ),
+                      child: Icon(
+                        Icons.star_rounded,
+                        color: AppColors.cxPurple,
+                        size: 22.sp,
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            localizations.starRatingTitle,
+                            style: TextStyle(
+                              fontSize: 18.sp,
+                              fontWeight: FontWeight.w700,
+                              color: isDark
+                                  ? theme.colorScheme.onSurface
+                                  : AppColors.cxDarkCharcoal,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Text(
+                            localizations.starRatingSubtitle,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: isDark
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : AppColors.cxSilverTint,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(height: 20.h),
+              Flexible(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(horizontal: 24.w),
+                  child: Column(
+                    children: [
+                      ...starData.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final item = entry.value;
+                        return Padding(
+                          padding: EdgeInsets.only(bottom: 12.h),
+                          child: Container(
+                            padding: EdgeInsets.all(14.r),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : item.color.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(16.r),
+                              border: Border.all(
+                                color: item.color.withOpacity(isDark ? 0.35 : 0.25),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(8.r),
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topLeft,
+                                      end: Alignment.bottomRight,
+                                      colors: [
+                                        item.color.withOpacity(isDark ? 0.3 : 0.2),
+                                        item.color.withOpacity(isDark ? 0.15 : 0.08),
+                                      ],
+                                    ),
+                                    borderRadius: BorderRadius.circular(10.r),
+                                  ),
+                                  child: Icon(
+                                    item.icon,
+                                    color: item.color,
+                                    size: 20.sp,
+                                  ),
+                                ),
+                                SizedBox(width: 12.w),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          ...List.generate(i + 1, (_) => Padding(
+                                            padding: EdgeInsets.only(right: 2.w),
+                                            child: Icon(
+                                              Icons.star_rounded,
+                                              color: item.color,
+                                              size: 13.sp,
+                                            ),
+                                          )),
+                                        ],
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        item.title,
+                                        style: TextStyle(
+                                          fontSize: 13.sp,
+                                          fontWeight: FontWeight.w700,
+                                          color: isDark
+                                              ? theme.colorScheme.onSurface
+                                              : AppColors.cxDarkCharcoal,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        item.desc,
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          height: 1.4,
+                                          color: isDark
+                                              ? theme.colorScheme.onSurfaceVariant
+                                              : AppColors.cxGraphiteGray,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }),
+                      SizedBox(height: 8.h),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 16.h),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildHeader(AppLocalizations localizations, bool isDark, ThemeData theme) {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
@@ -432,8 +658,393 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
               ],
             ),
           ),
+          GestureDetector(
+            onTap: () => _showStarInfoDialog(localizations, isDark, theme),
+            child: Container(
+              padding: EdgeInsets.all(8.r),
+              decoration: BoxDecoration(
+                color: AppColors.cxWhite.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(10.r),
+                border: Border.all(
+                  color: AppColors.cxWhite.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.info_outline_rounded,
+                color: AppColors.cxWhite,
+                size: 20.sp,
+              ),
+            ),
+          ),
         ],
       ),
+    );
+  }
+
+  void _showEmployeeSearchSheet(AppLocalizations localizations, bool isDark, ThemeData theme) {
+    final searchController = TextEditingController();
+    List<Map<String, dynamic>> filtered = List.from(_employees);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            void onSearch(String query) {
+              setSheetState(() {
+                filtered = _employees
+                    .where((e) => (e['name'] as String)
+                        .toLowerCase()
+                        .contains(query.toLowerCase()))
+                    .toList();
+              });
+            }
+
+            return Container(
+              height: MediaQuery.of(ctx).size.height * 0.75,
+              decoration: BoxDecoration(
+                color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.15),
+                    blurRadius: 30,
+                    offset: const Offset(0, -5),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  SizedBox(height: 12.h),
+                  Container(
+                    width: 40.w,
+                    height: 4.h,
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? theme.colorScheme.onSurfaceVariant.withOpacity(0.3)
+                          : AppColors.cxPlatinumGray,
+                      borderRadius: BorderRadius.circular(2.r),
+                    ),
+                  ),
+                  SizedBox(height: 16.h),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: EdgeInsets.all(8.r),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.cxPurple.withOpacity(0.2),
+                                AppColors.cxPurple.withOpacity(0.1),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Icon(
+                            Icons.people_outline_rounded,
+                            color: AppColors.cxPurple,
+                            size: 18.sp,
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                localizations.selectEmployee,
+                                style: TextStyle(
+                                  fontSize: 17.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: isDark
+                                      ? theme.colorScheme.onSurface
+                                      : AppColors.cxDarkCharcoal,
+                                ),
+                              ),
+                              Text(
+                                '${_employees.length} ${localizations.employee.toLowerCase()}s',
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: isDark
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : AppColors.cxSilverTint,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => Navigator.of(ctx).pop(),
+                          child: Container(
+                            padding: EdgeInsets.all(6.r),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? theme.colorScheme.surfaceContainerHighest
+                                  : AppColors.cxF5F7F9,
+                              borderRadius: BorderRadius.circular(8.r),
+                            ),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16.sp,
+                              color: isDark
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : AppColors.cxGraphiteGray,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 14.h),
+                  Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 20.w),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? theme.colorScheme.surfaceContainerHighest
+                            : AppColors.cxF5F7F9,
+                        borderRadius: BorderRadius.circular(12.r),
+                        border: Border.all(
+                          color: isDark
+                              ? theme.colorScheme.outline.withOpacity(0.3)
+                              : AppColors.cxPlatinumGray,
+                          width: 1,
+                        ),
+                      ),
+                      child: TextField(
+                        controller: searchController,
+                        autofocus: true,
+                        onChanged: onSearch,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: isDark
+                              ? theme.colorScheme.onSurface
+                              : AppColors.cxDarkCharcoal,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: '${localizations.selectEmployee}...',
+                          hintStyle: TextStyle(
+                            fontSize: 14.sp,
+                            color: isDark
+                                ? theme.colorScheme.onSurfaceVariant
+                                : AppColors.cxSilverTint,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: isDark
+                                ? theme.colorScheme.primary
+                                : AppColors.cxPurple,
+                            size: 20.sp,
+                          ),
+                          suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                            valueListenable: searchController,
+                            builder: (_, value, __) => value.text.isNotEmpty
+                                ? GestureDetector(
+                                    onTap: () {
+                                      searchController.clear();
+                                      onSearch('');
+                                    },
+                                    child: Icon(
+                                      Icons.close_rounded,
+                                      size: 16.sp,
+                                      color: isDark
+                                          ? theme.colorScheme.onSurfaceVariant
+                                          : AppColors.cxSilverTint,
+                                    ),
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(
+                            horizontal: 16.w,
+                            vertical: 14.h,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12.h),
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.search_off_rounded,
+                                  size: 48.sp,
+                                  color: isDark
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : AppColors.cxSilverTint,
+                                ),
+                                SizedBox(height: 12.h),
+                                Text(
+                                  localizations.noEmployeesAvailable,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: isDark
+                                        ? theme.colorScheme.onSurfaceVariant
+                                        : AppColors.cxSilverTint,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.separated(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 20.w, vertical: 4.h),
+                            itemCount: filtered.length,
+                            separatorBuilder: (_, __) => Divider(
+                              height: 1,
+                              color: isDark
+                                  ? theme.colorScheme.outline.withOpacity(0.15)
+                                  : AppColors.cxPlatinumGray.withOpacity(0.5),
+                            ),
+                            itemBuilder: (_, index) {
+                              final employee = filtered[index];
+                              final isSelected =
+                                  employee['id'] == _selectedEmployeeId;
+                              final name = employee['name'] as String;
+                              final position =
+                                  employee['job_position_name'] as String? ?? '';
+                              final initials = name.isNotEmpty
+                                  ? name
+                                      .trim()
+                                      .split(' ')
+                                      .take(2)
+                                      .map((w) => w.isNotEmpty ? w[0] : '')
+                                      .join()
+                                      .toUpperCase()
+                                  : '?';
+
+                              return InkWell(
+                                onTap: () {
+                                  setState(
+                                      () => _selectedEmployeeId = employee['id']);
+                                  Navigator.of(ctx).pop();
+                                },
+                                borderRadius: BorderRadius.circular(12.r),
+                                child: Padding(
+                                  padding: EdgeInsets.symmetric(vertical: 10.h),
+                                  child: Row(
+                                    children: [
+                                      Container(
+                                        width: 40.w,
+                                        height: 40.w,
+                                        decoration: BoxDecoration(
+                                          gradient: LinearGradient(
+                                            begin: Alignment.topLeft,
+                                            end: Alignment.bottomRight,
+                                            colors: isSelected
+                                                ? [
+                                                    AppColors.cxPurple,
+                                                    AppColors.cxPurple
+                                                        .withOpacity(0.7),
+                                                  ]
+                                                : [
+                                                    AppColors.cxPurple
+                                                        .withOpacity(
+                                                            isDark ? 0.3 : 0.15),
+                                                    AppColors.cxPurple
+                                                        .withOpacity(
+                                                            isDark ? 0.15 : 0.08),
+                                                  ],
+                                          ),
+                                          borderRadius:
+                                              BorderRadius.circular(12.r),
+                                        ),
+                                        child: Center(
+                                          child: Text(
+                                            initials,
+                                            style: TextStyle(
+                                              fontSize: 13.sp,
+                                              fontWeight: FontWeight.w700,
+                                              color: isSelected
+                                                  ? AppColors.cxWhite
+                                                  : (isDark
+                                                      ? theme.colorScheme.primary
+                                                      : AppColors.cxPurple),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      SizedBox(width: 12.w),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              name,
+                                              style: TextStyle(
+                                                fontSize: 14.sp,
+                                                fontWeight: isSelected
+                                                    ? FontWeight.w700
+                                                    : FontWeight.w500,
+                                                color: isSelected
+                                                    ? (isDark
+                                                        ? theme
+                                                            .colorScheme.primary
+                                                        : AppColors.cxPurple)
+                                                    : (isDark
+                                                        ? theme.colorScheme
+                                                            .onSurface
+                                                        : AppColors
+                                                            .cxDarkCharcoal),
+                                              ),
+                                            ),
+                                            if (position.isNotEmpty) ...[
+                                              SizedBox(height: 2.h),
+                                              Text(
+                                                position,
+                                                style: TextStyle(
+                                                  fontSize: 11.sp,
+                                                  color: isDark
+                                                      ? theme.colorScheme
+                                                          .onSurfaceVariant
+                                                      : AppColors.cxSilverTint,
+                                                ),
+                                              ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      if (isSelected)
+                                        Container(
+                                          padding: EdgeInsets.all(4.r),
+                                          decoration: BoxDecoration(
+                                            color:
+                                                AppColors.cxPurple.withOpacity(
+                                                    isDark ? 0.25 : 0.12),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            Icons.check_rounded,
+                                            size: 14.sp,
+                                            color: isDark
+                                                ? theme.colorScheme.primary
+                                                : AppColors.cxPurple,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  SizedBox(height: 16.h),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -516,9 +1127,9 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
                                   height: 24.w,
                                   decoration: BoxDecoration(
                                     shape: BoxShape.circle,
-                                    color: (isDark 
-                                        ? theme.colorScheme.primary 
-                                        : AppColors.cxPurple)
+                                    color: (isDark
+                                            ? theme.colorScheme.primary
+                                            : AppColors.cxPurple)
                                         .withOpacity(1.0 - _pulseAnimation.value),
                                   ),
                                 ),
@@ -544,17 +1155,17 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
                                 borderRadius: BorderRadius.circular(4.r),
                                 gradient: LinearGradient(
                                   colors: [
-                                    (isDark 
-                                        ? theme.colorScheme.surfaceContainerHigh 
-                                        : AppColors.cxPlatinumGray)
+                                    (isDark
+                                            ? theme.colorScheme.surfaceContainerHigh
+                                            : AppColors.cxPlatinumGray)
                                         .withOpacity(0.3),
-                                    (isDark 
-                                        ? theme.colorScheme.surfaceContainerHigh 
-                                        : AppColors.cxPlatinumGray)
+                                    (isDark
+                                            ? theme.colorScheme.surfaceContainerHigh
+                                            : AppColors.cxPlatinumGray)
                                         .withOpacity(0.1),
-                                    (isDark 
-                                        ? theme.colorScheme.surfaceContainerHigh 
-                                        : AppColors.cxPlatinumGray)
+                                    (isDark
+                                            ? theme.colorScheme.surfaceContainerHigh
+                                            : AppColors.cxPlatinumGray)
                                         .withOpacity(0.3),
                                   ],
                                   stops: const [0.0, 0.5, 1.0],
@@ -569,17 +1180,17 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
                                 borderRadius: BorderRadius.circular(4.r),
                                 gradient: LinearGradient(
                                   colors: [
-                                    (isDark 
-                                        ? theme.colorScheme.surfaceContainerHigh 
-                                        : AppColors.cxPlatinumGray)
+                                    (isDark
+                                            ? theme.colorScheme.surfaceContainerHigh
+                                            : AppColors.cxPlatinumGray)
                                         .withOpacity(0.2),
-                                    (isDark 
-                                        ? theme.colorScheme.surfaceContainerHigh 
-                                        : AppColors.cxPlatinumGray)
+                                    (isDark
+                                            ? theme.colorScheme.surfaceContainerHigh
+                                            : AppColors.cxPlatinumGray)
                                         .withOpacity(0.05),
-                                    (isDark 
-                                        ? theme.colorScheme.surfaceContainerHigh 
-                                        : AppColors.cxPlatinumGray)
+                                    (isDark
+                                            ? theme.colorScheme.surfaceContainerHigh
+                                            : AppColors.cxPlatinumGray)
                                         .withOpacity(0.2),
                                   ],
                                   stops: const [0.0, 0.5, 1.0],
@@ -592,56 +1203,85 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
                     ],
                   ),
                 )
-              : Container(
-                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: isDark
-                        ? theme.colorScheme.surfaceContainerHighest
-                        : AppColors.cxF5F7F9,
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
+              : GestureDetector(
+                  onTap: _employees.isEmpty
+                      ? null
+                      : () => _showEmployeeSearchSheet(localizations, isDark, theme),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+                    decoration: BoxDecoration(
                       color: isDark
-                          ? theme.colorScheme.outline.withOpacity(0.3)
-                          : AppColors.cxPlatinumGray,
-                      width: 1,
+                          ? theme.colorScheme.surfaceContainerHighest
+                          : AppColors.cxF5F7F9,
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: _selectedEmployeeId != null
+                            ? (isDark
+                                ? AppColors.cxPurple.withOpacity(0.5)
+                                : AppColors.cxPurple.withOpacity(0.4))
+                            : (isDark
+                                ? theme.colorScheme.outline.withOpacity(0.3)
+                                : AppColors.cxPlatinumGray),
+                        width: _selectedEmployeeId != null ? 1.5 : 1,
+                      ),
                     ),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedEmployeeId,
-                      isExpanded: true,
-                      hint: Text(
-                        _employees.isEmpty
-                            ? localizations.noEmployeesAvailable
-                            : 'Select an employee...',
-                        style: TextStyle(
-                          fontSize: 14.sp,
-                          color: isDark
-                              ? theme.colorScheme.onSurfaceVariant
-                              : AppColors.cxSilverTint,
+                    child: Row(
+                      children: [
+                        Icon(
+                          _selectedEmployeeId != null
+                              ? Icons.person_rounded
+                              : Icons.search_rounded,
+                          color: _selectedEmployeeId != null
+                              ? (isDark ? theme.colorScheme.primary : AppColors.cxPurple)
+                              : (isDark
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : AppColors.cxSilverTint),
+                          size: 18.sp,
                         ),
-                      ),
-                      icon: Icon(
-                        Icons.keyboard_arrow_down_rounded,
-                        color: isDark ? theme.colorScheme.primary : AppColors.cxPurple,
-                      ),
-                      dropdownColor: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w500,
-                        color: isDark ? theme.colorScheme.onSurface : AppColors.cxDarkCharcoal,
-                      ),
-                      items: _employees.map((employee) {
-                        return DropdownMenuItem<String>(
-                          value: employee['id'],
-                          child: Text(employee['name']!),
-                        );
-                      }).toList(),
-                      onChanged: _employees.isEmpty
-                          ? null
-                          : (value) {
-                              setState(() => _selectedEmployeeId = value);
-                            },
+                        SizedBox(width: 10.w),
+                        Expanded(
+                          child: Text(
+                            _selectedEmployeeId != null
+                                ? (_employees.firstWhere(
+                                    (e) => e['id'] == _selectedEmployeeId,
+                                    orElse: () => {'name': ''},
+                                  )['name'] ?? '')
+                                : (_employees.isEmpty
+                                    ? localizations.noEmployeesAvailable
+                                    : localizations.selectEmployee),
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: _selectedEmployeeId != null
+                                  ? FontWeight.w600
+                                  : FontWeight.w400,
+                              color: _selectedEmployeeId != null
+                                  ? (isDark
+                                      ? theme.colorScheme.onSurface
+                                      : AppColors.cxDarkCharcoal)
+                                  : (isDark
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : AppColors.cxSilverTint),
+                            ),
+                          ),
+                        ),
+                        if (_selectedEmployeeId != null)
+                          GestureDetector(
+                            onTap: () => setState(() => _selectedEmployeeId = null),
+                            child: Icon(
+                              Icons.close_rounded,
+                              size: 16.sp,
+                              color: isDark
+                                  ? theme.colorScheme.onSurfaceVariant
+                                  : AppColors.cxSilverTint,
+                            ),
+                          )
+                        else
+                          Icon(
+                            Icons.keyboard_arrow_down_rounded,
+                            color: isDark ? theme.colorScheme.primary : AppColors.cxPurple,
+                            size: 20.sp,
+                          ),
+                      ],
                     ),
                   ),
                 ),

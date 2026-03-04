@@ -270,6 +270,19 @@ class AppLocalizations {
       'catFinance':'Finance',
       'catLearning':'Learning & HR',
       'catTasks':'Tasks',
+      // Star Rating Hints
+      'starRatingTitle':'Rating Levels',
+      'starRatingSubtitle':'Assessment criteria for each star level',
+      'star1Title':'Star 1 – Learning',
+      'star1Desc':'Still learning the basics. Needs guidance and supervision to complete tasks.',
+      'star2Title':'Star 2 – Independent',
+      'star2Desc':'Can work independently. Completes tasks without constant supervision.',
+      'star3Title':'Star 3 – Fast & Quality',
+      'star3Desc':'Works fast and with high quality. Consistently meets or exceeds standards.',
+      'star4Title':'Star 4 – Can Teach',
+      'star4Desc':'Can teach others. Shares knowledge and mentors colleagues effectively.',
+      'star5Title':'Star 5 – Can Improve',
+      'star5Desc':'Can improve processes. Identifies inefficiencies and proposes better solutions.',
 
     },
     'uz': {
@@ -532,6 +545,19 @@ class AppLocalizations {
       'catFinance':'Moliya',
       'catLearning':'O\'quv & HR',
       'catTasks':'Vazifalar',
+      // Star Rating Hints
+      'starRatingTitle':'Baholash darajalari',
+      'starRatingSubtitle':'Har bir yulduz darajasi uchun baholash mezonlari',
+      'star1Title':'1 Yulduz – O\'rganyapti',
+      'star1Desc':'Hali asoslarni o\'rganmoqda. Vazifalarni bajarish uchun yo\'naltirish va nazorat kerak.',
+      'star2Title':'2 Yulduz – Mustaqil ishlay oladi',
+      'star2Desc':'Mustaqil ishlaya oladi. Doimiy nazoratisiz vazifalarni bajaradi.',
+      'star3Title':'3 Yulduz – Tez va sifatli ishlaydi',
+      'star3Desc':'Tez va yuqori sifatda ishlaydi. Standartlarni muntazam bajaradi yoki oshib ketadi.',
+      'star4Title':'4 Yulduz – Boshqalarga o\'rgata oladi',
+      'star4Desc':'Boshqalarga o\'rgata oladi. Bilimini ulashadi va hamkasblarini samarali nazorat qiladi.',
+      'star5Title':'5 Yulduz – Jarayonni yaxshilay oladi',
+      'star5Desc':'Jarayonlarni yaxshilay oladi. Kamchiliklarni aniqlaydi va yaxshiroq yechimlar taklif etadi.',
 
     },
     'ru': {
@@ -807,6 +833,19 @@ class AppLocalizations {
       'catFinance':'Финансы',
       'catLearning':'Обучение & HR',
       'catTasks':'Задачи',
+      // Star Rating Hints
+      'starRatingTitle':'Уровни оценки',
+      'starRatingSubtitle':'Критерии оценки для каждого уровня звёзд',
+      'star1Title':'1 Звезда – Обучается',
+      'star1Desc':'Ещё изучает основы. Требует руководства и контроля для выполнения задач.',
+      'star2Title':'2 Звезды – Работает самостоятельно',
+      'star2Desc':'Может работать самостоятельно. Выполняет задачи без постоянного контроля.',
+      'star3Title':'3 Звезды – Быстро и качественно',
+      'star3Desc':'Работает быстро и качественно. Стабильно выполняет или превышает стандарты.',
+      'star4Title':'4 Звезды – Может обучать других',
+      'star4Desc':'Может обучать других. Делится знаниями и эффективно наставляет коллег.',
+      'star5Title':'5 Звёзд – Может улучшать процессы',
+      'star5Desc':'Может улучшать процессы. Выявляет неэффективность и предлагает лучшие решения.',
     },
   };
 
@@ -1045,6 +1084,19 @@ class AppLocalizations {
   String get catFinance => translate('catFinance');
   String get catLearning => translate('catLearning');
   String get catTasks => translate('catTasks');
+  // Star Rating Hints
+  String get starRatingTitle => translate('starRatingTitle');
+  String get starRatingSubtitle => translate('starRatingSubtitle');
+  String get star1Title => translate('star1Title');
+  String get star1Desc => translate('star1Desc');
+  String get star2Title => translate('star2Title');
+  String get star2Desc => translate('star2Desc');
+  String get star3Title => translate('star3Title');
+  String get star3Desc => translate('star3Desc');
+  String get star4Title => translate('star4Title');
+  String get star4Desc => translate('star4Desc');
+  String get star5Title => translate('star5Title');
+  String get star5Desc => translate('star5Desc');
 
 
 }

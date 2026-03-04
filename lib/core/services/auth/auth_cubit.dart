@@ -88,6 +88,8 @@ class AuthCubit extends Cubit<AuthState> {
       print('🚪 [AuthCubit] Starting logout process...');
       print('═══════════════════════════════════════════════════════');
       
+      emit(const AuthLoggingOut());
+      
       print('1️⃣ [AuthCubit] Calling AuthManager.logout()...');
       await _authManager.logout();
       print('✅ [AuthCubit] AuthManager.logout() completed');

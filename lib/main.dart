@@ -236,7 +236,18 @@ class _MyAppState extends State<MyApp> {
                 builder: (context, themeMode) {
                   return BlocListener<AuthCubit, AuthState>(
                     listener: (context, state) {
-                      if (state is AuthError) {
+                      if (state is AuthLoggingOut) {
+                        final navContext = _navigatorKey.currentContext;
+                        if (navContext != null) {
+                          showDialog(
+                            context: navContext,
+                            barrierDismissible: false,
+                            barrierColor: Colors.black.withOpacity(0.6),
+                            builder: (_) => const _LogoutLoadingOverlay(),
+                          );
+                        }
+                      } else if (state is AuthError) {
+                        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
                         print('❌ [GLOBAL] Auth error: ${state.message}');
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -246,6 +257,7 @@ class _MyAppState extends State<MyApp> {
                           ),
                         );
                       } else if (state is AuthUnauthenticated) {
+                        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
                         print('🔐 [GLOBAL] Session expired - navigating to onboard');
                         _router.go('/onboard');
                       }
@@ -377,6 +389,53 @@ class _BouncingDotsLoaderState extends State<_BouncingDotsLoader>
           },
         );
       }),
+    );
+  }
+}
+
+class _LogoutLoadingOverlay extends StatelessWidget {
+  const _LogoutLoadingOverlay();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 28),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.15),
+              blurRadius: 30,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 48,
+              height: 48,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFEF4444)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Logging out...',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1F1F2E),
+                letterSpacing: 0.3,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

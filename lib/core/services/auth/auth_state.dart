@@ -19,6 +19,11 @@ class AuthLoading extends AuthState {
   const AuthLoading();
 }
 
+/// Logging out state - during logout process
+class AuthLoggingOut extends AuthState {
+  const AuthLoggingOut();
+}
+
 /// Authenticated state - user is logged in
 class AuthAuthenticated extends AuthState {
   final Identity identity;
