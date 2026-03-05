@@ -93,7 +93,7 @@ class _CalendarPageState extends State<CalendarPage> {
 
       final requestBody = {
         'name': _selectedTheme!.name,
-        'training_theme_id': _selectedTheme!.id,
+        if (_selectedTheme!.id > 0) 'training_theme_id': _selectedTheme!.id,
         'date': DateFormat('yyyy-MM-dd').format(_selectedEventDate!),
         'time': '${_selectedEventTime!.hour.toString().padLeft(2, '0')}:${_selectedEventTime!.minute.toString().padLeft(2, '0')}:00',
       };
