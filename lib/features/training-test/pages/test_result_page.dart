@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../data/test_result_model.dart';
 
@@ -107,7 +108,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
           ),
           SizedBox(height: 16.h),
           Text(
-            'Loading results...',
+            AppLocalizations.of(context).loadingResults,
             style: TextStyle(
               color: isDark ? const Color(0xFF9CA3AF) : AppColors.cxGraphiteGray,
               fontSize: 16.sp,
@@ -132,7 +133,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
             ),
             SizedBox(height: 16.h),
             Text(
-              'Error Loading Results',
+              AppLocalizations.of(context).errorLoadingResults,
               style: TextStyle(
                 fontSize: 20.sp,
                 fontWeight: FontWeight.bold,
@@ -150,7 +151,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
             SizedBox(height: 24.h),
             ElevatedButton(
               onPressed: _loadResult,
-              child: const Text('Retry'),
+              child: Text(AppLocalizations.of(context).retry),
             ),
           ],
         ),
@@ -247,7 +248,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
                         ),
                       ),
                       Text(
-                        'Score',
+                        AppLocalizations.of(context).score,
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: Colors.white.withOpacity(0.9),
@@ -267,7 +268,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
             ),
             SizedBox(height: 8.h),
             Text(
-              isPassed ? 'Congratulations!' : 'Keep Trying!',
+              isPassed ? AppLocalizations.of(context).congratulations : AppLocalizations.of(context).keepTrying,
               style: TextStyle(
                 fontSize: 24.sp,
                 fontWeight: FontWeight.bold,
@@ -276,7 +277,9 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
             ),
             SizedBox(height: 4.h),
             Text(
-              isPassed ? 'You passed the test!' : 'You need ${_result!.passingScore}% to pass',
+              isPassed
+                  ? AppLocalizations.of(context).youPassedTest
+                  : '${AppLocalizations.of(context).youNeedToPass} ${_result!.passingScore}% ${AppLocalizations.of(context).toPass}',
               style: TextStyle(
                 fontSize: 14.sp,
                 color: Colors.white.withOpacity(0.9),
@@ -295,7 +298,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
           child: _buildStatCard(
             isDark: isDark,
             icon: Icons.quiz,
-            label: 'Total Questions',
+            label: AppLocalizations.of(context).totalQuestions,
             value: '${result.totalQuestions}',
             color: const Color(0xFF6366F1),
           ),
@@ -305,7 +308,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
           child: _buildStatCard(
             isDark: isDark,
             icon: Icons.check_circle,
-            label: 'Correct',
+            label: AppLocalizations.of(context).correct,
             value: '${result.correctMatches}',
             color: const Color(0xFF10B981),
           ),
@@ -315,7 +318,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
           child: _buildStatCard(
             isDark: isDark,
             icon: Icons.cancel,
-            label: 'Wrong',
+            label: AppLocalizations.of(context).wrong,
             value: '${result.totalMatches - result.correctMatches}',
             color: const Color(0xFFEF4444),
           ),
@@ -383,7 +386,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Detailed Results',
+          AppLocalizations.of(context).detailedResults,
           style: TextStyle(
             fontSize: 18.sp,
             fontWeight: FontWeight.bold,
@@ -438,7 +441,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
                     ),
                     SizedBox(width: 6.w),
                     Text(
-                      isCorrect ? 'Correct' : 'Wrong',
+                      isCorrect ? AppLocalizations.of(context).correct : AppLocalizations.of(context).wrong,
                       style: TextStyle(
                         fontSize: 12.sp,
                         fontWeight: FontWeight.w600,
@@ -576,7 +579,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
                   ),
                   SizedBox(width: 8.w),
                   Text(
-                    'Correct: ${detail.pair!.rightItem}',
+                    '${AppLocalizations.of(context).correctAnswer}: ${detail.pair!.rightItem}',
                     style: TextStyle(
                       fontSize: 12.sp,
                       color: const Color(0xFF10B981),
@@ -646,7 +649,7 @@ class _TestResultPageState extends State<TestResultPage> with SingleTickerProvid
               ),
             ),
             child: Text(
-              'Back to Courses',
+              AppLocalizations.of(context).backToCourses,
               style: TextStyle(
                 fontSize: 16.sp,
                 fontWeight: FontWeight.w600,

@@ -283,6 +283,21 @@ class AppLocalizations {
       'star4Desc':'Can teach others. Shares knowledge and mentors colleagues effectively.',
       'star5Title':'Star 5 – Can Improve',
       'star5Desc':'Can improve processes. Identifies inefficiencies and proposes better solutions.',
+      // Test Result Page
+      'loadingResults':'Loading results...',
+      'errorLoadingResults':'Error Loading Results',
+      'score':'Score',
+      'congratulations':'Congratulations!',
+      'keepTrying':'Keep Trying!',
+      'youPassedTest':'You passed the test!',
+      'youNeedToPass':'You need',
+      'toPass':'to pass',
+      'totalQuestions':'Total Questions',
+      'correct':'Correct',
+      'wrong':'Wrong',
+      'detailedResults':'Detailed Results',
+      'correctAnswer':'Correct',
+      'backToCourses':'Back to Courses',
 
     },
     'uz': {
@@ -556,8 +571,23 @@ class AppLocalizations {
       'star3Desc':'Tez va yuqori sifatda ishlaydi. Standartlarni muntazam bajaradi yoki oshib ketadi.',
       'star4Title':'4 Yulduz – Boshqalarga o\'rgata oladi',
       'star4Desc':'Boshqalarga o\'rgata oladi. Bilimini ulashadi va hamkasblarini samarali nazorat qiladi.',
-      'star5Title':'5 Yulduz – Jarayonni yaxshilay oladi',
-      'star5Desc':'Jarayonlarni yaxshilay oladi. Kamchiliklarni aniqlaydi va yaxshiroq yechimlar taklif etadi.',
+      'star5Title':'Yulduz 5 – Yaxshilash',
+      'star5Desc':'Jarayonlarni yaxshilashi mumkin. Samarasizliklarni aniqlaydi va yaxshiroq yechimlarni taklif qiladi.',
+      // Test Result Page
+      'loadingResults':'Natijalar yuklanmoqda...',
+      'errorLoadingResults':'Natijalarni yuklashda xatolik',
+      'score':'Ball',
+      'congratulations':'Tabriklaymiz!',
+      'keepTrying':'Harakat qiling!',
+      'youPassedTest':'Siz testdan o\'tdingiz!',
+      'youNeedToPass':'O\'tish uchun',
+      'toPass':'kerak',
+      'totalQuestions':'Jami savollar',
+      'correct':'To\'g\'ri',
+      'wrong':'Noto\'g\'ri',
+      'detailedResults':'Batafsil natijalar',
+      'correctAnswer':'To\'g\'ri',
+      'backToCourses':'Kurslarga qaytish',
 
     },
     'ru': {
@@ -566,6 +596,21 @@ class AppLocalizations {
       'hrTitle':'Обучение и развитие',
       'hrSubtitle':'Управление сотрудниками, процессом обучения и навыками',
       'calendarSubtitle1':'Ближайшие учебные занятия и расписание',
+      // Test Result Page
+      'loadingResults':'Загрузка результатов...',
+      'errorLoadingResults':'Ошибка загрузки результатов',
+      'score':'Балл',
+      'congratulations':'Поздравляем!',
+      'keepTrying':'Не сдавайтесь!',
+      'youPassedTest':'Вы прошли тест!',
+      'youNeedToPass':'Чтобы пройти',
+      'toPass':'нужно',
+      'totalQuestions':'Всего вопросов',
+      'correct':'Правильно',
+      'wrong':'Неправильно',
+      'detailedResults':'Подробные результаты',
+      'correctAnswer':'Правильный ответ',
+      'backToCourses':'Вернуться к курсам',
       'trainingTestSubtitle':'Тесты HR, расписание и результаты сотрудников',
       'trainingCourses':'Курсы обучения',
       'availableCourses':'Доступные курсы обучения',
@@ -1097,6 +1142,20 @@ class AppLocalizations {
   String get star4Desc => translate('star4Desc');
   String get star5Title => translate('star5Title');
   String get star5Desc => translate('star5Desc');
-
+  // Test Result Page
+  String get loadingResults => translate('loadingResults');
+  String get errorLoadingResults => translate('errorLoadingResults');
+  String get score => translate('score');
+  String get congratulations => translate('congratulations');
+  String get keepTrying => translate('keepTrying');
+  String get youPassedTest => translate('youPassedTest');
+  String get youNeedToPass => translate('youNeedToPass');
+  String get toPass => translate('toPass');
+  String get totalQuestions => translate('totalQuestions');
+  String get correct => translate('correct');
+  String get wrong => translate('wrong');
+  String get detailedResults => translate('detailedResults');
+  String get correctAnswer => translate('correctAnswer');
+  String get backToCourses => translate('backToCourses');
 
 }

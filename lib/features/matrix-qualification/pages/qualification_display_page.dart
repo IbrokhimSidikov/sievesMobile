@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
@@ -799,24 +800,195 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
   }
 
   Widget _buildLoadingState(bool isDark, ThemeData theme) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            color: isDark ? theme.colorScheme.primary : AppColors.cxEmeraldGreen,
-          ),
-          SizedBox(height: 16.h),
-          Text(
-            'Loading qualifications...',
-            style: TextStyle(
-              fontSize: 14.sp,
-              color: isDark
-                  ? theme.colorScheme.onSurfaceVariant
-                  : AppColors.cxSilverTint,
+    final baseColor = isDark ? const Color(0xFF1E1E2A) : const Color(0xFFE8E8EE);
+    final highlightColor = isDark ? const Color(0xFF2A2A3A) : const Color(0xFFF5F5FA);
+    final cardBg = isDark ? theme.colorScheme.surface : AppColors.cxWhite;
+
+    return Shimmer.fromColors(
+      baseColor: baseColor,
+      highlightColor: highlightColor,
+      child: SingleChildScrollView(
+        physics: const NeverScrollableScrollPhysics(),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Pie chart card skeleton
+            Container(
+              padding: EdgeInsets.all(20.r),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(20.r),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(
+                    children: [
+                      Container(
+                        width: 20.w,
+                        height: 20.w,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(5.r),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
+                      Container(
+                        width: 140.w,
+                        height: 14.h,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(7.r),
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        width: 70.w,
+                        height: 28.h,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: 20.h),
+                  // Pie chart circle skeleton
+                  Center(
+                    child: Container(
+                      width: 180.w,
+                      height: 180.w,
+                      decoration: BoxDecoration(
+                        color: baseColor,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Center(
+                        child: Container(
+                          width: 100.w,
+                          height: 100.w,
+                          decoration: BoxDecoration(
+                            color: isDark ? const Color(0xFF12121A) : AppColors.cxF5F7F9,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 20.h),
+                  // Legend skeleton
+                  Row(
+                    children: List.generate(3, (i) => Padding(
+                      padding: EdgeInsets.only(right: 14.w),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Container(
+                            width: 10.w,
+                            height: 10.w,
+                            decoration: BoxDecoration(
+                              color: baseColor,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                          SizedBox(width: 5.w),
+                          Container(
+                            width: 44.w,
+                            height: 10.h,
+                            decoration: BoxDecoration(
+                              color: baseColor,
+                              borderRadius: BorderRadius.circular(5.r),
+                            ),
+                          ),
+                        ],
+                      ),
+                    )),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+            SizedBox(height: 24.h),
+            // Section title skeleton
+            Container(
+              width: 160.w,
+              height: 16.h,
+              decoration: BoxDecoration(
+                color: baseColor,
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+            ),
+            SizedBox(height: 12.h),
+            // Rating card skeletons
+            ...List.generate(4, (i) => Padding(
+              padding: EdgeInsets.only(bottom: 12.h),
+              child: Container(
+                padding: EdgeInsets.all(16.r),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(16.r),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 42.w,
+                          height: 42.w,
+                          decoration: BoxDecoration(
+                            color: baseColor,
+                            borderRadius: BorderRadius.circular(12.r),
+                          ),
+                        ),
+                        SizedBox(width: 12.w),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Container(
+                                height: 14.h,
+                                width: double.infinity,
+                                decoration: BoxDecoration(
+                                  color: baseColor,
+                                  borderRadius: BorderRadius.circular(7.r),
+                                ),
+                              ),
+                              SizedBox(height: 6.h),
+                              Container(
+                                height: 11.h,
+                                width: 120.w,
+                                decoration: BoxDecoration(
+                                  color: baseColor,
+                                  borderRadius: BorderRadius.circular(5.r),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 16.h),
+                    // Stars row skeleton
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: List.generate(5, (_) => Container(
+                        width: 40.w,
+                        height: 40.w,
+                        decoration: BoxDecoration(
+                          color: baseColor,
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                      )),
+                    ),
+                  ],
+                ),
+              ),
+            )),
+            SizedBox(height: 8.h),
+          ],
+        ),
       ),
     );
   }

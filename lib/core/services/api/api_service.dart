@@ -126,7 +126,9 @@ class ApiService {
   Future<bool> sendFcmToken(int employeeId, String fcmToken) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/employee/$employeeId/fcm-token');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/employee/$employeeId/fcm-token',
+      );
 
       print('📲 [FCM] Sending FCM token to backend...');
       print('   Employee ID: $employeeId');
@@ -142,7 +144,9 @@ class ApiService {
         print('✅ [FCM] FCM token sent successfully to backend');
         return true;
       } else {
-        print('❌ [FCM] Error sending FCM token: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ [FCM] Error sending FCM token: ${response.statusCode} - ${response.body}',
+        );
         return false;
       }
     } catch (e) {
@@ -155,21 +159,22 @@ class ApiService {
   Future<bool> deleteFcmToken(int employeeId) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/employee/$employeeId/fcm-token');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/employee/$employeeId/fcm-token',
+      );
 
       print('🗑️ [FCM] Deleting FCM token from backend...');
       print('   Employee ID: $employeeId');
 
-      final response = await _httpClient.delete(
-        uri,
-        headers: headers,
-      );
+      final response = await _httpClient.delete(uri, headers: headers);
 
       if (response.statusCode == 200 || response.statusCode == 204) {
         print('✅ [FCM] FCM token deleted from backend');
         return true;
       } else {
-        print('❌ [FCM] Error deleting FCM token: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ [FCM] Error deleting FCM token: ${response.statusCode} - ${response.body}',
+        );
         return false;
       }
     } catch (e) {
@@ -1267,7 +1272,9 @@ class ApiService {
   Future<List<Map<String, dynamic>>?> getMatrixQualificationFields() async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/matrix-qualification');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/matrix-qualification',
+      );
 
       print('📊 [API] Fetching matrix qualification fields: $uri');
       final response = await _httpClient.get(uri, headers: headers);
@@ -1275,7 +1282,7 @@ class ApiService {
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         print('✅ [API] Fetched matrix qualification fields successfully');
-        
+
         // Handle both array and object responses
         if (jsonData is List) {
           return List<Map<String, dynamic>>.from(jsonData);
@@ -1306,12 +1313,11 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/matrix-qualification/results/submit');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/matrix-qualification/results/submit',
+      );
 
-      final body = {
-        'employee_id': employeeId,
-        'items': items,
-      };
+      final body = {'employee_id': employeeId, 'items': items};
 
       print('📊 [API] Submitting matrix qualification results: $body');
       final response = await _httpClient.post(
@@ -1336,18 +1342,24 @@ class ApiService {
   }
 
   // Get user's qualification results for employee
-  Future<List<Map<String, dynamic>>?> getMyQualificationResults(int employeeId) async {
+  Future<List<Map<String, dynamic>>?> getMyQualificationResults(
+    int employeeId,
+  ) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/matrix-qualification/employee/$employeeId');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/matrix-qualification/employee/$employeeId',
+      );
 
-      print('📊 [API] Fetching qualification results for employee: $employeeId');
+      print(
+        '📊 [API] Fetching qualification results for employee: $employeeId',
+      );
       final response = await _httpClient.get(uri, headers: headers);
 
       if (response.statusCode == 200) {
         final jsonData = jsonDecode(response.body);
         print('✅ [API] Fetched qualification results successfully');
-        
+
         if (jsonData is List) {
           return List<Map<String, dynamic>>.from(jsonData);
         } else {
@@ -1371,7 +1383,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final uri = Uri.parse('https://api.v3.sievesapp.com/training-course');
-      
+
       print('📚 [API] Fetching training courses from: $uri');
       final response = await _httpClient.get(uri, headers: headers);
 
@@ -1379,13 +1391,21 @@ class ApiService {
 
       if (response.statusCode == 200) {
         final List<dynamic> data = jsonDecode(response.body);
-        final courses = data.map((json) => TrainingCourse.fromJson(json)).toList();
-        
-        print('✅ [API] Successfully fetched ${courses.length} training courses');
+        final courses = data
+            .map((json) => TrainingCourse.fromJson(json))
+            .toList();
+
+        print(
+          '✅ [API] Successfully fetched ${courses.length} training courses',
+        );
         return courses;
       } else {
-        print('❌ Error fetching training courses: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to load training courses: HTTP ${response.statusCode}');
+        print(
+          '❌ Error fetching training courses: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Failed to load training courses: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('❌ Exception fetching training courses: $e');
@@ -1397,8 +1417,10 @@ class ApiService {
   Future<CourseWithTests> fetchCourseWithTests(int courseId) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course/$courseId');
-      
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/training-course/$courseId',
+      );
+
       print('📝 [API] Fetching course details with tests from: $uri');
       final response = await _httpClient.get(uri, headers: headers);
 
@@ -1407,12 +1429,18 @@ class ApiService {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final course = CourseWithTests.fromJson(data);
-        
-        print('✅ [API] Successfully fetched course with ${course.tests.length} tests');
+
+        print(
+          '✅ [API] Successfully fetched course with ${course.tests.length} tests',
+        );
         return course;
       } else {
-        print('❌ Error fetching course details: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to load course details: HTTP ${response.statusCode}');
+        print(
+          '❌ Error fetching course details: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Failed to load course details: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('❌ Exception fetching course details: $e');
@@ -1424,8 +1452,10 @@ class ApiService {
   Future<int> startTrainingSession(int courseId) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course/session/start');
-      
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/training-course/session/start',
+      );
+
       print('🎯 [API] Starting training session for course: $courseId');
       final response = await _httpClient.post(
         uri,
@@ -1438,11 +1468,13 @@ class ApiService {
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
         final sessionId = data['session_id'] ?? data['id'];
-        
+
         print('✅ [API] Successfully started session with ID: $sessionId');
         return sessionId;
       } else {
-        print('❌ Error starting session: ${response.statusCode} - ${response.body}');
+        print(
+          '❌ Error starting session: ${response.statusCode} - ${response.body}',
+        );
         throw Exception('Failed to start session: HTTP ${response.statusCode}');
       }
     } catch (e) {
@@ -1459,8 +1491,10 @@ class ApiService {
   }) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/training-course/session/submit');
-      
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/training-course/session/submit',
+      );
+
       final body = {
         'session_id': sessionId,
         'match_answers': matchAnswers,
@@ -1468,8 +1502,10 @@ class ApiService {
       };
 
       print('📤 [API] Submitting training session: $sessionId');
-      print('📤 [API] Match answers: ${matchAnswers.length}, Option answers: ${optionAnswers.length}');
-      
+      print(
+        '📤 [API] Match answers: ${matchAnswers.length}, Option answers: ${optionAnswers.length}',
+      );
+
       final response = await _httpClient.post(
         uri,
         headers: headers,
@@ -1480,12 +1516,16 @@ class ApiService {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         final data = jsonDecode(response.body);
-        
+
         print('✅ [API] Successfully submitted session');
         return data;
       } else {
-        print('❌ Error submitting session: ${response.statusCode} - ${response.body}');
-        throw Exception('Failed to submit session: HTTP ${response.statusCode}');
+        print(
+          '❌ Error submitting session: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Failed to submit session: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('❌ Exception submitting session: $e');
@@ -1495,17 +1535,15 @@ class ApiService {
 
   Future<TestSessionResult> fetchSessionResult(int sessionId) async {
     try {
-      final url = 'https://api.v3.sievesapp.com/training-course/session/$sessionId/result';
+      final url =
+          'https://api.v3.sievesapp.com/training-course/session/$sessionId/result';
       print('📊 Fetching session result for session ID: $sessionId');
       print('📊 URL: $url');
-      
+
       final headers = await _getHeaders();
       print('📊 Headers: ${headers.keys.toList()}');
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: headers,
-      );
+
+      final response = await http.get(Uri.parse(url), headers: headers);
 
       print('📊 Session result response status: ${response.statusCode}');
       print('📊 Response body: ${response.body}');
@@ -1517,11 +1555,82 @@ class ApiService {
       } else {
         print('❌ Failed to fetch session result: ${response.statusCode}');
         print('❌ Error response: ${response.body}');
-        throw Exception('Failed to fetch session result: HTTP ${response.statusCode}');
+        throw Exception(
+          'Failed to fetch session result: HTTP ${response.statusCode}',
+        );
       }
     } catch (e) {
       print('❌ Exception fetching session result: $e');
       rethrow;
+    }
+  }
+
+  // ─── Mobile Notifications ────────────────────────────────────────────────
+
+  Future<List<Map<String, dynamic>>> getMyNotifications({int days = 7}) async {
+    try {
+      final headers = await _getHeaders();
+      final from = DateTime.now().subtract(Duration(days: days));
+      final fromStr =
+          '${from.year}-${from.month.toString().padLeft(2, '0')}-${from.day.toString().padLeft(2, '0')}';
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/mobile-notifications?from_date=$fromStr',
+      );
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        final List<dynamic> data = json.decode(response.body);
+        return data.cast<Map<String, dynamic>>();
+      } else {
+        return [];
+      }
+    } catch (e) {
+      return [];
+    }
+  }
+
+  Future<int> getUnreadNotificationCount() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/mobile-notifications/unread-count');
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        return (data['count'] as num?)?.toInt() ?? 0;
+      }
+      return 0;
+    } catch (e) {
+      print('❌ [API] Exception fetching unread count: $e');
+      return 0;
+    }
+  }
+
+  Future<Map<String, dynamic>?> markNotificationAsRead(int id) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/mobile-notifications/$id/read');
+      final response = await _httpClient.patch(uri, headers: headers);
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+      print(
+        '❌ [API] Failed to mark notification as read: ${response.statusCode}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception marking notification as read: $e');
+      return null;
+    }
+  }
+
+  Future<bool> markAllNotificationsAsRead() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('https://api.v3.sievesapp.com/mobile-notifications/read-all');
+      final response = await _httpClient.patch(uri, headers: headers);
+      return response.statusCode == 200;
+    } catch (e) {
+      print('❌ [API] Exception marking all notifications as read: $e');
+      return false;
     }
   }
 }

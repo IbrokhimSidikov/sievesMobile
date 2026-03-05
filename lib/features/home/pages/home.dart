@@ -8,7 +8,6 @@ import '../../../core/l10n/app_localizations.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/theme/theme_cubit.dart';
-import '../../../core/services/notification/notification_storage_service.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/services/api/api_service.dart';
 import '../../../core/model/story_model.dart';
@@ -50,7 +49,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       if (_authManager.hasBreakAccess)
       _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, const Color(0xFF856E5E), '/faceVerification'),
       if (_authManager.hasStopwatchAccess)
-        _ModuleItem(localizations.productivityTimer, Icons.timer_outlined, const Color(0xFF7A6555), '/employeeProductivity'),
+        _ModuleItem(localizations.employeeProductivity, Icons.timer_outlined, const Color(0xFF7A6555), '/employeeProductivity'),
       _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF887060), '/checklist'),
 
     ];
@@ -178,7 +177,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   }
 
   Future<void> _loadUnreadCount() async {
-    final count = await NotificationStorageService().getUnreadCount();
+    final count = await _apiService.getUnreadNotificationCount();
     if (mounted) {
       setState(() {
         _unreadNotificationCount = count;

@@ -7,6 +7,7 @@ class NotificationModel {
   final String type;
   final DateTime timestamp;
   final bool isRead;
+  final DateTime? readAt;
   final Map<String, dynamic>? data;
 
   NotificationModel({
@@ -16,6 +17,7 @@ class NotificationModel {
     required this.type,
     required this.timestamp,
     this.isRead = false,
+    this.readAt,
     this.data,
   });
 
@@ -28,11 +30,12 @@ class NotificationModel {
       'type': type,
       'timestamp': timestamp.toIso8601String(),
       'isRead': isRead,
+      'readAt': readAt?.toIso8601String(),
       'data': data,
     };
   }
 
-  // Create from JSON
+  // Create from local storage JSON
   factory NotificationModel.fromJson(Map<String, dynamic> json) {
     return NotificationModel(
       id: json['id'] as String,
@@ -41,7 +44,33 @@ class NotificationModel {
       type: json['type'] as String? ?? 'general',
       timestamp: DateTime.parse(json['timestamp'] as String),
       isRead: json['isRead'] as bool? ?? false,
+      readAt: json['readAt'] != null
+          ? DateTime.parse(json['readAt'] as String)
+          : null,
       data: json['data'] as Map<String, dynamic>?,
+    );
+  }
+
+  // Create from backend API response (t_mobile_notifications table)
+  factory NotificationModel.fromApiJson(Map<String, dynamic> json) {
+    final rawData = json['data'];
+    final Map<String, dynamic>? dataMap = rawData is Map<String, dynamic>
+        ? rawData
+        : null;
+
+    return NotificationModel(
+      id: json['id'].toString(),
+      title: json['title'] as String? ?? '',
+      body: json['body'] as String? ?? '',
+      type: json['type'] as String? ?? 'general',
+      timestamp: json['sent_at'] != null
+          ? DateTime.parse(json['sent_at'] as String)
+          : DateTime.parse(json['created_at'] as String),
+      isRead: (json['is_read'] as num?)?.toInt() == 1,
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'] as String)
+          : null,
+      data: dataMap,
     );
   }
 
@@ -53,6 +82,7 @@ class NotificationModel {
     String? type,
     DateTime? timestamp,
     bool? isRead,
+    DateTime? readAt,
     Map<String, dynamic>? data,
   }) {
     return NotificationModel(
@@ -62,6 +92,7 @@ class NotificationModel {
       type: type ?? this.type,
       timestamp: timestamp ?? this.timestamp,
       isRead: isRead ?? this.isRead,
+      readAt: readAt ?? this.readAt,
       data: data ?? this.data,
     );
   }
