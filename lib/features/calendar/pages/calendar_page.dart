@@ -91,9 +91,11 @@ class _CalendarPageState extends State<CalendarPage> {
         return;
       }
 
+      const _staticThemeIds = {13, 14};
       final requestBody = {
         'name': _selectedTheme!.name,
-        'training_theme_id': _selectedTheme!.id,
+        if (!_staticThemeIds.contains(_selectedTheme!.id))
+          'training_theme_id': _selectedTheme!.id,
         'date': DateFormat('yyyy-MM-dd').format(_selectedEventDate!),
         'time': '${_selectedEventTime!.hour.toString().padLeft(2, '0')}:${_selectedEventTime!.minute.toString().padLeft(2, '0')}:00',
       };
@@ -249,8 +251,8 @@ class _CalendarPageState extends State<CalendarPage> {
 
     // Create static training themes
     final staticThemes = [
-      TrainingTheme(id: -1, name: 'Marketing (xostess)'),
-      TrainingTheme(id: -2, name: 'Marketing (kassa)'),
+      TrainingTheme(id: 13, name: 'Marketing (xostess)'),
+      TrainingTheme(id: 14, name: 'Marketing (kassa)'),
     ];
 
     try {

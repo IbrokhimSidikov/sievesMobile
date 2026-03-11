@@ -375,7 +375,7 @@ class WorkEntryService {
       final now = DateTime.now();
       
       // Check if department is excluded from cutoff logic
-      final excludedDepartments = [16, 28, 20];
+      final excludedDepartments = [28, 20];
       final isExcludedDepartment = excludedDepartments.contains(departmentId);
       
       DateTime adjustedTime = now;
