@@ -878,8 +878,8 @@ class _BentoCardState extends State<_BentoCard>
             gradient: LinearGradient(
               colors: isDark
                   ? [
-                      color.withOpacity(0.28),
-                      color.withOpacity(0.12),
+                      const Color(0xFF2F2F2F),
+                      const Color(0xFF1A1A1A),
                     ]
                   : [
                       color.withOpacity(0.18),
@@ -890,19 +890,21 @@ class _BentoCardState extends State<_BentoCard>
             ),
             border: Border.all(
               color: isDark
-                  ? color.withOpacity(0.22)
+                  ? const Color(0xFFFFCB74).withOpacity(0.55)
                   : color.withOpacity(0.18),
-              width: 1.2,
+              width: isDark ? 1.6 : 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: color.withOpacity(isDark ? 0.14 : 0.10),
+                color: isDark
+                    ? const Color(0xFFFFCB74).withOpacity(0.10)
+                    : color.withOpacity(0.10),
                 blurRadius: 16,
                 offset: const Offset(0, 6),
                 spreadRadius: -4,
               ),
               BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.25 : 0.05),
+                color: Colors.black.withOpacity(isDark ? 0.40 : 0.05),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -922,7 +924,7 @@ class _BentoCardState extends State<_BentoCard>
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isDark
-                          ? Colors.white.withOpacity(0.05)
+                          ? const Color(0xFFFFCB74).withOpacity(0.08)
                           : color.withOpacity(0.07),
                     ),
                   ),
@@ -937,7 +939,7 @@ class _BentoCardState extends State<_BentoCard>
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
-                            ? Colors.white.withOpacity(0.03)
+                            ? const Color(0xFFF6F6F6).withOpacity(0.04)
                             : color.withOpacity(0.05),
                       ),
                     ),
@@ -960,8 +962,8 @@ class _BentoCardState extends State<_BentoCard>
 
   // Small card: icon + title side by side
   Widget _buildSmallContent(bool isDark, Color color) {
-    final iconColor = isDark ? Colors.white : _darken(color, 0.25);
-    final textColor = isDark ? Colors.white : _darken(color, 0.30);
+    final iconColor = isDark ? const Color(0xFFF6F6F6) : _darken(color, 0.25);
+    final textColor = isDark ? const Color(0xFFF6F6F6) : _darken(color, 0.30);
     return Row(
       children: [
         Container(
@@ -1000,10 +1002,10 @@ class _BentoCardState extends State<_BentoCard>
 
   // Large / medium / wide card: full layout with icon top, title bottom
   Widget _buildFullContent(bool isDark, Color color, bool isLarge) {
-    final iconColor = isDark ? Colors.white : _darken(color, 0.25);
-    final titleColor = isDark ? Colors.white : _darken(color, 0.35);
+    final iconColor = isDark ? const Color(0xFFF6F6F6) : _darken(color, 0.25);
+    final titleColor = isDark ? const Color(0xFFF6F6F6) : _darken(color, 0.35);
     final subtitleColor = isDark
-        ? Colors.white.withOpacity(0.70)
+        ? const Color(0xFFF6F6F6).withOpacity(0.60)
         : _darken(color, 0.20).withOpacity(0.75);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1016,11 +1018,11 @@ class _BentoCardState extends State<_BentoCard>
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(isLarge ? 16.r : 13.r),
             color: isDark
-                ? Colors.white.withOpacity(0.14)
+                ? const Color(0xFFFFCB74).withOpacity(0.15)
                 : color.withOpacity(0.14),
             border: Border.all(
               color: isDark
-                  ? Colors.white.withOpacity(0.18)
+                  ? const Color(0xFFFFCB74).withOpacity(0.35)
                   : color.withOpacity(0.22),
               width: 0.8,
             ),
