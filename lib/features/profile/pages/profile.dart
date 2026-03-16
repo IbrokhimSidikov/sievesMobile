@@ -76,7 +76,7 @@ class _ProfileState extends State<Profile> {
 
       // Get current identity from AuthManager
       final identity = _authManager.currentIdentity;
-      
+
       if (identity == null) {
         throw Exception('No user identity found. Please login again.');
       }
@@ -103,10 +103,11 @@ class _ProfileState extends State<Profile> {
         }
       }
 
-      final employeeData = await _apiService.getEmployeeWithExpand(
-        employeeId,
-        ['identity', 'jobPosition', 'individual.photo'],
-      );
+      final employeeData = await _apiService.getEmployeeWithExpand(employeeId, [
+        'identity',
+        'jobPosition',
+        'individual.photo',
+      ]);
 
       String? role;
       String? jobPositionName;
@@ -115,7 +116,9 @@ class _ProfileState extends State<Profile> {
         role = employeeData['identity']?['role'] as String?;
         jobPositionName = employeeData['jobPosition']?['name'] as String?;
         print('✅ Role: $role, Job Position: $jobPositionName');
-        print('🖼️ Employee photo data from API: ${employeeData['individual']?['photo']}');
+        print(
+          '🖼️ Employee photo data from API: ${employeeData['individual']?['photo']}',
+        );
       }
 
       final Map<String, dynamic> identityData = {
@@ -125,48 +128,82 @@ class _ProfileState extends State<Profile> {
         'role': identity.role,
         'phone': identity.phone,
         'allowance': identity.allowance,
-        'employee': identity.employee != null ? {
-          'id': identity.employee!.id,
-          'status': identity.employee!.status,
-          'individual': identity.employee!.individual != null ? {
-            'firstName': identity.employee!.individual!.firstName,
-            'lastName': identity.employee!.individual!.lastName,
-            'email': identity.employee!.individual!.email,
-            'phone': identity.employee!.individual!.phone,
-            // Use photo from employeeData API response if available
-            'photo': employeeData?['individual']?['photo'] ?? (identity.employee!.individual!.photo != null ? {
-              'id': identity.employee!.individual!.photo!.id,
-              'path': identity.employee!.individual!.photo!.path,
-              'name': identity.employee!.individual!.photo!.name,
-              'format': identity.employee!.individual!.photo!.format,
-              'thumbnail': identity.employee!.individual!.photo!.thumbnail,
-            } : null),
-          } : null,
-          'branch': identity.employee!.branch != null ? {
-            'name': identity.employee!.branch!.name,
-            'address': identity.employee!.branch!.address,
-          } : null,
-          'jobPosition': identity.employee!.jobPosition != null ? {
-            'name': identity.employee!.jobPosition!.name,
-          } : null,
-          'department': identity.employee!.department != null ? {
-            'name': identity.employee!.department!.name,
-          } : null,
-          'reward': identity.employee!.reward != null ? {
-            'amount': identity.employee!.reward!.amount,
-            'type': identity.employee!.reward!.type,
-          } : null,
-        } : null,
+        'employee': identity.employee != null
+            ? {
+                'id': identity.employee!.id,
+                'status': identity.employee!.status,
+                'individual': identity.employee!.individual != null
+                    ? {
+                        'firstName': identity.employee!.individual!.firstName,
+                        'lastName': identity.employee!.individual!.lastName,
+                        'email': identity.employee!.individual!.email,
+                        'phone': identity.employee!.individual!.phone,
+                        // Use photo from employeeData API response if available
+                        'photo':
+                            employeeData?['individual']?['photo'] ??
+                            (identity.employee!.individual!.photo != null
+                                ? {
+                                    'id': identity
+                                        .employee!
+                                        .individual!
+                                        .photo!
+                                        .id,
+                                    'path': identity
+                                        .employee!
+                                        .individual!
+                                        .photo!
+                                        .path,
+                                    'name': identity
+                                        .employee!
+                                        .individual!
+                                        .photo!
+                                        .name,
+                                    'format': identity
+                                        .employee!
+                                        .individual!
+                                        .photo!
+                                        .format,
+                                    'thumbnail': identity
+                                        .employee!
+                                        .individual!
+                                        .photo!
+                                        .thumbnail,
+                                  }
+                                : null),
+                      }
+                    : null,
+                'branch': identity.employee!.branch != null
+                    ? {
+                        'name': identity.employee!.branch!.name,
+                        'address': identity.employee!.branch!.address,
+                      }
+                    : null,
+                'jobPosition': identity.employee!.jobPosition != null
+                    ? {'name': identity.employee!.jobPosition!.name}
+                    : null,
+                'department': identity.employee!.department != null
+                    ? {'name': identity.employee!.department!.name}
+                    : null,
+                'reward': identity.employee!.reward != null
+                    ? {
+                        'amount': identity.employee!.reward!.amount,
+                        'type': identity.employee!.reward!.type,
+                      }
+                    : null,
+              }
+            : null,
         'role': role,
         'jobPositionName': jobPositionName,
       };
 
       // Debug: Log the converted identity data
-      print('📦 [Profile] Converted identity data photo: ${identityData['employee']?['individual']?['photo']}');
-      
+      print(
+        '📦 [Profile] Converted identity data photo: ${identityData['employee']?['individual']?['photo']}',
+      );
+
       // Cache the profile data
       await _cacheService.cacheProfileData(employeeId, identityData);
-      
+
       if (mounted) {
         setState(() {
           _profileData = identityData;
@@ -191,7 +228,7 @@ class _ProfileState extends State<Profile> {
     final now = DateTime.now();
     final firstDayOfMonth = DateTime(now.year, now.month, 1);
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
-    
+
     return {
       'startDate': firstDayOfMonth.toIso8601String().split('T')[0],
       'endDate': lastDayOfMonth.toIso8601String().split('T')[0],
@@ -215,7 +252,9 @@ class _ProfileState extends State<Profile> {
       }
 
       final dateRange = _getCurrentMonthDateRange();
-      print('📅 Fetching work entries from ${dateRange['startDate']} to ${dateRange['endDate']}');
+      print(
+        '📅 Fetching work entries from ${dateRange['startDate']} to ${dateRange['endDate']}',
+      );
 
       final workEntriesResponse = await _apiService.getWorkEntries(
         employeeId,
@@ -225,8 +264,10 @@ class _ProfileState extends State<Profile> {
 
       if (mounted) {
         setState(() {
-          _workEntries = (workEntriesResponse?['entries'] as List<dynamic>?)
-              ?.cast<WorkEntry>() ?? [];
+          _workEntries =
+              (workEntriesResponse?['entries'] as List<dynamic>?)
+                  ?.cast<WorkEntry>() ??
+              [];
           _isLoadingWorkEntries = false;
         });
         print('✅ Loaded ${_workEntries.length} work entries for current month');
@@ -253,7 +294,7 @@ class _ProfileState extends State<Profile> {
       // Get individual_id from employee
       final identity = _authManager.currentIdentity;
       final individualId = identity?.employee?.individualId;
-      
+
       if (individualId == null) {
         print('❌ No individual ID found');
         setState(() {
@@ -266,13 +307,19 @@ class _ProfileState extends State<Profile> {
 
       // Try to load from cache first (if not forcing refresh)
       if (!forceRefresh) {
-        final cachedData = await _cacheService.getCachedPrePaidData(individualId);
+        final cachedData = await _cacheService.getCachedPrePaidData(
+          individualId,
+        );
         if (cachedData != null) {
           print('✅ Loaded pre-paid data from cache');
           if (mounted) {
             setState(() {
-              _prePaidAmount = (cachedData['amount'] as num?)?.toDouble() ?? 0.0;
-              _currentMonthTransactions = (cachedData['transactions'] as List?)?.cast<Map<String, dynamic>>() ?? [];
+              _prePaidAmount =
+                  (cachedData['amount'] as num?)?.toDouble() ?? 0.0;
+              _currentMonthTransactions =
+                  (cachedData['transactions'] as List?)
+                      ?.cast<Map<String, dynamic>>() ??
+                  [];
               _isLoadingPrePaid = false;
               _isPrePaidFromCache = true;
             });
@@ -292,13 +339,13 @@ class _ProfileState extends State<Profile> {
 
       // Log the complete response
       print('🔍 Transaction API Response: $response');
-      
+
       if (response != null) {
         print('📦 Response keys: ${response.keys.toList()}');
         if (response['models'] != null) {
           final transactions = response['models'] as List;
           print('📊 Total transactions received: ${transactions.length}');
-          
+
           // Log first transaction for structure inspection
           if (transactions.isNotEmpty) {
             print('📝 First transaction sample: ${transactions.first}');
@@ -308,33 +355,36 @@ class _ProfileState extends State<Profile> {
 
       if (response != null && response['models'] != null) {
         final transactions = response['models'] as List;
-        
+
         // Get current month and year
         final now = DateTime.now();
         final currentMonth = now.month;
         final currentYear = now.year;
-        
+
         print('📅 Filtering for current month: $currentMonth/$currentYear');
-        
+
         // Filter transactions for current month and sum amounts
         double totalAmount = 0.0;
         int transactionCount = 0;
         List<Map<String, dynamic>> currentMonthTxns = [];
-        
+
         for (var transaction in transactions) {
           try {
             final dateStr = transaction['date'] as String?;
             if (dateStr != null) {
               final transactionDate = DateTime.parse(dateStr);
-              
+
               // Check if transaction is in current month
-              if (transactionDate.month == currentMonth && 
+              if (transactionDate.month == currentMonth &&
                   transactionDate.year == currentYear) {
-                final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+                final amount =
+                    (transaction['amount'] as num?)?.toDouble() ?? 0.0;
                 totalAmount += amount;
                 transactionCount++;
                 currentMonthTxns.add(transaction as Map<String, dynamic>);
-                print('✅ Current month transaction: ${transaction['id']} - Amount: $amount - Date: $dateStr');
+                print(
+                  '✅ Current month transaction: ${transaction['id']} - Amount: $amount - Date: $dateStr',
+                );
               }
             }
           } catch (e) {
@@ -343,7 +393,11 @@ class _ProfileState extends State<Profile> {
         }
 
         // Cache the pre-paid data
-        await _cacheService.cachePrePaidData(individualId, totalAmount, currentMonthTxns);
+        await _cacheService.cachePrePaidData(
+          individualId,
+          totalAmount,
+          currentMonthTxns,
+        );
 
         if (mounted) {
           setState(() {
@@ -352,7 +406,9 @@ class _ProfileState extends State<Profile> {
             _isLoadingPrePaid = false;
             _isPrePaidFromCache = false;
           });
-          print('💰 Total pre-paid amount: $totalAmount UZS from $transactionCount transactions');
+          print(
+            '💰 Total pre-paid amount: $totalAmount UZS from $transactionCount transactions',
+          );
         }
       } else {
         print('⚠️ No models found in response');
@@ -381,7 +437,7 @@ class _ProfileState extends State<Profile> {
     print('═══════════════════════════════════════════════════════');
     print('🔴 [Profile] Logout button pressed');
     print('═══════════════════════════════════════════════════════');
-    
+
     // Show confirmation dialog
     print('📋 [Profile] Showing confirmation dialog...');
     final shouldLogout = await showDialog<bool>(
@@ -390,7 +446,7 @@ class _ProfileState extends State<Profile> {
       builder: (BuildContext context) {
         final theme = Theme.of(context);
         final isDark = theme.brightness == Brightness.dark;
-        
+
         return Dialog(
           backgroundColor: Colors.transparent,
           elevation: 0,
@@ -399,21 +455,15 @@ class _ProfileState extends State<Profile> {
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: isDark 
-                  ? [
-                      const Color(0xFF1F1F2E),
-                      const Color(0xFF1A1A24),
-                    ]
-                  : [
-                      Colors.white,
-                      Colors.grey.shade50,
-                    ],
+                colors: isDark
+                    ? [const Color(0xFF1F1F2E), const Color(0xFF1A1A24)]
+                    : [Colors.white, Colors.grey.shade50],
               ),
               borderRadius: BorderRadius.circular(24.r),
               border: Border.all(
-                color: isDark 
-                  ? Colors.white.withOpacity(0.1)
-                  : Colors.grey.withOpacity(0.2),
+                color: isDark
+                    ? Colors.white.withOpacity(0.1)
+                    : Colors.grey.withOpacity(0.2),
                 width: 1,
               ),
               boxShadow: [
@@ -466,40 +516,40 @@ class _ProfileState extends State<Profile> {
                       size: 40.sp,
                     ),
                   ),
-                  
+
                   SizedBox(height: 24.h),
-                  
+
                   // Title
                   Text(
                     AppLocalizations.of(context).logoutTitle,
                     style: TextStyle(
                       fontSize: 24.sp,
                       fontWeight: FontWeight.w700,
-                      color: isDark 
-                        ? const Color(0xFFE8E8F0)
-                        : AppColors.cxBlack,
+                      color: isDark
+                          ? const Color(0xFFE8E8F0)
+                          : AppColors.cxBlack,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  
+
                   SizedBox(height: 12.h),
-                  
+
                   // Description
                   Text(
                     AppLocalizations.of(context).logoutDesc,
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: 15.sp,
-                      color: isDark 
-                        ? const Color(0xFF9CA3AF)
-                        : AppColors.cxBlack.withOpacity(0.6),
+                      color: isDark
+                          ? const Color(0xFF9CA3AF)
+                          : AppColors.cxBlack.withOpacity(0.6),
                       height: 1.5,
                       letterSpacing: 0.2,
                     ),
                   ),
-                  
+
                   SizedBox(height: 32.h),
-                  
+
                   // Action buttons
                   Row(
                     children: [
@@ -509,13 +559,13 @@ class _ProfileState extends State<Profile> {
                           height: 52.h,
                           decoration: BoxDecoration(
                             color: isDark
-                              ? const Color(0xFF252532)
-                              : Colors.grey.shade100,
+                                ? const Color(0xFF252532)
+                                : Colors.grey.shade100,
                             borderRadius: BorderRadius.circular(16.r),
                             border: Border.all(
                               color: isDark
-                                ? Colors.white.withOpacity(0.1)
-                                : Colors.grey.withOpacity(0.3),
+                                  ? Colors.white.withOpacity(0.1)
+                                  : Colors.grey.withOpacity(0.3),
                               width: 1,
                             ),
                           ),
@@ -531,8 +581,8 @@ class _ProfileState extends State<Profile> {
                                     fontSize: 16.sp,
                                     fontWeight: FontWeight.w600,
                                     color: isDark
-                                      ? const Color(0xFF9CA3AF)
-                                      : AppColors.cxBlack.withOpacity(0.7),
+                                        ? const Color(0xFF9CA3AF)
+                                        : AppColors.cxBlack.withOpacity(0.7),
                                     letterSpacing: 0.5,
                                   ),
                                 ),
@@ -541,9 +591,9 @@ class _ProfileState extends State<Profile> {
                           ),
                         ),
                       ),
-                      
+
                       SizedBox(width: 12.w),
-                      
+
                       // Logout button
                       Expanded(
                         child: Container(
@@ -552,10 +602,7 @@ class _ProfileState extends State<Profile> {
                             gradient: const LinearGradient(
                               begin: Alignment.topLeft,
                               end: Alignment.bottomRight,
-                              colors: [
-                                Color(0xFFEF4444),
-                                Color(0xFFDC2626),
-                              ],
+                              colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
                             ),
                             borderRadius: BorderRadius.circular(16.r),
                             boxShadow: [
@@ -609,7 +656,7 @@ class _ProfileState extends State<Profile> {
 
     if (shouldLogout == true) {
       print('✅ [Profile] User confirmed logout');
-      
+
       // Perform logout via AuthCubit
       // NOTE: Don't show loading dialog here - the global BlocListener in main.dart
       // will handle navigation immediately, which would dispose this widget
@@ -617,12 +664,14 @@ class _ProfileState extends State<Profile> {
       print('🔄 [Profile] Calling AuthCubit.logout()...');
       await context.read<AuthCubit>().logout();
       print('✅ [Profile] AuthCubit.logout() completed');
-      
+
       // The global BlocListener in main.dart will handle navigation to /onboard
       // when AuthUnauthenticated state is emitted
-      
+
       print('═══════════════════════════════════════════════════════');
-      print('✅ [Profile] Logout handler completed - waiting for global navigation');
+      print(
+        '✅ [Profile] Logout handler completed - waiting for global navigation',
+      );
       print('═══════════════════════════════════════════════════════');
       print('');
     } else {
@@ -635,8 +684,18 @@ class _ProfileState extends State<Profile> {
   String _getCurrentMonthString() {
     final now = DateTime.now();
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${months[now.month - 1]} ${now.year}';
   }
@@ -645,11 +704,11 @@ class _ProfileState extends State<Profile> {
   Future<void> _forceRefresh() async {
     final employeeId = _authManager.currentEmployeeId;
     final individualId = _authManager.currentIdentity?.employee?.individualId;
-    
+
     if (employeeId != null) {
       await _cacheService.clearAllCachesForUser(employeeId, individualId);
     }
-    
+
     // Reload all data
     await Future.wait([
       _loadProfileData(forceRefresh: true),
@@ -683,7 +742,9 @@ class _ProfileState extends State<Profile> {
 
       // Try to load from cache first (if not forcing refresh)
       if (!forceRefresh) {
-        final cachedData = await _cacheService.getCachedVacationData(employeeId);
+        final cachedData = await _cacheService.getCachedVacationData(
+          employeeId,
+        );
         if (cachedData != null) {
           print('✅ Loaded vacation data from cache');
           if (mounted) {
@@ -706,7 +767,8 @@ class _ProfileState extends State<Profile> {
         type: 'vacation',
       );
 
-      final vacationEntries = (vacationResponse?['entries'] as List<WorkEntry>?) ?? [];
+      final vacationEntries =
+          (vacationResponse?['entries'] as List<WorkEntry>?) ?? [];
       final totalVacations = vacationResponse?['totalCount'] ?? 0;
 
       print('📊 Found $totalVacations vacation entries');
@@ -717,14 +779,15 @@ class _ProfileState extends State<Profile> {
       if (vacationEntries.isEmpty) {
         // No vacations exist - calculate from first work day
         print('📅 No vacations found, calculating from first work day');
-        
+
         final allClosedEntriesResponse = await _apiService.getWorkEntriesByType(
           employeeId: employeeId,
           status: 'closed',
         );
 
-        final closedEntries = (allClosedEntriesResponse?['entries'] as List<WorkEntry>?) ?? [];
-        
+        final closedEntries =
+            (allClosedEntriesResponse?['entries'] as List<WorkEntry>?) ?? [];
+
         if (closedEntries.isEmpty) {
           print('⚠️ No closed work entries found');
           setState(() {
@@ -741,20 +804,29 @@ class _ProfileState extends State<Profile> {
           if (entry.checkInTime != null && entry.checkOutTime != null) {
             final checkIn = DateTime.parse(entry.checkInTime!);
             final checkOut = DateTime.parse(entry.checkOutTime!);
-            totalWorkedMilliseconds += checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+            totalWorkedMilliseconds +=
+                checkOut.millisecondsSinceEpoch -
+                checkIn.millisecondsSinceEpoch;
           }
         }
 
         // Calculate available vacation days
         // Formula: floor(totalWorkedMilliseconds / (3600000 * 234))
         // 3600000 ms = 1 hour, 234 hours = 1 vacation day
-        final calculatedDays = (totalWorkedMilliseconds / (3600000 * 234)).floor();
+        final calculatedDays = (totalWorkedMilliseconds / (3600000 * 234))
+            .floor();
         final availableDays = calculatedDays > 7 ? 7 : calculatedDays;
 
-        print('✅ Calculated vacation days: $availableDays (from ${closedEntries.length} closed entries)');
+        print(
+          '✅ Calculated vacation days: $availableDays (from ${closedEntries.length} closed entries)',
+        );
 
         // Cache the vacation data
-        await _cacheService.cacheVacationData(employeeId, availableDays, totalVacations);
+        await _cacheService.cacheVacationData(
+          employeeId,
+          availableDays,
+          totalVacations,
+        );
 
         setState(() {
           _availableVacationDays = availableDays;
@@ -765,7 +837,7 @@ class _ProfileState extends State<Profile> {
       } else {
         // Vacations exist - calculate from most recent vacation date
         print('📅 Vacations found, calculating from most recent vacation');
-        
+
         // Sort by check_in_time descending (most recent first)
         vacationEntries.sort((a, b) {
           final aTime = DateTime.parse(a.checkInTime ?? '');
@@ -775,7 +847,9 @@ class _ProfileState extends State<Profile> {
 
         // Get the most recent vacation date
         final mostRecentVacation = vacationEntries.first;
-        startDate = DateTime.parse(mostRecentVacation.checkInTime!).toIso8601String().split('T')[0];
+        startDate = DateTime.parse(
+          mostRecentVacation.checkInTime!,
+        ).toIso8601String().split('T')[0];
 
         print('📅 Most recent vacation: $startDate');
 
@@ -788,9 +862,12 @@ class _ProfileState extends State<Profile> {
           endDate: endDate,
         );
 
-        final attendanceEntries = (attendanceResponse?['entries'] as List<WorkEntry>?) ?? [];
+        final attendanceEntries =
+            (attendanceResponse?['entries'] as List<WorkEntry>?) ?? [];
 
-        print('📊 Found ${attendanceEntries.length} attendance entries since last vacation');
+        print(
+          '📊 Found ${attendanceEntries.length} attendance entries since last vacation',
+        );
 
         // Calculate total worked milliseconds
         int totalWorkedMilliseconds = 0;
@@ -798,20 +875,27 @@ class _ProfileState extends State<Profile> {
           if (entry.checkInTime != null && entry.checkOutTime != null) {
             final checkIn = DateTime.parse(entry.checkInTime!);
             final checkOut = DateTime.parse(entry.checkOutTime!);
-            totalWorkedMilliseconds += checkOut.millisecondsSinceEpoch - checkIn.millisecondsSinceEpoch;
+            totalWorkedMilliseconds +=
+                checkOut.millisecondsSinceEpoch -
+                checkIn.millisecondsSinceEpoch;
           }
         }
 
         print('⏱️ Total worked milliseconds: $totalWorkedMilliseconds');
 
         // Calculate available vacation days
-        final calculatedDays = (totalWorkedMilliseconds / (3600000 * 234)).floor();
+        final calculatedDays = (totalWorkedMilliseconds / (3600000 * 234))
+            .floor();
         final availableDays = calculatedDays > 7 ? 7 : calculatedDays;
 
         print('✅ Calculated vacation days: $availableDays (max 7)');
 
         // Cache the vacation data
-        await _cacheService.cacheVacationData(employeeId, availableDays, totalVacations);
+        await _cacheService.cacheVacationData(
+          employeeId,
+          availableDays,
+          totalVacations,
+        );
 
         setState(() {
           _availableVacationDays = availableDays;
@@ -875,15 +959,26 @@ class _ProfileState extends State<Profile> {
         final now = DateTime.now();
         final previousMonth = DateTime(now.year, now.month - 1, 1);
         const months = [
-          'January', 'February', 'March', 'April', 'May', 'June',
-          'July', 'August', 'September', 'October', 'November', 'December'
+          'January',
+          'February',
+          'March',
+          'April',
+          'May',
+          'June',
+          'July',
+          'August',
+          'September',
+          'October',
+          'November',
+          'December',
         ];
-        final monthName = '${months[previousMonth.month - 1]} ${previousMonth.year}';
+        final monthName =
+            '${months[previousMonth.month - 1]} ${previousMonth.year}';
 
         // Extract bonus amount from response
         // Handle different response structures
         double bonusAmount = 0.0;
-        
+
         if (response is Map<String, dynamic>) {
           // Helper function to safely parse amount (handles both String and num)
           double parseAmount(dynamic value) {
@@ -894,7 +989,7 @@ class _ProfileState extends State<Profile> {
             }
             return 0.0;
           }
-          
+
           // Try different possible field names
           if (response.containsKey('amount')) {
             bonusAmount = parseAmount(response['amount']);
@@ -912,7 +1007,7 @@ class _ProfileState extends State<Profile> {
               bonusAmount = parseAmount(bonus['amount']);
             }
           }
-          
+
           print('📊 Bonus response: $response');
           print('💰 Extracted bonus amount: $bonusAmount UZS');
         }
@@ -954,13 +1049,25 @@ class _ProfileState extends State<Profile> {
       context: context,
       builder: (BuildContext context) {
         final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-        final dialogBg = isDarkMode ? const Color(0xFF1A1A24) : AppColors.cxPureWhite;
-        final itemBg = isDarkMode ? const Color(0xFF252532) : AppColors.cxF5F7F9;
-        final primaryText = isDarkMode ? const Color(0xFFE8E8F0) : AppColors.cxBlack;
-        final secondaryText = isDarkMode ? const Color(0xFF9CA3AF) : AppColors.cxBlack;
-        final borderColor = isDarkMode ? const Color(0xFF374151) : AppColors.cxEmeraldGreen;
-        final greenColor = isDarkMode ? const Color(0xFF34D399) : AppColors.cxEmeraldGreen;
-        
+        final dialogBg = isDarkMode
+            ? const Color(0xFF1A1A24)
+            : AppColors.cxPureWhite;
+        final itemBg = isDarkMode
+            ? const Color(0xFF252532)
+            : AppColors.cxF5F7F9;
+        final primaryText = isDarkMode
+            ? const Color(0xFFE8E8F0)
+            : AppColors.cxBlack;
+        final secondaryText = isDarkMode
+            ? const Color(0xFF9CA3AF)
+            : AppColors.cxBlack;
+        final borderColor = isDarkMode
+            ? const Color(0xFF374151)
+            : AppColors.cxEmeraldGreen;
+        final greenColor = isDarkMode
+            ? const Color(0xFF34D399)
+            : AppColors.cxEmeraldGreen;
+
         return Dialog(
           backgroundColor: Colors.transparent,
           shape: RoundedRectangleBorder(
@@ -971,7 +1078,7 @@ class _ProfileState extends State<Profile> {
             decoration: BoxDecoration(
               color: dialogBg,
               borderRadius: BorderRadius.circular(20.r),
-              border: isDarkMode 
+              border: isDarkMode
                   ? Border.all(color: const Color(0xFF374151), width: 1)
                   : null,
               boxShadow: [
@@ -987,7 +1094,10 @@ class _ProfileState extends State<Profile> {
               children: [
                 // Header
                 Container(
-                  padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 20.w,
+                    vertical: 16.h,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: isDarkMode
@@ -1030,7 +1140,7 @@ class _ProfileState extends State<Profile> {
                     ],
                   ),
                 ),
-                
+
                 // Transaction List
                 Flexible(
                   child: ListView.separated(
@@ -1040,29 +1150,35 @@ class _ProfileState extends State<Profile> {
                     separatorBuilder: (context, index) => SizedBox(height: 8.h),
                     itemBuilder: (context, index) {
                       final transaction = _currentMonthTransactions[index];
-                      final amount = (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-                      final description = transaction['description'] as String? ?? 'No description';
+                      final amount =
+                          (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+                      final description =
+                          transaction['description'] as String? ??
+                          'No description';
                       final dateStr = transaction['date'] as String?;
                       final branchData = transaction['branch_id'] as num?;
                       final branchName = branchData?.toString();
-                      
+
                       String formattedDate = 'N/A';
                       if (dateStr != null) {
                         try {
                           final date = DateTime.parse(dateStr);
-                          formattedDate = '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+                          formattedDate =
+                              '${date.day.toString().padLeft(2, '0')}.${date.month.toString().padLeft(2, '0')}.${date.year} ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
                         } catch (e) {
                           print('Error parsing date: $e');
                         }
                       }
-                      
+
                       return Container(
                         padding: EdgeInsets.all(12.w),
                         decoration: BoxDecoration(
                           color: itemBg,
                           borderRadius: BorderRadius.circular(12.r),
                           border: Border.all(
-                            color: borderColor.withOpacity(isDarkMode ? 0.3 : 0.1),
+                            color: borderColor.withOpacity(
+                              isDarkMode ? 0.3 : 0.1,
+                            ),
                             width: 1,
                           ),
                         ),
@@ -1075,8 +1191,12 @@ class _ProfileState extends State<Profile> {
                               decoration: BoxDecoration(
                                 gradient: LinearGradient(
                                   colors: [
-                                    greenColor.withOpacity(isDarkMode ? 0.2 : 0.1),
-                                    greenColor.withOpacity(isDarkMode ? 0.15 : 0.1),
+                                    greenColor.withOpacity(
+                                      isDarkMode ? 0.2 : 0.1,
+                                    ),
+                                    greenColor.withOpacity(
+                                      isDarkMode ? 0.15 : 0.1,
+                                    ),
                                   ],
                                 ),
                                 borderRadius: BorderRadius.circular(8.r),
@@ -1088,7 +1208,7 @@ class _ProfileState extends State<Profile> {
                               ),
                             ),
                             SizedBox(width: 12.w),
-                            
+
                             // Content
                             Expanded(
                               child: Column(
@@ -1120,7 +1240,9 @@ class _ProfileState extends State<Profile> {
                                             branchName,
                                             style: TextStyle(
                                               fontSize: 11.sp,
-                                              color: secondaryText.withOpacity(0.6),
+                                              color: secondaryText.withOpacity(
+                                                0.6,
+                                              ),
                                               fontWeight: FontWeight.w500,
                                             ),
                                             maxLines: 1,
@@ -1141,15 +1263,12 @@ class _ProfileState extends State<Profile> {
                                 ],
                               ),
                             ),
-                            
+
                             SizedBox(width: 8.w),
-                            
+
                             // Amount
                             Text(
-                              '${amount.toStringAsFixed(0).replaceAllMapped(
-                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                (Match m) => '${m[1]} ',
-                              )}',
+                              '${amount.toStringAsFixed(0).replaceAllMapped(RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'), (Match m) => '${m[1]} ')}',
                               style: TextStyle(
                                 fontSize: 15.sp,
                                 fontWeight: FontWeight.w700,
@@ -1175,31 +1294,33 @@ class _ProfileState extends State<Profile> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     // NOTE: Removed BlocListener here because main.dart has a global listener
     // that handles navigation when AuthUnauthenticated is emitted
     // Having two listeners caused navigation conflicts and the loading dialog to get stuck
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       body: Container(
         decoration: BoxDecoration(
-          gradient: isDark ? null : LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              AppColors.cxSoftWhite,
-              AppColors.cxPlatinumGray.withOpacity(0.3),
-              AppColors.cxPureWhite,
-            ],
-          ),
+          gradient: isDark
+              ? null
+              : LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.cxSoftWhite,
+                    AppColors.cxPlatinumGray.withOpacity(0.3),
+                    AppColors.cxPureWhite,
+                  ],
+                ),
         ),
         child: SafeArea(
           child: _isLoading
               ? _buildLoadingState()
               : _error != null
-                  ? _buildErrorState()
-                  : _buildProfileContent(),
+              ? _buildErrorState()
+              : _buildProfileContent(),
         ),
       ),
     );
@@ -1208,13 +1329,13 @@ class _ProfileState extends State<Profile> {
   Widget _buildLoadingState() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final shimmerBase = isDark 
-        ? Colors.white.withOpacity(0.03) 
+    final shimmerBase = isDark
+        ? Colors.white.withOpacity(0.03)
         : Colors.grey.shade200;
-    final shimmerHighlight = isDark 
-        ? Colors.white.withOpacity(0.08) 
+    final shimmerHighlight = isDark
+        ? Colors.white.withOpacity(0.08)
         : Colors.grey.shade50;
-    
+
     return SingleChildScrollView(
       padding: EdgeInsets.all(20.w),
       child: Column(
@@ -1278,7 +1399,7 @@ class _ProfileState extends State<Profile> {
             ],
           ),
           SizedBox(height: 24.h),
-          
+
           // Profile card shimmer with gradient effect
           Container(
             width: double.infinity,
@@ -1372,7 +1493,7 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           SizedBox(height: 20.h),
-          
+
           // Work hours card shimmer with gradient
           Container(
             width: double.infinity,
@@ -1497,7 +1618,7 @@ class _ProfileState extends State<Profile> {
             ),
           ),
           SizedBox(height: 20.h),
-          
+
           // Info cards shimmer - 2 columns
           Row(
             children: [
@@ -1527,7 +1648,7 @@ class _ProfileState extends State<Profile> {
             ],
           ),
           SizedBox(height: 12.h),
-          
+
           Row(
             children: [
               Expanded(
@@ -1635,7 +1756,7 @@ class _ProfileState extends State<Profile> {
   Widget _buildErrorState() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    
+
     return Center(
       child: Padding(
         padding: EdgeInsets.all(32.w),
@@ -1691,10 +1812,7 @@ class _ProfileState extends State<Profile> {
                 gradient: const LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    Color(0xFFEF4444),
-                    Color(0xFFDC2626),
-                  ],
+                  colors: [Color(0xFFEF4444), Color(0xFFDC2626)],
                 ),
                 borderRadius: BorderRadius.circular(16.r),
                 boxShadow: [
@@ -1711,7 +1829,10 @@ class _ProfileState extends State<Profile> {
                   onTap: _handleLogout,
                   borderRadius: BorderRadius.circular(16.r),
                   child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 32.w, vertical: 12.h),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 32.w,
+                      vertical: 12.h,
+                    ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1764,7 +1885,100 @@ class _ProfileState extends State<Profile> {
           _buildVacationDaysCard(),
           SizedBox(height: 20.h),
           _buildJobInfoCard(),
+          SizedBox(height: 20.h),
+          _buildFeedbackButton(),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFeedbackButton() {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+
+    return GestureDetector(
+      onTap: () => context.push(AppRoutes.feedbackForm),
+      child: Container(
+        width: double.infinity,
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 16.h),
+        decoration: BoxDecoration(
+          color: isDark ? const Color(0xFF1A1A24) : AppColors.cxPureWhite,
+          borderRadius: BorderRadius.circular(20.r),
+          border: Border.all(
+            color: AppColors.cx43C19F.withOpacity(isDark ? 0.3 : 0.2),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.cx43C19F.withOpacity(0.08),
+              blurRadius: 16,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 44.w,
+              height: 44.h,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [
+                    AppColors.cx43C19F.withOpacity(0.2),
+                    AppColors.cx4AC1A7.withOpacity(0.1),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12.r),
+                border: Border.all(
+                  color: AppColors.cx43C19F.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.feedback_outlined,
+                color: AppColors.cx43C19F,
+                size: 22.sp,
+              ),
+            ),
+            SizedBox(width: 16.w),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    AppLocalizations.of(context).feedback,
+                    style: TextStyle(
+                      fontSize: 16.sp,
+                      fontWeight: FontWeight.w600,
+                      color: isDark
+                          ? const Color(0xFFE8E8F0)
+                          : AppColors.cxBlack,
+                    ),
+                  ),
+                  SizedBox(height: 2.h),
+                  Text(
+                    AppLocalizations.of(context).feedbackSubtitle,
+                    style: TextStyle(
+                      fontSize: 13.sp,
+                      color: isDark
+                          ? const Color(0xFF9CA3AF)
+                          : AppColors.cxBlack.withOpacity(0.5),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(
+              Icons.arrow_forward_ios_rounded,
+              color: isDark
+                  ? const Color(0xFF6B7280)
+                  : AppColors.cxBlack.withOpacity(0.3),
+              size: 16.sp,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1772,8 +1986,12 @@ class _ProfileState extends State<Profile> {
   Widget _buildHeader() {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final isAnyCached = _isFromCache || _isPrePaidFromCache || _isVacationFromCache || _isBonusFromCache;
-    
+    final isAnyCached =
+        _isFromCache ||
+        _isPrePaidFromCache ||
+        _isVacationFromCache ||
+        _isBonusFromCache;
+
     return Row(
       children: [
         IconButton(
@@ -1844,10 +2062,7 @@ class _ProfileState extends State<Profile> {
               ],
             ),
             borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-              color: Colors.red.withOpacity(0.2),
-              width: 1,
-            ),
+            border: Border.all(color: Colors.red.withOpacity(0.2), width: 1),
           ),
           child: IconButton(
             onPressed: _handleLogout,
@@ -1868,11 +2083,11 @@ class _ProfileState extends State<Profile> {
     final identity = _profileData;
     final employee = _profileData?['employee'];
     final employeeIndividual = employee?['individual'];
-    
+
     // Debug logging
     print('🖼️ [Profile] Individual data: $individual');
     print('🖼️ [Profile] Photo data: ${individual?['photo']}');
-    
+
     // Get the photo URL from the individual's photo object
     String? photoUrl;
     final photoData = individual?['photo'];
@@ -1880,27 +2095,25 @@ class _ProfileState extends State<Profile> {
       final path = photoData['path'] as String?;
       final name = photoData['name'] as String?;
       final format = photoData['format'] as String?;
-      
+
       print('🖼️ [Profile] Photo path: $path, name: $name, format: $format');
-      
+
       if (path != null && name != null && format != null) {
-        photoUrl = 'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
+        photoUrl =
+            'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
         print('🖼️ [Profile] Constructed photo URL: $photoUrl');
       }
     } else {
       print('🖼️ [Profile] Photo data is null or not a Map');
     }
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            AppColors.cxRoyalBlue,
-            AppColors.cxEmeraldGreen,
-          ],
+          colors: [AppColors.cxRoyalBlue, AppColors.cxEmeraldGreen],
         ),
         borderRadius: BorderRadius.circular(24.r),
         boxShadow: [
@@ -1938,7 +2151,8 @@ class _ProfileState extends State<Profile> {
                     ? Image.network(
                         photoUrl,
                         fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => _buildDefaultAvatar(),
+                        errorBuilder: (context, error, stackTrace) =>
+                            _buildDefaultAvatar(),
                       )
                     : _buildDefaultAvatar(),
               ),
@@ -1946,8 +2160,11 @@ class _ProfileState extends State<Profile> {
             SizedBox(height: 16.h),
             // Name
             Text(
-              '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'.trim().isNotEmpty 
-                  ? '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'.trim()
+              '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'
+                      .trim()
+                      .isNotEmpty
+                  ? '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'
+                        .trim()
                   : 'No name',
               style: TextStyle(
                 fontSize: 24.sp,
@@ -2056,19 +2273,31 @@ class _ProfileState extends State<Profile> {
   Widget _buildWorkHoursCard() {
     // Use work entries fetched from API (already filtered to current month)
     final currentMonthEntries = _workEntries;
-    
+
     // Calculate hours using WorkTimeCalculator
-    final totalHoursFormatted = WorkTimeCalculator.calculateTotalHours(currentMonthEntries);
-    final totalHours = WorkTimeCalculator.getTotalHoursAsDouble(currentMonthEntries);
-    final dayHoursFormatted = WorkTimeCalculator.calculateDayHours(currentMonthEntries);
-    final dayHours = WorkTimeCalculator.getDayHoursAsDouble(currentMonthEntries);
-    final nightHoursFormatted = WorkTimeCalculator.calculateNightHours(currentMonthEntries);
-    final nightHours = WorkTimeCalculator.getNightHoursAsDouble(currentMonthEntries);
+    final totalHoursFormatted = WorkTimeCalculator.calculateTotalHours(
+      currentMonthEntries,
+    );
+    final totalHours = WorkTimeCalculator.getTotalHoursAsDouble(
+      currentMonthEntries,
+    );
+    final dayHoursFormatted = WorkTimeCalculator.calculateDayHours(
+      currentMonthEntries,
+    );
+    final dayHours = WorkTimeCalculator.getDayHoursAsDouble(
+      currentMonthEntries,
+    );
+    final nightHoursFormatted = WorkTimeCalculator.calculateNightHours(
+      currentMonthEntries,
+    );
+    final nightHours = WorkTimeCalculator.getNightHoursAsDouble(
+      currentMonthEntries,
+    );
     final isOvertime = WorkTimeCalculator.isOvertime(currentMonthEntries);
-    
+
     // Display current month
     final month = _getCurrentMonthString();
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -2137,7 +2366,10 @@ class _ProfileState extends State<Profile> {
                       // Overtime badge
                       if (isOvertime)
                         Container(
-                          padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 12.w,
+                            vertical: 6.h,
+                          ),
                           decoration: BoxDecoration(
                             color: Colors.orange.withOpacity(0.9),
                             borderRadius: BorderRadius.circular(12.r),
@@ -2336,7 +2568,7 @@ class _ProfileState extends State<Profile> {
             ],
           ),
           SizedBox(height: 24.h),
-          
+
           // Total hours shimmer - prominent display
           Center(
             child: Column(
@@ -2361,9 +2593,9 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          
+
           SizedBox(height: 24.h),
-          
+
           // Day and Night hours shimmer breakdown
           Row(
             children: [
@@ -2484,29 +2716,43 @@ class _ProfileState extends State<Profile> {
     final bonusAmount = _bonusAmount;
     final bonusMonth = _bonusMonth.isNotEmpty ? _bonusMonth : 'Previous Month';
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Color scheme for light and dark modes
-    final cardBgStart = isDarkMode ? const Color(0xFF2D1B4E) : const Color(0xFFFFF5F7);
-    final cardBgMid = isDarkMode ? const Color(0xFF3D2563) : const Color(0xFFFFE8EC);
-    final cardBgEnd = isDarkMode ? const Color(0xFF4A2F7A) : const Color(0xFFFFD6DD);
-    final borderColor = isDarkMode ? const Color(0xFF7C4DFF) : const Color(0xFFFF6B9D);
-    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
-    final secondaryText = isDarkMode ? const Color(0xFFB8B8C8) : AppColors.cxBlack;
-    final purpleColor = isDarkMode ? const Color(0xFFB388FF) : const Color(0xFFAF52DE);
-    final purpleColorLight = isDarkMode ? const Color(0xFF9C7AFF) : const Color(0xFFC77DFF);
-    final accentGlow = isDarkMode ? const Color(0xFFB388FF) : const Color(0xFFFF6B9D);
-    
+    final cardBgStart = isDarkMode
+        ? const Color(0xFF2D1B4E)
+        : const Color(0xFFFFF5F7);
+    final cardBgMid = isDarkMode
+        ? const Color(0xFF3D2563)
+        : const Color(0xFFFFE8EC);
+    final cardBgEnd = isDarkMode
+        ? const Color(0xFF4A2F7A)
+        : const Color(0xFFFFD6DD);
+    final borderColor = isDarkMode
+        ? const Color(0xFF7C4DFF)
+        : const Color(0xFFFF6B9D);
+    final primaryText = isDarkMode
+        ? const Color(0xFFF0F0F5)
+        : AppColors.cxBlack;
+    final secondaryText = isDarkMode
+        ? const Color(0xFFB8B8C8)
+        : AppColors.cxBlack;
+    final purpleColor = isDarkMode
+        ? const Color(0xFFB388FF)
+        : const Color(0xFFAF52DE);
+    final purpleColorLight = isDarkMode
+        ? const Color(0xFF9C7AFF)
+        : const Color(0xFFC77DFF);
+    final accentGlow = isDarkMode
+        ? const Color(0xFFB388FF)
+        : const Color(0xFFFF6B9D);
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            cardBgStart,
-            cardBgMid,
-            cardBgEnd,
-          ],
+          colors: [cardBgStart, cardBgMid, cardBgEnd],
           stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(24.r),
@@ -2517,7 +2763,9 @@ class _ProfileState extends State<Profile> {
         boxShadow: [
           // Primary shadow
           BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(isDarkMode ? 0.6 : 0.15),
+            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(
+              isDarkMode ? 0.6 : 0.15,
+            ),
             blurRadius: 24,
             offset: Offset(0, 10),
             spreadRadius: isDarkMode ? -2 : 0,
@@ -2531,7 +2779,9 @@ class _ProfileState extends State<Profile> {
           ),
           // Secondary shadow for depth
           BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(isDarkMode ? 0.4 : 0.08),
+            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(
+              isDarkMode ? 0.4 : 0.08,
+            ),
             blurRadius: 40,
             offset: Offset(0, 20),
             spreadRadius: isDarkMode ? -10 : -5,
@@ -2575,180 +2825,246 @@ class _ProfileState extends State<Profile> {
               ),
             ),
           ),
-          
+
           Padding(
             padding: EdgeInsets.all(24.w),
             child: _isLoadingBonus
                 ? _buildBonusShimmer(isDarkMode, purpleColor, purpleColorLight)
                 : Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with icon and title
-                Row(
-                  children: [
-                    Container(
-                      padding: EdgeInsets.all(12.w),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            purpleColor.withOpacity(isDarkMode ? 0.25 : 0.2),
-                            purpleColorLight.withOpacity(isDarkMode ? 0.2 : 0.15),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(16.r),
-                        boxShadow: [
-                          BoxShadow(
-                            color: purpleColor.withOpacity(0.3),
-                            blurRadius: 12,
-                            offset: Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.card_giftcard_rounded,
-                        color: isDarkMode ? purpleColor : purpleColor,
-                        size: 28.sp,
-                      ),
-                    ),
-                    SizedBox(width: 16.w),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            AppLocalizations.of(context).bonus,
-                            style: TextStyle(
-                              fontSize: 22.sp,
-                              fontWeight: FontWeight.w700,
-                              color: primaryText,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                          Text(
-                            bonusMonth,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              color: secondaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    // Bonus badge
-                    Container(
-                      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            purpleColor.withOpacity(isDarkMode ? 0.3 : 0.2),
-                            purpleColorLight.withOpacity(isDarkMode ? 0.25 : 0.15),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: purpleColor.withOpacity(0.4),
-                          width: 1,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.star_rounded,
-                            color: isDarkMode ? purpleColor : purpleColor,
-                            size: 16.sp,
-                          ),
-                          SizedBox(width: 4.w),
-                          Text(
-                            'Active',
-                            style: TextStyle(
-                              fontSize: 11.sp,
-                              fontWeight: FontWeight.w700,
-                              color: primaryText,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                SizedBox(height: 24.h),
-                
-                // Bonus amount - prominent display
-                Center(
-                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Header with icon and title
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                              bonusAmount.toStringAsFixed(0).replaceAllMapped(
-                                RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                    (Match m) => '${m[1]} ',
+                          Container(
+                            padding: EdgeInsets.all(12.w),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  purpleColor.withOpacity(
+                                    isDarkMode ? 0.25 : 0.2,
+                                  ),
+                                  purpleColorLight.withOpacity(
+                                    isDarkMode ? 0.2 : 0.15,
+                                  ),
+                                ],
                               ),
-                            style: TextStyle(
-                              fontSize: 52.sp,
-                              fontWeight: FontWeight.w800,
-                              color: primaryText,
-                              height: 1.0,
-                              fontFeatures: [FontFeature.tabularFigures()],
-                              shadows: [
-                                Shadow(
+                              borderRadius: BorderRadius.circular(16.r),
+                              boxShadow: [
+                                BoxShadow(
                                   color: purpleColor.withOpacity(0.3),
-                                  blurRadius: 20,
+                                  blurRadius: 12,
                                   offset: Offset(0, 4),
                                 ),
                               ],
                             ),
+                            child: Icon(
+                              Icons.card_giftcard_rounded,
+                              color: isDarkMode ? purpleColor : purpleColor,
+                              size: 28.sp,
+                            ),
                           ),
-                          SizedBox(width: 8.w),
-                          Padding(
-                            padding: EdgeInsets.only(top: 8.h),
-                            child: Text(
-                              'UZS',
-                              style: TextStyle(
-                                fontSize: 18.sp,
-                                fontWeight: FontWeight.w600,
-                                color: secondaryText,
-                                letterSpacing: 0.5,
+                          SizedBox(width: 16.w),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  AppLocalizations.of(context).bonus,
+                                  style: TextStyle(
+                                    fontSize: 22.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: primaryText,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  bonusMonth,
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    color: secondaryText,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          // Bonus badge
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 12.w,
+                              vertical: 6.h,
+                            ),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [
+                                  purpleColor.withOpacity(
+                                    isDarkMode ? 0.3 : 0.2,
+                                  ),
+                                  purpleColorLight.withOpacity(
+                                    isDarkMode ? 0.25 : 0.15,
+                                  ),
+                                ],
                               ),
+                              borderRadius: BorderRadius.circular(12.r),
+                              border: Border.all(
+                                color: purpleColor.withOpacity(0.4),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.star_rounded,
+                                  color: isDarkMode ? purpleColor : purpleColor,
+                                  size: 16.sp,
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  'Active',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: primaryText,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      SizedBox(height: 8.h),
+                      SizedBox(height: 24.h),
+
+                      // Bonus amount - prominent display
+                      Center(
+                        child: Column(
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  bonusAmount
+                                      .toStringAsFixed(0)
+                                      .replaceAllMapped(
+                                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                        (Match m) => '${m[1]} ',
+                                      ),
+                                  style: TextStyle(
+                                    fontSize: 52.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: primaryText,
+                                    height: 1.0,
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                    shadows: [
+                                      Shadow(
+                                        color: purpleColor.withOpacity(0.3),
+                                        blurRadius: 20,
+                                        offset: Offset(0, 4),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(width: 8.w),
+                                Padding(
+                                  padding: EdgeInsets.only(top: 8.h),
+                                  child: Text(
+                                    'UZS',
+                                    style: TextStyle(
+                                      fontSize: 18.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: secondaryText,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            SizedBox(height: 8.h),
+                            Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 16.w,
+                                vertical: 8.h,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    purpleColor.withOpacity(
+                                      isDarkMode ? 0.2 : 0.15,
+                                    ),
+                                    purpleColorLight.withOpacity(
+                                      isDarkMode ? 0.15 : 0.1,
+                                    ),
+                                  ],
+                                ),
+                                borderRadius: BorderRadius.circular(20.r),
+                                border: Border.all(
+                                  color: purpleColor.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.trending_up_rounded,
+                                    color: purpleColor,
+                                    size: 16.sp,
+                                  ),
+                                  SizedBox(width: 6.w),
+                                  Text(
+                                    AppLocalizations.of(
+                                      context,
+                                    ).currentBonusAmount,
+                                    style: TextStyle(
+                                      fontSize: 13.sp,
+                                      fontWeight: FontWeight.w600,
+                                      color: primaryText,
+                                      letterSpacing: 0.3,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      SizedBox(height: 20.h),
+
+                      // Info message
                       Container(
-                        padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 8.h),
+                        padding: EdgeInsets.all(16.w),
                         decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              purpleColor.withOpacity(isDarkMode ? 0.2 : 0.15),
-                              purpleColorLight.withOpacity(isDarkMode ? 0.15 : 0.1),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(20.r),
+                          color: (isDarkMode ? Colors.white : Colors.black)
+                              .withOpacity(isDarkMode ? 0.05 : 0.03),
+                          borderRadius: BorderRadius.circular(16.r),
                           border: Border.all(
-                            color: purpleColor.withOpacity(0.3),
+                            color: (isDarkMode ? Colors.white : Colors.black)
+                                .withOpacity(isDarkMode ? 0.1 : 0.05),
                             width: 1,
                           ),
                         ),
                         child: Row(
-                          mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              Icons.trending_up_rounded,
-                              color: purpleColor,
-                              size: 16.sp,
+                              Icons.info_outline_rounded,
+                              color: secondaryText,
+                              size: 20.sp,
                             ),
-                            SizedBox(width: 6.w),
-                            Text(
-                              AppLocalizations.of(context).currentBonusAmount,
-                              style: TextStyle(
-                                fontSize: 13.sp,
-                                fontWeight: FontWeight.w600,
-                                color: primaryText,
-                                letterSpacing: 0.3,
+                            SizedBox(width: 12.w),
+                            Expanded(
+                              child: Text(
+                                bonusAmount > 0
+                                    ? AppLocalizations.of(context).bonusDesc
+                                    : AppLocalizations.of(context).noBonus,
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  color: secondaryText,
+                                  height: 1.4,
+                                ),
                               ),
                             ),
                           ],
@@ -2756,56 +3072,23 @@ class _ProfileState extends State<Profile> {
                       ),
                     ],
                   ),
-                ),
-                
-                SizedBox(height: 20.h),
-                
-                // Info message
-                Container(
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: (isDarkMode ? Colors.white : Colors.black).withOpacity(isDarkMode ? 0.05 : 0.03),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: (isDarkMode ? Colors.white : Colors.black).withOpacity(isDarkMode ? 0.1 : 0.05),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.info_outline_rounded,
-                        color: secondaryText,
-                        size: 20.sp,
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Text(
-                          bonusAmount > 0
-                              ? AppLocalizations.of(context).bonusDesc
-                              : AppLocalizations.of(context).noBonus,
-                          style: TextStyle(
-                            fontSize: 13.sp,
-                            color: secondaryText,
-                            height: 1.4,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildBonusShimmer(bool isDarkMode, Color purpleColor, Color purpleColorLight) {
-    final shimmerBase = (isDarkMode ? Colors.white : purpleColor).withOpacity(isDarkMode ? 0.05 : 0.2);
-    final shimmerHighlight = (isDarkMode ? Colors.white : purpleColor).withOpacity(isDarkMode ? 0.1 : 0.4);
-    
+  Widget _buildBonusShimmer(
+    bool isDarkMode,
+    Color purpleColor,
+    Color purpleColorLight,
+  ) {
+    final shimmerBase = (isDarkMode ? Colors.white : purpleColor).withOpacity(
+      isDarkMode ? 0.05 : 0.2,
+    );
+    final shimmerHighlight = (isDarkMode ? Colors.white : purpleColor)
+        .withOpacity(isDarkMode ? 0.1 : 0.4);
+
     return Shimmer.fromColors(
       baseColor: shimmerBase,
       highlightColor: shimmerHighlight,
@@ -2859,7 +3142,7 @@ class _ProfileState extends State<Profile> {
             ],
           ),
           SizedBox(height: 24.h),
-          
+
           // Amount shimmer - prominent display
           Center(
             child: Column(
@@ -2884,9 +3167,9 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          
+
           SizedBox(height: 20.h),
-          
+
           // Info message shimmer
           Container(
             padding: EdgeInsets.all(16.w),
@@ -2942,29 +3225,39 @@ class _ProfileState extends State<Profile> {
     final double prePaidAmount = _prePaidAmount;
     final String month = _getCurrentMonthString();
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Dark mode colors - more luxurious palette
-    final cardBgStart = isDarkMode ? const Color(0xFF1E1E2E) : AppColors.cxPureWhite;
+    final cardBgStart = isDarkMode
+        ? const Color(0xFF1E1E2E)
+        : AppColors.cxPureWhite;
     final cardBgMid = isDarkMode ? const Color(0xFF252538) : AppColors.cxF7F6F9;
     final cardBgEnd = isDarkMode ? const Color(0xFF2A2A3E) : AppColors.cxF5F7F9;
-    final borderColor = isDarkMode ? const Color(0xFF3D3D5C) : AppColors.cxEmeraldGreen;
-    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
-    final secondaryText = isDarkMode ? const Color(0xFFA8A8B8) : AppColors.cxBlack;
-    final greenColor = isDarkMode ? const Color(0xFF3DDBA4) : AppColors.cxEmeraldGreen;
-    final greenColorLight = isDarkMode ? const Color(0xFF2BC990) : Color(0xFF4AC1A7);
-    final accentGlow = isDarkMode ? const Color(0xFF3DDBA4) : AppColors.cxEmeraldGreen;
-    
+    final borderColor = isDarkMode
+        ? const Color(0xFF3D3D5C)
+        : AppColors.cxEmeraldGreen;
+    final primaryText = isDarkMode
+        ? const Color(0xFFF0F0F5)
+        : AppColors.cxBlack;
+    final secondaryText = isDarkMode
+        ? const Color(0xFFA8A8B8)
+        : AppColors.cxBlack;
+    final greenColor = isDarkMode
+        ? const Color(0xFF3DDBA4)
+        : AppColors.cxEmeraldGreen;
+    final greenColorLight = isDarkMode
+        ? const Color(0xFF2BC990)
+        : Color(0xFF4AC1A7);
+    final accentGlow = isDarkMode
+        ? const Color(0xFF3DDBA4)
+        : AppColors.cxEmeraldGreen;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            cardBgStart,
-            cardBgMid,
-            cardBgEnd,
-          ],
+          colors: [cardBgStart, cardBgMid, cardBgEnd],
           stops: [0.0, 0.5, 1.0],
         ),
         borderRadius: BorderRadius.circular(24.r),
@@ -2975,7 +3268,9 @@ class _ProfileState extends State<Profile> {
         boxShadow: [
           // Primary shadow
           BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(isDarkMode ? 0.5 : 0.1),
+            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(
+              isDarkMode ? 0.5 : 0.1,
+            ),
             blurRadius: 24,
             offset: Offset(0, 10),
             spreadRadius: isDarkMode ? -2 : 0,
@@ -2990,7 +3285,9 @@ class _ProfileState extends State<Profile> {
             ),
           // Secondary shadow for depth
           BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(isDarkMode ? 0.3 : 0.05),
+            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(
+              isDarkMode ? 0.3 : 0.05,
+            ),
             blurRadius: 40,
             offset: Offset(0, 20),
             spreadRadius: isDarkMode ? -10 : -5,
@@ -3014,8 +3311,12 @@ class _ProfileState extends State<Profile> {
                             decoration: BoxDecoration(
                               gradient: LinearGradient(
                                 colors: [
-                                  greenColor.withOpacity(isDarkMode ? 0.2 : 0.15),
-                                  greenColorLight.withOpacity(isDarkMode ? 0.15 : 0.15),
+                                  greenColor.withOpacity(
+                                    isDarkMode ? 0.2 : 0.15,
+                                  ),
+                                  greenColorLight.withOpacity(
+                                    isDarkMode ? 0.15 : 0.15,
+                                  ),
                                 ],
                               ),
                               borderRadius: BorderRadius.circular(16.r),
@@ -3054,16 +3355,13 @@ class _ProfileState extends State<Profile> {
                         ],
                       ),
                       SizedBox(height: 20.h),
-                      
+
                       // Amount display - prominent and elegant
                       Container(
                         padding: EdgeInsets.all(20.w),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
-                            colors: [
-                              greenColor,
-                              greenColorLight,
-                            ],
+                            colors: [greenColor, greenColorLight],
                           ),
                           borderRadius: BorderRadius.circular(20.r),
                           boxShadow: [
@@ -3087,48 +3385,61 @@ class _ProfileState extends State<Profile> {
                                     style: TextStyle(
                                       fontSize: 18.sp,
                                       fontWeight: FontWeight.w600,
-                                      color: AppColors.cxPureWhite.withOpacity(0.9),
+                                      color: AppColors.cxPureWhite.withOpacity(
+                                        0.9,
+                                      ),
                                     ),
                                   ),
                                 ),
                                 SizedBox(width: 8.w),
                                 Text(
-                                  prePaidAmount.toStringAsFixed(0).replaceAllMapped(
-                                    RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                    (Match m) => '${m[1]} ',
-                                  ),
+                                  prePaidAmount
+                                      .toStringAsFixed(0)
+                                      .replaceAllMapped(
+                                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                                        (Match m) => '${m[1]} ',
+                                      ),
                                   style: TextStyle(
                                     fontSize: 42.sp,
                                     fontWeight: FontWeight.w800,
                                     color: AppColors.cxPureWhite,
                                     height: 1.0,
-                                    fontFeatures: [FontFeature.tabularFigures()],
+                                    fontFeatures: [
+                                      FontFeature.tabularFigures(),
+                                    ],
                                   ),
                                 ),
                               ],
                             ),
                             SizedBox(height: 8.h),
                             Container(
-                              padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 6.h),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 14.w,
+                                vertical: 6.h,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.cxPureWhite.withOpacity(0.2),
                                 borderRadius: BorderRadius.circular(20.r),
                               ),
                               child: Text(
-                                AppLocalizations.of(context).currentMonthBalance,
+                                AppLocalizations.of(
+                                  context,
+                                ).currentMonthBalance,
                                 style: TextStyle(
                                   fontSize: 12.sp,
                                   fontWeight: FontWeight.w600,
-                                  color: AppColors.cxPureWhite.withOpacity(0.95),
+                                  color: AppColors.cxPureWhite.withOpacity(
+                                    0.95,
+                                  ),
                                 ),
                               ),
                             ),
                           ],
                         ),
                       ),
-                      
+
                       SizedBox(height: 16.h),
-                      
+
                       // Info note with icon
                       Row(
                         children: [
@@ -3235,7 +3546,7 @@ class _ProfileState extends State<Profile> {
             ],
           ),
           SizedBox(height: 20.h),
-          
+
           // Amount box shimmer
           Container(
             padding: EdgeInsets.all(20.w),
@@ -3265,9 +3576,9 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          
+
           SizedBox(height: 16.h),
-          
+
           // Info row shimmer
           Row(
             children: [
@@ -3298,15 +3609,17 @@ class _ProfileState extends State<Profile> {
 
   Widget _buildVacationDaysCard() {
     // Dynamic data from API calculation
-    final int availableVacationDays = _availableVacationDays; // Days available to use
-    final int usedVacationDays = _totalVacationDays; // Days already used (total vacation entries)
+    final int availableVacationDays =
+        _availableVacationDays; // Days available to use
+    final int usedVacationDays =
+        _totalVacationDays; // Days already used (total vacation entries)
     final int maxVacationDays = 7; // Maximum vacation days that can be earned
-    
+
     // Calculate percentage for progress bar (based on max 7 days)
-    final double usagePercentage = availableVacationDays > 0 
-        ? (availableVacationDays / maxVacationDays) * 100 
+    final double usagePercentage = availableVacationDays > 0
+        ? (availableVacationDays / maxVacationDays) * 100
         : 0;
-    
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -3375,7 +3688,7 @@ class _ProfileState extends State<Profile> {
                     ],
                   ),
                   SizedBox(height: 24.h),
-                  
+
                   // Available days - prominent display
                   Center(
                     child: Column(
@@ -3403,9 +3716,9 @@ class _ProfileState extends State<Profile> {
                       ],
                     ),
                   ),
-                  
+
                   SizedBox(height: 24.h),
-                  
+
                   // Progress bar
                   Container(
                     height: 8.h,
@@ -3436,9 +3749,9 @@ class _ProfileState extends State<Profile> {
                       ),
                     ),
                   ),
-                  
+
                   SizedBox(height: 20.h),
-                  
+
                   // Usage breakdown
                   Row(
                     children: [
@@ -3577,7 +3890,7 @@ class _ProfileState extends State<Profile> {
             ],
           ),
           SizedBox(height: 24.h),
-          
+
           // Available days shimmer
           Center(
             child: Column(
@@ -3602,9 +3915,9 @@ class _ProfileState extends State<Profile> {
               ],
             ),
           ),
-          
+
           SizedBox(height: 24.h),
-          
+
           // Progress bar shimmer
           Container(
             height: 8.h,
@@ -3613,9 +3926,9 @@ class _ProfileState extends State<Profile> {
               borderRadius: BorderRadius.circular(10.r),
             ),
           ),
-          
+
           SizedBox(height: 20.h),
-          
+
           // Breakdown shimmer
           Row(
             children: [
@@ -3708,13 +4021,19 @@ class _ProfileState extends State<Profile> {
   Widget _buildJobInfoCard() {
     final jobPosition = _profileData?['employee']?['jobPosition'];
     final branch = _profileData?['employee']?['branch'];
-    
+
     return _buildInfoCard(
       title: AppLocalizations.of(context).jobInformation,
       icon: Icons.work_outline,
       children: [
-        _buildInfoRow(AppLocalizations.of(context).branch, branch?['name'] ?? 'Not specified'),
-        _buildInfoRow(AppLocalizations.of(context).department, _profileData?['employee']?['department']?['name'] ?? 'Not specified'),
+        _buildInfoRow(
+          AppLocalizations.of(context).branch,
+          branch?['name'] ?? 'Not specified',
+        ),
+        _buildInfoRow(
+          AppLocalizations.of(context).department,
+          _profileData?['employee']?['department']?['name'] ?? 'Not specified',
+        ),
       ],
     );
   }
@@ -3725,14 +4044,24 @@ class _ProfileState extends State<Profile> {
     required List<Widget> children,
   }) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    
+
     // Dark mode colors
-    final cardBgStart = isDarkMode ? const Color(0xFF1E1E2E) : AppColors.cxPureWhite;
-    final cardBgEnd = isDarkMode ? const Color(0xFF252538) : AppColors.cxPureWhite;
-    final borderColor = isDarkMode ? const Color(0xFF3D3D5C) : Colors.transparent;
-    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
-    final blueColor = isDarkMode ? const Color(0xFF818CF8) : AppColors.cxRoyalBlue;
-    
+    final cardBgStart = isDarkMode
+        ? const Color(0xFF1E1E2E)
+        : AppColors.cxPureWhite;
+    final cardBgEnd = isDarkMode
+        ? const Color(0xFF252538)
+        : AppColors.cxPureWhite;
+    final borderColor = isDarkMode
+        ? const Color(0xFF3D3D5C)
+        : Colors.transparent;
+    final primaryText = isDarkMode
+        ? const Color(0xFFF0F0F5)
+        : AppColors.cxBlack;
+    final blueColor = isDarkMode
+        ? const Color(0xFF818CF8)
+        : AppColors.cxRoyalBlue;
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
@@ -3782,11 +4111,7 @@ class _ProfileState extends State<Profile> {
                     ),
                     borderRadius: BorderRadius.circular(12.r),
                   ),
-                  child: Icon(
-                    icon,
-                    color: blueColor,
-                    size: 24.sp,
-                  ),
+                  child: Icon(icon, color: blueColor, size: 24.sp),
                 ),
                 SizedBox(width: 12.w),
                 Expanded(
@@ -3816,9 +4141,13 @@ class _ProfileState extends State<Profile> {
 
   Widget _buildInfoRow(String label, String value) {
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDarkMode ? const Color(0xFFF0F0F5) : AppColors.cxBlack;
-    final secondaryText = isDarkMode ? const Color(0xFFA8A8B8) : AppColors.cxBlack;
-    
+    final primaryText = isDarkMode
+        ? const Color(0xFFF0F0F5)
+        : AppColors.cxBlack;
+    final secondaryText = isDarkMode
+        ? const Color(0xFFA8A8B8)
+        : AppColors.cxBlack;
+
     return Padding(
       padding: EdgeInsets.only(bottom: 12.h),
       child: Row(

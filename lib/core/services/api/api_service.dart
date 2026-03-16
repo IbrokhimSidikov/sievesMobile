@@ -1591,7 +1591,9 @@ class ApiService {
   Future<int> getUnreadNotificationCount() async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/mobile-notifications/unread-count');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/mobile-notifications/unread-count',
+      );
       final response = await _httpClient.get(uri, headers: headers);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -1607,7 +1609,9 @@ class ApiService {
   Future<Map<String, dynamic>?> markNotificationAsRead(int id) async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/mobile-notifications/$id/read');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/mobile-notifications/$id/read',
+      );
       final response = await _httpClient.patch(uri, headers: headers);
       if (response.statusCode == 200) {
         return json.decode(response.body) as Map<String, dynamic>;
@@ -1625,12 +1629,39 @@ class ApiService {
   Future<bool> markAllNotificationsAsRead() async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse('https://api.v3.sievesapp.com/mobile-notifications/read-all');
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/mobile-notifications/read-all',
+      );
       final response = await _httpClient.patch(uri, headers: headers);
       return response.statusCode == 200;
     } catch (e) {
       print('❌ [API] Exception marking all notifications as read: $e');
       return false;
+    }
+  }
+
+  // Get current day session
+  Future<Map<String, dynamic>?> getCurrentDaySession() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/day-session/0?specialType=current');
+
+      print('📅 [API] Fetching current day session: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        print('✅ [API] Day session fetched: ${data['id']}');
+        return data;
+      } else {
+        print(
+          '❌ [API] Error getting day session: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('❌ [API] Exception getting day session: $e');
+      return null;
     }
   }
 }

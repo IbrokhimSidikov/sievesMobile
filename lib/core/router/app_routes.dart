@@ -28,11 +28,12 @@ import '../../features/profile/pages/profile.dart';
 import '../../features/face-verification/pages/face_verification_page.dart';
 import '../../features/training-test/pages/training_test_page.dart';
 import '../../features/wallet/pages/wallet_page.dart';
+import '../../features/profile/pages/feedback_form_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
 import '../services/auth/auth_manager.dart';
 
-class AppRoutes {
 
+class AppRoutes {
   static const String onboard = '/onboard';
   // static const String login = '/login';
   static const String home = '/home';
@@ -58,8 +59,12 @@ class AppRoutes {
   static const String qualificationDisplayPage = '/qualificationDisplayPage';
   static const String trainingTestPage = '/trainingTestPage';
   static const String hrPage = '/hrPage';
+  static const String feedbackForm = '/feedbackForm';
 
-  static GoRouter createRouter(String initialLocation, {GlobalKey<NavigatorState>? navigatorKey}) {
+  static GoRouter createRouter(
+    String initialLocation, {
+    GlobalKey<NavigatorState>? navigatorKey,
+  }) {
     return GoRouter(
       navigatorKey: navigatorKey,
       initialLocation: initialLocation,
@@ -70,9 +75,10 @@ class AppRoutes {
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
             child: const Onboard(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
           ),
         ),
         // GoRoute(
@@ -86,35 +92,36 @@ class AppRoutes {
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
             child: const Home(),
-            transitionsBuilder: (context, animation, secondaryAnimation, child) {
-              return FadeTransition(opacity: animation, child: child);
-            },
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+                  return FadeTransition(opacity: animation, child: child);
+                },
           ),
         ),
         GoRoute(
           path: '/profile',
           name: profile,
-          builder: (context, state) => const Profile()
+          builder: (context, state) => const Profile(),
         ),
         GoRoute(
-            path: '/attendance',
-            name: attendance,
-            builder: (context, state) => const Attendance()
+          path: '/attendance',
+          name: attendance,
+          builder: (context, state) => const Attendance(),
         ),
         GoRoute(
-            path: '/breakRecords',
-            name: breakRecords,
-            builder: (context, state) => const BreakRecords()
+          path: '/breakRecords',
+          name: breakRecords,
+          builder: (context, state) => const BreakRecords(),
         ),
         GoRoute(
-            path: '/breakOrder',
-            name: breakOrder,
-            builder: (context, state) => const BreakPage()
+          path: '/breakOrder',
+          name: breakOrder,
+          builder: (context, state) => const BreakPage(),
         ),
         GoRoute(
           path: '/history',
           name: history,
-          builder: (context, state) => const History()
+          builder: (context, state) => const History(),
         ),
         GoRoute(
           path: '/productivityTimer',
@@ -126,30 +133,30 @@ class AppRoutes {
             }
             return null;
           },
-          builder: (context, state) => const ProductivityTimer()
+          builder: (context, state) => const ProductivityTimer(),
         ),
         GoRoute(
           path: '/checklist',
           name: checklist,
-          builder: (context, state) => const Checklist()
+          builder: (context, state) => const Checklist(),
         ),
-        
+
         GoRoute(
           path: '/notificationNew',
           name: notificationNew,
-          builder: (context, state) => const NotificationsPage()
+          builder: (context, state) => const NotificationsPage(),
         ),
 
         GoRoute(
           path: '/lmsPage',
           name: lmsPage,
-          builder: (context, state) => const LmsPage()
+          builder: (context, state) => const LmsPage(),
         ),
 
         GoRoute(
           path: '/testHistory',
           name: testHistory,
-          builder: (context, state) => const TestHistoryPage()
+          builder: (context, state) => const TestHistoryPage(),
         ),
 
         GoRoute(
@@ -158,7 +165,7 @@ class AppRoutes {
           builder: (context, state) {
             final test = state.extra as Test;
             return CourseViewerPage(test: test);
-          }
+          },
         ),
 
         GoRoute(
@@ -167,7 +174,7 @@ class AppRoutes {
           builder: (context, state) {
             final testWithSessions = state.extra as TestWithSessions;
             return TestDetailPage(testWithSessions: testWithSessions);
-          }
+          },
         ),
 
         GoRoute(
@@ -176,7 +183,7 @@ class AppRoutes {
           builder: (context, state) {
             final test = state.extra as Test;
             return TestTakingPage(test: test);
-          }
+          },
         ),
 
         GoRoute(
@@ -192,52 +199,58 @@ class AppRoutes {
               sessionId: data['sessionId'] as int?,
               sessionData: data['sessionData'] as Map<String, dynamic>?,
             );
-          }
+          },
         ),
 
         GoRoute(
           path: '/faceVerification',
           name: faceVerification,
-          builder: (context, state) => const FaceVerificationPage()
+          builder: (context, state) => const FaceVerificationPage(),
         ),
 
         GoRoute(
           path: '/wallet',
           name: wallet,
-          builder: (context, state) => const WalletPage()
+          builder: (context, state) => const WalletPage(),
         ),
 
         GoRoute(
           path: '/calendar',
           name: calendar,
-          builder: (context, state) => const CalendarPage()
+          builder: (context, state) => const CalendarPage(),
         ),
 
         GoRoute(
           path: '/matrixQualificationPage',
           name: matrixQualificationPage,
-          builder: (context, state) => const MatrixQualificationPage()
+          builder: (context, state) => const MatrixQualificationPage(),
         ),
         GoRoute(
           path: '/employeeProductivity',
           name: employeeProductivity,
-          builder: (context, state) => const EmployeeProductivity()
+          builder: (context, state) => const EmployeeProductivity(),
         ),
         GoRoute(
           path: '/qualificationDisplayPage',
           name: qualificationDisplayPage,
-          builder: (context, state) => const QualificationDisplayPage()
+          builder: (context, state) => const QualificationDisplayPage(),
         ),
         GoRoute(
           path: '/trainingTestPage',
           name: trainingTestPage,
-          builder: (context, state) => const TrainingTestPage()
+          builder: (context, state) => const TrainingTestPage(),
         ),
         GoRoute(
           path: '/hrPage',
           name: hrPage,
-          builder: (context, state) => const HrPage()
+          builder: (context, state) => const HrPage(),
         ),
-      ]);
+        GoRoute(
+          path: '/feedbackForm',
+          name: feedbackForm,
+          builder: (context, state) => const FeedbackFormPage(),
+        ),
+      ],
+    );
   }
 }

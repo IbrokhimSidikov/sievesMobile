@@ -44,6 +44,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _ModuleItem(localizations.history, Icons.history_outlined, const Color(0xFF6E6050), '/history'),
       _ModuleItem(localizations.lWallet, Icons.wallet_outlined, const Color(0xFF957A6A), '/wallet'),
       _ModuleItem(localizations.qualificationDisplayPage, Icons.verified_user_outlined, const Color(0xFF7C6C5C), '/qualificationDisplayPage'),
+      _ModuleItem(localizations.feedback, Icons.feedback_outlined, const Color(0xFF7C6C5C), '/feedbackForm'),
       if (_authManager.hasBreakAccess)
         _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, const Color(0xFF9E8272), '/breakOrder'),
       if (_authManager.hasBreakAccess)
