@@ -271,7 +271,7 @@ class WorkEntryService {
       print('');
 
       print('┌─────────────────────────────────────────────────────────────┐');
-      print('│ STEP 2: Downloading profile image                          │');
+      print('│ STEP 2: Downloading profile image                           │');
       print('└─────────────────────────────────────────────────────────────┘');
       final photoUrl = employee.individual?.photoUrl;
       if (photoUrl == null || photoUrl.isEmpty) {

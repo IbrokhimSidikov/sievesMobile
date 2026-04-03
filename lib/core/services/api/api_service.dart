@@ -1565,6 +1565,37 @@ class ApiService {
     }
   }
 
+  // Fetch game-type sessions (leaderboard)
+  Future<List<dynamic>> fetchGameSessions() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/training-course/sessions/by-type/game?expand=employee.individual',
+      );
+
+      print('🏆 [API] Fetching game sessions from: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      print('🏆 [API] Response status: ${response.statusCode}');
+
+      if (response.statusCode == 200) {
+        final List<dynamic> data = jsonDecode(response.body);
+        print('✅ [API] Fetched ${data.length} game sessions');
+        return data;
+      } else {
+        print(
+          '❌ Error fetching game sessions: ${response.statusCode} - ${response.body}',
+        );
+        throw Exception(
+          'Failed to load game sessions: HTTP ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      print('❌ Exception fetching game sessions: $e');
+      rethrow;
+    }
+  }
+
   // ─── Mobile Notifications ────────────────────────────────────────────────
 
   Future<List<Map<String, dynamic>>> getMyNotifications({int days = 7}) async {

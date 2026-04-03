@@ -36,23 +36,87 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
     final allModules = [
-      _ModuleItem(localizations.profile, Icons.person_outline, const Color(0xFF8D7B6B), '/profile'),
-      _ModuleItem(localizations.attendance, Icons.calendar_today_outlined, const Color(0xFF7A6A5A), '/attendance'),
-      _ModuleItem(localizations.breakRecords, Icons.coffee_outlined, const Color(0xFF9C8878), '/breakRecords'),
-      _ModuleItem(localizations.learning, Icons.laptop_mac_sharp, const Color(0xFF7B7060), '/lmsPage'),
-      _ModuleItem(localizations.hr, Icons.menu_book_outlined, const Color(0xFF8A7868), '/hrPage'),
-      _ModuleItem(localizations.history, Icons.history_outlined, const Color(0xFF6E6050), '/history'),
-      _ModuleItem(localizations.lWallet, Icons.wallet_outlined, const Color(0xFF957A6A), '/wallet'),
-      _ModuleItem(localizations.qualificationDisplayPage, Icons.verified_user_outlined, const Color(0xFF7C6C5C), '/qualificationDisplayPage'),
-      _ModuleItem(localizations.feedback, Icons.feedback_outlined, const Color(0xFF7C6C5C), '/feedbackForm'),
+      _ModuleItem(
+        localizations.profile,
+        Icons.person_outline,
+        const Color(0xFF8D7B6B),
+        '/profile',
+      ),
+      _ModuleItem(
+        localizations.attendance,
+        Icons.calendar_today_outlined,
+        const Color(0xFF7A6A5A),
+        '/attendance',
+      ),
+      _ModuleItem(
+        localizations.breakRecords,
+        Icons.coffee_outlined,
+        const Color(0xFF9C8878),
+        '/breakRecords',
+      ),
+      _ModuleItem(
+        localizations.learning,
+        Icons.laptop_mac_sharp,
+        const Color(0xFF7B7060),
+        '/lmsPage',
+      ),
+      _ModuleItem(
+        localizations.hr,
+        Icons.menu_book_outlined,
+        const Color(0xFF8A7868),
+        '/hrPage',
+      ),
+      _ModuleItem(
+        localizations.history,
+        Icons.history_outlined,
+        const Color(0xFF6E6050),
+        '/history',
+      ),
+      _ModuleItem(
+        localizations.lWallet,
+        Icons.wallet_outlined,
+        const Color(0xFF957A6A),
+        '/wallet',
+      ),
+      _ModuleItem(
+        localizations.qualificationDisplayPage,
+        Icons.verified_user_outlined,
+        const Color(0xFF7C6C5C),
+        '/qualificationDisplayPage',
+      ),
+      _ModuleItem(
+        localizations.feedback,
+        Icons.feedback_outlined,
+        const Color(0xFF7C6C5C),
+        '/feedbackForm',
+      ),
       if (_authManager.hasBreakAccess)
-        _ModuleItem(localizations.breakOrder, Icons.restaurant_menu_rounded, const Color(0xFF9E8272), '/breakOrder'),
+        _ModuleItem(
+          localizations.breakOrder,
+          Icons.restaurant_menu_rounded,
+          const Color(0xFF9E8272),
+          '/breakOrder',
+        ),
       if (_authManager.hasBreakAccess)
-      _ModuleItem(localizations.faceVerification, Icons.face_2_outlined, const Color(0xFF856E5E), '/faceVerification'),
+        _ModuleItem(
+          localizations.faceVerification,
+          Icons.face_2_outlined,
+          const Color(0xFF856E5E),
+          '/faceVerification',
+        ),
       if (_authManager.hasStopwatchAccess)
-        _ModuleItem(localizations.employeeProductivity, Icons.timer_outlined, const Color(0xFF7A6555), '/employeeProductivity'),
-      _ModuleItem(localizations.checklist, Icons.checklist_outlined, const Color(0xFF887060), '/checklist'),
-
+        _ModuleItem(
+          localizations.employeeProductivity,
+          Icons.timer_outlined,
+          const Color(0xFF7A6555),
+          '/employeeProductivity',
+        ),
+      _ModuleItem(
+        localizations.checklist,
+        Icons.checklist_outlined,
+        const Color(0xFF887060),
+        '/checklist',
+      ),
     ];
     return allModules;
   }
@@ -69,10 +133,10 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           return '$firstName $lastName 👋';
         }
       }
-      
+
       return '${identity.username} 👋';
     }
-    
+
     return 'Welcome 👋';
   }
 
@@ -112,11 +176,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     _loadUnreadCount();
     _loadCurrentStatus();
     _loadUserStories();
-    
+
     // Refresh badge every 5 seconds when on home page
     _startPeriodicRefresh();
   }
-  
+
   void _startPeriodicRefresh() {
     _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
       if (mounted) {
@@ -124,7 +188,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       }
     });
   }
-  
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -135,7 +199,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _loadCurrentStatus();
     }
   }
-  
+
   Future<void> _loadCurrentStatus() async {
     final employeeId = _authManager.currentEmployeeId;
     if (employeeId != null) {
@@ -158,8 +222,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           _userStories = stories;
           _isLoadingStories = false;
         });
-        final totalStories = stories.fold<int>(0, (sum, userStory) => sum + userStory.stories.length);
-        print('📖 [HOME] Admin stories loaded: $totalStories stories from ${stories.length} users');
+        final totalStories = stories.fold<int>(
+          0,
+          (sum, userStory) => sum + userStory.stories.length,
+        );
+        print(
+          '📖 [HOME] Admin stories loaded: $totalStories stories from ${stories.length} users',
+        );
       }
     } catch (e) {
       print('❌ [HOME] Error loading admin stories: $e');
@@ -197,7 +266,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -316,7 +385,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         ],
                       ),
                       child: Text(
-                        _unreadNotificationCount > 99 ? '99+' : '$_unreadNotificationCount',
+                        _unreadNotificationCount > 99
+                            ? '99+'
+                            : '$_unreadNotificationCount',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 9.sp,
@@ -374,9 +445,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           ),
           SliverPadding(
             padding: EdgeInsets.fromLTRB(20.sp, 0, 20.sp, 40.sp),
-            sliver: SliverToBoxAdapter(
-              child: _buildBentoGrid(theme),
-            ),
+            sliver: SliverToBoxAdapter(child: _buildBentoGrid(theme)),
           ),
         ],
       ),
@@ -571,8 +640,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   Widget _buildUserAvatar() {
     final identity = _authManager.currentIdentity;
     final userPhoto = identity?.employee?.individual?.photoUrl;
-    final firstUserStories = _userStories.isNotEmpty ? _userStories.first : null;
-    final hasStories = firstUserStories != null && firstUserStories.stories.isNotEmpty;
+    final firstUserStories = _userStories.isNotEmpty
+        ? _userStories.first
+        : null;
+    final hasStories =
+        firstUserStories != null && firstUserStories.stories.isNotEmpty;
     final hasUnviewed = hasStories && firstUserStories.hasUnviewedStories;
 
     return GestureDetector(
@@ -580,9 +652,8 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           ? () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (context) => StoryViewer(
-                    userStories: firstUserStories,
-                  ),
+                  builder: (context) =>
+                      StoryViewer(userStories: firstUserStories),
                 ),
               );
             }
@@ -606,10 +677,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                 )
               : null,
           border: hasStories && !hasUnviewed
-              ? Border.all(
-                  color: Colors.grey.shade400,
-                  width: 2.w,
-                )
+              ? Border.all(color: Colors.grey.shade400, width: 2.w)
               : null,
         ),
         child: Container(
@@ -624,9 +692,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               : null,
           child: CircleAvatar(
             radius: hasStories ? (60 - 12).r : 30.r,
-            backgroundImage: userPhoto != null
-                ? NetworkImage(userPhoto)
-                : null,
+            backgroundImage: userPhoto != null ? NetworkImage(userPhoto) : null,
             backgroundColor: Colors.grey.shade300,
             child: userPhoto == null
                 ? Icon(
@@ -643,21 +709,32 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
 
   Widget _buildStatusBadge(ThemeData theme) {
     // Use real-time status from API, fallback to cached status if still loading
-    final status = (_currentEmployeeStatus ?? _authManager.currentEmployeeStatus)?.toLowerCase() ?? 'offline';
+    final status =
+        (_currentEmployeeStatus ?? _authManager.currentEmployeeStatus)
+            ?.toLowerCase() ??
+        'offline';
     final isOnline = status == 'online';
-    
+
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: isOnline
-              ? [AppColors.cxEmeraldGreen, AppColors.cxEmeraldGreen.withOpacity(0.8)]
-              : [AppColors.cxSilverTint, AppColors.cxSilverTint.withOpacity(0.8)],
+              ? [
+                  AppColors.cxEmeraldGreen,
+                  AppColors.cxEmeraldGreen.withOpacity(0.8),
+                ]
+              : [
+                  AppColors.cxSilverTint,
+                  AppColors.cxSilverTint.withOpacity(0.8),
+                ],
         ),
         borderRadius: BorderRadius.circular(20.r),
         boxShadow: [
           BoxShadow(
-            color: (isOnline ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint).withOpacity(0.3),
+            color:
+                (isOnline ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint)
+                    .withOpacity(0.3),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -735,10 +812,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    entry.value['flag']!,
-                    style: TextStyle(fontSize: 14.sp),
-                  ),
+                  Text(entry.value['flag']!, style: TextStyle(fontSize: 14.sp)),
                   SizedBox(width: 6.w),
                   Text(
                     entry.value['name']!,
@@ -762,10 +836,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               return Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    entry.value['flag']!,
-                    style: TextStyle(fontSize: 14.sp),
-                  ),
+                  Text(entry.value['flag']!, style: TextStyle(fontSize: 14.sp)),
                   SizedBox(width: 4.w),
                   Text(
                     entry.value['name']!,
@@ -830,9 +901,10 @@ class _BentoCardState extends State<_BentoCard>
       duration: const Duration(milliseconds: 140),
       vsync: this,
     );
-    _scaleAnim = Tween<double>(begin: 1.0, end: 0.94).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOut),
-    );
+    _scaleAnim = Tween<double>(
+      begin: 1.0,
+      end: 0.94,
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
   }
 
   @override
@@ -878,14 +950,8 @@ class _BentoCardState extends State<_BentoCard>
             borderRadius: BorderRadius.circular(22.r),
             gradient: LinearGradient(
               colors: isDark
-                  ? [
-                      const Color(0xFF2F2F2F),
-                      const Color(0xFF1A1A1A),
-                    ]
-                  : [
-                      color.withOpacity(0.18),
-                      color.withOpacity(0.10),
-                    ],
+                  ? [const Color(0xFF2F2F2F), const Color(0xFF1A1A1A)]
+                  : [color.withOpacity(0.18), color.withOpacity(0.10)],
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
             ),
@@ -976,11 +1042,7 @@ class _BentoCardState extends State<_BentoCard>
                 ? Colors.white.withOpacity(0.14)
                 : color.withOpacity(0.14),
           ),
-          child: Icon(
-            widget.module.icon,
-            size: 18.sp,
-            color: iconColor,
-          ),
+          child: Icon(widget.module.icon, size: 18.sp, color: iconColor),
         ),
         SizedBox(width: 8.w),
         Expanded(
@@ -1073,7 +1135,9 @@ class _BentoCardState extends State<_BentoCard>
 
   Color _darken(Color color, double amount) {
     final hsl = HSLColor.fromColor(color);
-    return hsl.withLightness((hsl.lightness - amount).clamp(0.0, 1.0)).toColor();
+    return hsl
+        .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
+        .toColor();
   }
 
   String _getSubtitle(String title, BuildContext context) {

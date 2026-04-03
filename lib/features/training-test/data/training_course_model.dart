@@ -15,6 +15,7 @@ class TrainingCourse {
   final String? deletedAt;
   final bool deleted;
   final CourseTheme? theme;
+  final String? type;
 
   TrainingCourse({
     required this.id,
@@ -33,6 +34,7 @@ class TrainingCourse {
     this.deletedAt,
     required this.deleted,
     this.theme,
+    this.type,
   });
 
   factory TrainingCourse.fromJson(Map<String, dynamic> json) {
@@ -53,6 +55,7 @@ class TrainingCourse {
       deletedAt: json['deleted_at'],
       deleted: json['deleted'] ?? false,
       theme: json['theme'] != null ? CourseTheme.fromJson(json['theme']) : null,
+      type: json['type'],
     );
   }
 
@@ -74,6 +77,7 @@ class TrainingCourse {
       'deleted_at': deletedAt,
       'deleted': deleted,
       'theme': theme?.toJson(),
+      'type': type,
     };
   }
 }

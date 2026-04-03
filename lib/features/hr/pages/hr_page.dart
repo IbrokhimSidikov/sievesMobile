@@ -49,7 +49,7 @@ class HrPage extends StatelessWidget {
                         icon: Icons.calendar_month_outlined,
                         gradientColors: [
                           AppColors.cxRoyalBlue,
-                          AppColors.cxRoyalBlue.withOpacity(0.8),
+                          AppColors.cx1C1C1E.withOpacity(0.2),
                         ],
                         onTap: () => context.push('/calendar'),
                         isDark: isDark,
@@ -63,9 +63,23 @@ class HrPage extends StatelessWidget {
                         icon: Icons.phonelink_sharp,
                         gradientColors: [
                           AppColors.cxPurple,
-                          AppColors.cxPurple.withOpacity(0.8),
+                          AppColors.cx1C1C1E.withOpacity(0.2),
                         ],
                         onTap: () => context.push('/trainingTestPage'),
+                        isDark: isDark,
+                        theme: theme,
+                      ),
+                      SizedBox(height: 24.h),
+                      _buildHrCard(
+                        context,
+                        title: localizations.trainingGame,
+                        subtitle: localizations.trainingGameSubtitle,
+                        icon: Icons.sports_esports_rounded,
+                        gradientColors: [
+                          AppColors.cxEmeraldGreen,
+                          AppColors.cx1C1C1E.withOpacity(0.2),
+                        ],
+                        onTap: () => context.push('/trainingGameTestPage'),
                         isDark: isDark,
                         theme: theme,
                       ),
@@ -187,18 +201,18 @@ class HrPage extends StatelessWidget {
                 : gradientColors,
           ),
           borderRadius: BorderRadius.circular(24.r),
-          boxShadow: [
-            BoxShadow(
-              color: gradientColors[0].withOpacity(isDark ? 0.3 : 0.4),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-            BoxShadow(
-              color: gradientColors[0].withOpacity(isDark ? 0.15 : 0.2),
-              blurRadius: 40,
-              offset: const Offset(0, 20),
-            ),
-          ],
+          // boxShadow: [
+          //   BoxShadow(
+          //     color: gradientColors[0].withOpacity(isDark ? 0.3 : 0.4),
+          //     blurRadius: 20,
+          //     offset: const Offset(0, 10),
+          //   ),
+          //   BoxShadow(
+          //     color: gradientColors[0].withOpacity(isDark ? 0.15 : 0.2),
+          //     blurRadius: 40,
+          //     offset: const Offset(0, 20),
+          //   ),
+          // ],
           border: Border.all(
             color: isDark
                 ? AppColors.cxWhite.withOpacity(0.1)

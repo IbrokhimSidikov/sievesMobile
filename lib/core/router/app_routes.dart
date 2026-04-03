@@ -27,6 +27,7 @@ import '../../features/onboard/pages/onboard.dart';
 import '../../features/profile/pages/profile.dart';
 import '../../features/face-verification/pages/face_verification_page.dart';
 import '../../features/training-test/pages/training_test_page.dart';
+import '../../features/training-game-test/pages/training_game_landing_page.dart';
 import '../../features/wallet/pages/wallet_page.dart';
 import '../../features/profile/pages/feedback_form_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
@@ -58,6 +59,7 @@ class AppRoutes {
   static const String employeeProductivity = '/employeeProductivity';
   static const String qualificationDisplayPage = '/qualificationDisplayPage';
   static const String trainingTestPage = '/trainingTestPage';
+  static const String trainingGameTestPage = '/trainingGameTestPage';
   static const String hrPage = '/hrPage';
   static const String feedbackForm = '/feedbackForm';
 
@@ -239,6 +241,11 @@ class AppRoutes {
           path: '/trainingTestPage',
           name: trainingTestPage,
           builder: (context, state) => const TrainingTestPage(),
+        ),
+        GoRoute(
+          path: '/trainingGameTestPage',
+          name: trainingGameTestPage,
+          builder: (context, state) => const TrainingGameLandingPage(),
         ),
         GoRoute(
           path: '/hrPage',

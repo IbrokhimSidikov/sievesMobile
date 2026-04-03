@@ -309,6 +309,50 @@ class AppLocalizations {
       'correctAnswer': 'Correct',
       'backToCourses': 'Back to Courses',
 
+      'skipped': 'Skipped',
+      // Leaderboard
+      'leaderboard': 'Leaderboard',
+      'leaderboardSubtitle': 'Top performers this period',
+      'courses': 'Courses',
+      'rank': 'Rank',
+      'noLeaderboardData': 'No results yet',
+      'noLeaderboardDesc': 'Be the first to complete a game test!',
+      // Training Game
+      'trainingGame': 'Training Games',
+      'trainingGameSubtitle': 'Practice your knowledge with game mode',
+      'trainingGamePickCourse': 'Select a course to start',
+      'trainingGameEmptyDesc': 'No courses are available for game mode yet',
+      'startGame': 'Start Game',
+      'gameMode': 'Game Mode',
+      'sessionTerminated': 'Session Terminated',
+      'testComplete': 'Test Complete',
+      'summary': 'Summary',
+      'review': 'Review',
+      'incomplete': 'Incomplete',
+      'partial': 'Partial',
+      'passed': 'Passed',
+      'failed': 'Failed',
+      'congratulationsMsg': 'Congratulations!',
+      'betterLuckMsg': 'Better luck next time',
+      'resultsBasedOnAnswered': 'Results are based on answered questions only',
+      'scoredOutOf': 'You scored {correct} out of {total} questions correctly',
+      'timeSpent': 'Time Spent',
+      'answered': 'Answered',
+      'terminated': 'Terminated',
+      'backToCourseList': 'Back to Courses',
+      'exitSession': 'Exit Session?',
+      'exitSessionMsg': 'Leaving will terminate your test session. Your progress will be lost.',
+      'exit': 'Exit',
+      'submitTestTitle': 'Submit Test?',
+      'unansweredMsg': 'You have {count} unanswered question(s). Submit anyway?',
+      'failedToLoadQuestions': 'Failed to Load Questions',
+      'noQuestionsAvailable': 'No Questions Available',
+      'noMcqQuestions': 'This course has no multiple-choice questions yet.',
+      'goBack': 'Go Back',
+      'submittingEllipsis': 'Submitting…',
+      'sessionEndedBg': 'Session ended — you switched to another app.',
+      'sessionEndedExit': 'Session ended — you exited the test.',
+      'sessionWasTerminated': 'Session was terminated.',
       //feedback page
       'thankYou': 'Thank you',
       'feedbackSubmitted': 'Feedback submitted successfully',
@@ -622,6 +666,50 @@ class AppLocalizations {
       'correctAnswer': 'To\'g\'ri',
       'backToCourses': 'Kurslarga qaytish',
 
+      'skipped': 'O\'tkazib yuborildi',
+      // Leaderboard
+      'leaderboard': 'Reyting',
+      'leaderboardSubtitle': 'Eng yaxshi natijalar',
+      'courses': 'Kurslar',
+      'rank': 'O\'rin',
+      'noLeaderboardData': 'Hali natijalar yo\'q',
+      'noLeaderboardDesc': 'O\'yin testini birinchi bo\'lib yakunlang!',
+      // Training Game
+      'trainingGame': 'Training o\'yinlari',
+      'trainingGameSubtitle': 'O\'yin rejimida bilimingizni sinab ko\'ring',
+      'trainingGamePickCourse': 'Boshlash uchun kurs tanlang',
+      'trainingGameEmptyDesc': 'O\'yin rejimi uchun kurslar mavjud emas',
+      'startGame': 'O\'yinni boshlash',
+      'gameMode': 'O\'yin rejimi',
+      'sessionTerminated': 'Sessiya tugatildi',
+      'testComplete': 'Test yakunlandi',
+      'summary': 'Xulosa',
+      'review': 'Ko\'rib chiqish',
+      'incomplete': 'Tugallanmagan',
+      'partial': 'Qisman',
+      'passed': 'O\'tildi',
+      'failed': 'O\'tilmadi',
+      'congratulationsMsg': 'Tabriklaymiz!',
+      'betterLuckMsg': 'Keyingi safar omad',
+      'resultsBasedOnAnswered': 'Natijalar faqat javob berilgan savollarga asoslanadi',
+      'scoredOutOf': '{total} ta savoldan {correct} tasiga to\'g\'ri javob berdingiz',
+      'timeSpent': 'Sarflangan vaqt',
+      'answered': 'Javob berildi',
+      'terminated': 'Tugatildi',
+      'backToCourseList': 'Kurslarga qaytish',
+      'exitSession': 'Chiqasizmi?',
+      'exitSessionMsg': 'Chiqish test sessiyasini tugatadi. Jarayoningiz yo\'qoladi.',
+      'exit': 'Chiqish',
+      'submitTestTitle': 'Testni yuborish?',
+      'unansweredMsg': '{count} ta savolga javob berilmadi. Baribir yuborasizmi?',
+      'failedToLoadQuestions': 'Savollarni yuklashda xatolik',
+      'noQuestionsAvailable': 'Savollar mavjud emas',
+      'noMcqQuestions': 'Bu kursda hali ko\'p tanlovli savollar yo\'q.',
+      'goBack': 'Orqaga',
+      'submittingEllipsis': 'Yuborilmoqda…',
+      'sessionEndedBg': 'Sessiya tugadi — boshqa ilovaga o\'tdingiz.',
+      'sessionEndedExit': 'Sessiya tugadi — testdan chiqdingiz.',
+      'sessionWasTerminated': 'Sessiya tugatildi.',
       //feedback page
       "thankYou": "Rahmat",
       "feedbackSubmitted": "Forma qabul qilindi",
@@ -946,6 +1034,50 @@ class AppLocalizations {
       'star5Desc':
           'Может улучшать процессы. Выявляет неэффективность и предлагает лучшие решения.',
 
+      'skipped': 'Пропущено',
+      // Leaderboard
+      'leaderboard': 'Рейтинг',
+      'leaderboardSubtitle': 'Лучшие результаты',
+      'courses': 'Курсы',
+      'rank': 'Место',
+      'noLeaderboardData': 'Результатов пока нет',
+      'noLeaderboardDesc': 'Будьте первым, кто завершит игровой тест!',
+      // Training Game
+      'trainingGame': 'Тренировочные игры',
+      'trainingGameSubtitle': 'Проверьте знания в игровом режиме',
+      'trainingGamePickCourse': 'Выберите курс для начала',
+      'trainingGameEmptyDesc': 'Курсы для игрового режима пока недоступны',
+      'startGame': 'Начать игру',
+      'gameMode': 'Игровой режим',
+      'sessionTerminated': 'Сессия завершена',
+      'testComplete': 'Тест завершён',
+      'summary': 'Итоги',
+      'review': 'Просмотр',
+      'incomplete': 'Не завершено',
+      'partial': 'Частично',
+      'passed': 'Пройдено',
+      'failed': 'Не пройдено',
+      'congratulationsMsg': 'Поздравляем!',
+      'betterLuckMsg': 'Удачи в следующий раз',
+      'resultsBasedOnAnswered': 'Результаты основаны только на отвеченных вопросах',
+      'scoredOutOf': 'Вы правильно ответили на {correct} из {total} вопросов',
+      'timeSpent': 'Затраченное время',
+      'answered': 'Отвечено',
+      'terminated': 'Завершена',
+      'backToCourseList': 'Вернуться к курсам',
+      'exitSession': 'Выйти из сессии?',
+      'exitSessionMsg': 'Выход завершит тестовую сессию. Прогресс будет потерян.',
+      'exit': 'Выйти',
+      'submitTestTitle': 'Отправить тест?',
+      'unansweredMsg': 'Вы не ответили на {count} вопрос(ов). Всё равно отправить?',
+      'failedToLoadQuestions': 'Не удалось загрузить вопросы',
+      'noQuestionsAvailable': 'Вопросы недоступны',
+      'noMcqQuestions': 'В этом курсе пока нет вопросов с множественным выбором.',
+      'goBack': 'Назад',
+      'submittingEllipsis': 'Отправка…',
+      'sessionEndedBg': 'Сессия завершена — вы переключились на другое приложение.',
+      'sessionEndedExit': 'Сессия завершена — вы вышли из теста.',
+      'sessionWasTerminated': 'Сессия была завершена.',
       //feedback form
       "thankYou": "Спасибо",
       "feedbackSubmitted": "Отзыв успешно отправлен",
@@ -1234,6 +1366,52 @@ class AppLocalizations {
   String get done => translate('done');
   String get submissionError => translate('submissionError');
   String get submissionErrorMessage => translate('submissionErrorMessage');
+  String get skipped => translate('skipped');
+  // Training Game
+  String get trainingGame => translate('trainingGame');
+  String get trainingGameSubtitle => translate('trainingGameSubtitle');
+  String get trainingGamePickCourse => translate('trainingGamePickCourse');
+  String get trainingGameEmptyDesc => translate('trainingGameEmptyDesc');
+  String get startGame => translate('startGame');
+  String get gameMode => translate('gameMode');
+  String get sessionTerminated => translate('sessionTerminated');
+  String get testComplete => translate('testComplete');
+  String get summary => translate('summary');
+  String get review => translate('review');
+  String get incomplete => translate('incomplete');
+  String get partial => translate('partial');
+  String get passed => translate('passed');
+  String get failed => translate('failed');
+  String get congratulationsMsg => translate('congratulationsMsg');
+  String get betterLuckMsg => translate('betterLuckMsg');
+  String get resultsBasedOnAnswered => translate('resultsBasedOnAnswered');
+  String get timeSpent => translate('timeSpent');
+  String get answered => translate('answered');
+  String get terminated => translate('terminated');
+  String get backToCourseList => translate('backToCourseList');
+  String get exitSession => translate('exitSession');
+  String get exitSessionMsg => translate('exitSessionMsg');
+  String get exit => translate('exit');
+  String get submitTestTitle => translate('submitTestTitle');
+  String get failedToLoadQuestions => translate('failedToLoadQuestions');
+  String get noQuestionsAvailable => translate('noQuestionsAvailable');
+  String get noMcqQuestions => translate('noMcqQuestions');
+  String get goBack => translate('goBack');
+  String get submittingEllipsis => translate('submittingEllipsis');
+  String get sessionEndedBg => translate('sessionEndedBg');
+  String get sessionEndedExit => translate('sessionEndedExit');
+  String get sessionWasTerminated => translate('sessionWasTerminated');
+  String unansweredMsg(int count) =>
+      translate('unansweredMsg').replaceAll('{count}', '$count');
+  String scoredOutOf(int correct, int total) => translate('scoredOutOf')
+      .replaceAll('{correct}', '$correct')
+      .replaceAll('{total}', '$total');
 
-
+  // Leaderboard
+  String get leaderboard => translate('leaderboard');
+  String get leaderboardSubtitle => translate('leaderboardSubtitle');
+  String get courses => translate('courses');
+  String get rank => translate('rank');
+  String get noLeaderboardData => translate('noLeaderboardData');
+  String get noLeaderboardDesc => translate('noLeaderboardDesc');
 }
