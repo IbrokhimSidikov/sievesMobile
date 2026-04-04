@@ -101,13 +101,14 @@ class _TrainingGameSessionState extends State<TrainingGameSession>
           .where((t) => t.options.isNotEmpty)
           .toList();
 
-      // Shuffle for random order
+      // Shuffle and take at most 25 random questions
       mcqTests.shuffle(Random());
+      final limited = mcqTests.take(25).toList();
 
       if (mounted) {
         setState(() {
           _sessionId = sessionId;
-          _questions = mcqTests;
+          _questions = limited;
           _isLoading = false;
         });
         _startTimer();
