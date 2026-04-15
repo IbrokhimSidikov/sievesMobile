@@ -1579,6 +1579,7 @@ class ApiService {
       print('🏆 [API] Response status: ${response.statusCode}');
 
       if (response.statusCode == 200) {
+        print('✅ [API] Raw response body: ${response.body}');
         final List<dynamic> data = jsonDecode(response.body);
         print('✅ [API] Fetched ${data.length} game sessions');
         return data;
