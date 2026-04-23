@@ -1570,7 +1570,7 @@ class ApiService {
     try {
       final headers = await _getHeaders();
       final uri = Uri.parse(
-        'https://api.v3.sievesapp.com/training-course/sessions/by-type/game?expand=employee.individual',
+        'https://api.v3.sievesapp.com/training-course/sessions/by-type/game?page=1&limit=20',
       );
 
       print('🏆 [API] Fetching game sessions from: $uri');
@@ -1580,7 +1580,9 @@ class ApiService {
 
       if (response.statusCode == 200) {
         print('✅ [API] Raw response body: ${response.body}');
-        final List<dynamic> data = jsonDecode(response.body);
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> data =
+            decoded is List ? decoded : (decoded['data'] as List? ?? []);
         print('✅ [API] Fetched ${data.length} game sessions');
         return data;
       } else {

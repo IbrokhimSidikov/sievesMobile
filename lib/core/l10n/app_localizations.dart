@@ -317,6 +317,8 @@ class AppLocalizations {
       'rank': 'Rank',
       'noLeaderboardData': 'No results yet',
       'noLeaderboardDesc': 'Be the first to complete a game test!',
+      'employee': 'Employee',
+      'registrationNumber': 'Reg. Number',
       // Training Game
       'trainingGame': 'Training Games',
       'trainingGameSubtitle': 'Practice your knowledge with game mode',
@@ -674,6 +676,8 @@ class AppLocalizations {
       'rank': 'O\'rin',
       'noLeaderboardData': 'Hali natijalar yo\'q',
       'noLeaderboardDesc': 'O\'yin testini birinchi bo\'lib yakunlang!',
+      'employee': 'Xodim',
+      'registrationNumber': 'Reg. raqam',
       // Training Game
       'trainingGame': 'Training o\'yinlari',
       'trainingGameSubtitle': 'O\'yin rejimida bilimingizni sinab ko\'ring',
@@ -1042,6 +1046,8 @@ class AppLocalizations {
       'rank': 'Место',
       'noLeaderboardData': 'Результатов пока нет',
       'noLeaderboardDesc': 'Будьте первым, кто завершит игровой тест!',
+      'employee': 'Сотрудник',
+      'registrationNumber': 'Рег. номер',
       // Training Game
       'trainingGame': 'Тренировочные игры',
       'trainingGameSubtitle': 'Проверьте знания в игровом режиме',
@@ -1414,4 +1420,6 @@ class AppLocalizations {
   String get rank => translate('rank');
   String get noLeaderboardData => translate('noLeaderboardData');
   String get noLeaderboardDesc => translate('noLeaderboardDesc');
+  // String get employee => translate('employee');
+  String get registrationNumber => translate('registrationNumber');
 }

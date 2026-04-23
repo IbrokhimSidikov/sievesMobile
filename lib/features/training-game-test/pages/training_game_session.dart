@@ -7,7 +7,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../training-test/data/test_models.dart';
-import 'test_results_page.dart';
+import 'game_test_result_page.dart';
 
 class TrainingGameSession extends StatefulWidget {
   final int courseId;
@@ -167,18 +167,18 @@ class _TrainingGameSessionState extends State<TrainingGameSession>
 
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => TestResultsPage(
-          courseName: widget.courseName,
-          questions: _questions,
-          selectedAnswers: _selectedAnswers,
-          elapsedSeconds: _elapsedSeconds,
-          terminated: true,
-          terminationReason: reason,
+    if (_sessionId != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => GameTestResultPage(
+            sessionId: _sessionId!,
+            courseName: widget.courseName,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   // ── Submit ────────────────────────────────────────────────────────────────
@@ -204,32 +204,36 @@ class _TrainingGameSessionState extends State<TrainingGameSession>
         .map((e) => {'test_id': e.key, 'option_id': e.value})
         .toList();
 
-    try {
-      if (_sessionId != null) {
-        await _authManager.apiService.submitTrainingSession(
-          sessionId: _sessionId!,
-          matchAnswers: const [],
-          optionAnswers: optionAnswers,
-        );
-      }
-    } catch (e) {
-      // Submission failed — still show local results
-      print('⚠️ [GameSession] Submit failed: $e');
+    // Kick off the submit in the background — don't block the UI.
+    Future<void>? submitFuture;
+    if (_sessionId != null) {
+      submitFuture = _authManager.apiService
+          .submitTrainingSession(
+            sessionId: _sessionId!,
+            matchAnswers: const [],
+            optionAnswers: optionAnswers,
+          )
+          .then((_) {})
+          .catchError((e) {
+        print('⚠️ [GameSession] Submit failed: $e');
+      });
     }
 
     if (!mounted) return;
 
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(
-        builder: (_) => TestResultsPage(
-          courseName: widget.courseName,
-          questions: _questions,
-          selectedAnswers: _selectedAnswers,
-          elapsedSeconds: _elapsedSeconds,
-          terminated: false,
+    if (_sessionId != null) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => GameTestResultPage(
+            sessionId: _sessionId!,
+            courseName: widget.courseName,
+            submitFuture: submitFuture,
+          ),
         ),
-      ),
-    );
+      );
+    } else {
+      Navigator.of(context).pop();
+    }
   }
 
   // ── Back button / exit guard ──────────────────────────────────────────────

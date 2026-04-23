@@ -12,7 +12,7 @@ class TestSessionResult {
   final String startedAt;
   final String completedAt;
   final List<TestResultDetail> results;
-  final ResultCourse course;
+  final ResultCourse? course;
 
   TestSessionResult({
     required this.id,
@@ -28,7 +28,7 @@ class TestSessionResult {
     required this.startedAt,
     required this.completedAt,
     required this.results,
-    required this.course,
+    this.course,
   });
 
   factory TestSessionResult.fromJson(Map<String, dynamic> json) {
@@ -46,9 +46,11 @@ class TestSessionResult {
       startedAt: json['started_at'] as String,
       completedAt: json['completed_at'] as String,
       results: (json['results'] as List)
-          .map((r) => TestResultDetail.fromJson(r))
+          .map((r) => TestResultDetail.fromJson(r as Map<String, dynamic>))
           .toList(),
-      course: ResultCourse.fromJson(json['course']),
+      course: json['course'] != null
+          ? ResultCourse.fromJson(json['course'] as Map<String, dynamic>)
+          : null,
     );
   }
 }
@@ -171,8 +173,8 @@ class ResultCourse {
   factory ResultCourse.fromJson(Map<String, dynamic> json) {
     return ResultCourse(
       id: json['id'] as int,
-      name: json['name'] as String,
-      description: json['description'] as String,
+      name: json['name']?.toString() ?? '',
+      description: json['description']?.toString() ?? '',
     );
   }
 }

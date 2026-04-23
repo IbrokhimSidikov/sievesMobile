@@ -8,6 +8,10 @@ class GameSession {
   final String scorePercentage;
   final int passingScore;
   final String? completedAt;
+  final String? employeeName;
+  final String? employeeRegistrationNumber;
+  final String? courseName;
+  final String? branchName;
   final GameSessionCourse? course;
   final GameSessionIdentity? identity;
   final GameSessionEmployee? employee;
@@ -22,6 +26,10 @@ class GameSession {
     required this.scorePercentage,
     required this.passingScore,
     this.completedAt,
+    this.employeeName,
+    this.employeeRegistrationNumber,
+    this.courseName,
+    this.branchName,
     this.course,
     this.identity,
     this.employee,
@@ -40,6 +48,10 @@ class GameSession {
       scorePercentage: json['score_percentage']?.toString() ?? '0.00',
       passingScore: json['passing_score'] ?? 70,
       completedAt: json['completed_at'],
+      employeeName: json['employee_name']?.toString(),
+      employeeRegistrationNumber: json['employee_registration_number']?.toString(),
+      courseName: json['course_name']?.toString(),
+      branchName: json['branch_name']?.toString(),
       course: json['course'] != null
           ? GameSessionCourse.fromJson(json['course'])
           : null,

@@ -1098,7 +1098,8 @@ class _BentoCardState extends State<_BentoCard>
         ),
 
         // Title + subtitle
-        Column(
+        Flexible(
+         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
@@ -1128,6 +1129,7 @@ class _BentoCardState extends State<_BentoCard>
               ),
             ],
           ],
+         ),
         ),
       ],
     );

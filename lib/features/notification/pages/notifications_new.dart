@@ -57,7 +57,9 @@ class _NotificationsPageState extends State<NotificationsPage>
       if (mounted) {
         setState(() {
           _notifications = _notifications
-              .map((n) => n.copyWith(isRead: true, readAt: DateTime.now()))
+              .map((n) => n.isRead
+                  ? n
+                  : n.copyWith(isRead: true, readAt: DateTime.now()))
               .toList();
           _isMarkingAll = false;
         });
