@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../models/checklist_model.dart';
 import 'checklist_state.dart';
@@ -7,8 +9,76 @@ import 'dart:convert';
 
 class ChecklistCubit extends Cubit<ChecklistState> {
   final AuthManager _authManager;
+  Timer? _draftSaveDebounce;
 
   ChecklistCubit(this._authManager) : super(const ChecklistInitial());
+
+  String _draftKey(int checklistId) {
+    final employeeId = _authManager.currentEmployeeId ?? 0;
+    return 'checklist_draft_${employeeId}_$checklistId';
+  }
+
+  Future<void> _saveDraft(ChecklistLoaded state) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final payload = {
+        'itemStates': state.itemStates
+            .map((key, value) => MapEntry(key.toString(), value)),
+        'itemNotes': state.itemNotes
+            .map((key, value) => MapEntry(key.toString(), value)),
+        'savedAt': DateTime.now().toIso8601String(),
+      };
+      await prefs.setString(_draftKey(state.checklist.id), json.encode(payload));
+    } catch (e) {
+      print('⚠️ Failed to save checklist draft: $e');
+    }
+  }
+
+  void _scheduleDraftSave(ChecklistLoaded state) {
+    _draftSaveDebounce?.cancel();
+    _draftSaveDebounce = Timer(const Duration(milliseconds: 400), () {
+      _saveDraft(state);
+    });
+  }
+
+  Future<({Map<int, bool> states, Map<int, String> notes})?> _loadDraft(
+      int checklistId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final raw = prefs.getString(_draftKey(checklistId));
+      if (raw == null) return null;
+      final decoded = json.decode(raw) as Map<String, dynamic>;
+      final states = <int, bool>{};
+      final notes = <int, String>{};
+      (decoded['itemStates'] as Map<String, dynamic>?)?.forEach((k, v) {
+        final id = int.tryParse(k);
+        if (id != null) states[id] = v == true;
+      });
+      (decoded['itemNotes'] as Map<String, dynamic>?)?.forEach((k, v) {
+        final id = int.tryParse(k);
+        if (id != null) notes[id] = (v ?? '').toString();
+      });
+      return (states: states, notes: notes);
+    } catch (e) {
+      print('⚠️ Failed to load checklist draft: $e');
+      return null;
+    }
+  }
+
+  Future<void> _clearDraft(int checklistId) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_draftKey(checklistId));
+    } catch (e) {
+      print('⚠️ Failed to clear checklist draft: $e');
+    }
+  }
+
+  @override
+  Future<void> close() {
+    _draftSaveDebounce?.cancel();
+    return super.close();
+  }
 
   Future<void> loadChecklist(int checklistId) async {
     try {
@@ -56,14 +126,34 @@ class ChecklistCubit extends Cubit<ChecklistState> {
           itemStates[item.id] = false;
           itemNotes[item.id] = '';
         }
-        
+
+        // Merge persisted draft (resume where the user left off)
+        final draft = await _loadDraft(checklistId);
+        if (draft != null) {
+          for (final entry in draft.states.entries) {
+            if (itemStates.containsKey(entry.key)) {
+              itemStates[entry.key] = entry.value;
+            }
+          }
+          for (final entry in draft.notes.entries) {
+            if (itemNotes.containsKey(entry.key)) {
+              itemNotes[entry.key] = entry.value;
+            }
+          }
+          print('📝 Restored checklist draft for $checklistId');
+        }
+
+        final completedCount = itemStates.values.where((v) => v).length;
+        final totalCount = itemStates.length;
+        final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
+
         print('✅ Loaded checklist: ${checklist.name} with ${checklist.items.length} items');
-        
+
         emit(ChecklistLoaded(
           checklist: checklist,
           itemStates: itemStates,
           itemNotes: itemNotes,
-          progress: 0.0,
+          progress: progress,
         ));
       } else {
         print('❌ API Error: ${response.statusCode} - ${response.body}');
@@ -85,10 +175,13 @@ class ChecklistCubit extends Cubit<ChecklistState> {
       final totalCount = updatedStates.length;
       final progress = totalCount > 0 ? completedCount / totalCount : 0.0;
 
-      emit(currentState.copyWith(
+      final newState = currentState.copyWith(
         itemStates: updatedStates,
         progress: progress,
-      ));
+      );
+      emit(newState);
+      // Toggle is discrete; persist immediately (no debounce needed).
+      _saveDraft(newState);
     }
   }
 
@@ -98,9 +191,12 @@ class ChecklistCubit extends Cubit<ChecklistState> {
       final updatedNotes = Map<int, String>.from(currentState.itemNotes);
       updatedNotes[itemId] = note;
 
-      emit(currentState.copyWith(
+      final newState = currentState.copyWith(
         itemNotes: updatedNotes,
-      ));
+      );
+      emit(newState);
+      // Notes update on every keystroke; debounce writes.
+      _scheduleDraftSave(newState);
     }
   }
 
@@ -171,6 +267,7 @@ class ChecklistCubit extends Cubit<ChecklistState> {
 
       if (response.statusCode == 200 || response.statusCode == 201) {
         print('✅ Checklist submitted successfully');
+        await _clearDraft(currentState.checklist.id);
         emit(const ChecklistSubmitted());
       } else {
         print('❌ Submission failed: ${response.statusCode} - ${response.body}');
