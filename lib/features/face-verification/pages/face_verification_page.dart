@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sieves_mob/core/l10n/app_localizations.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/snackbar_helper.dart';
 import '../../break/widgets/face_capture_dialog.dart';
 import '../services/work_entry_service.dart';
 import '../../../core/services/auth/auth_manager.dart';
@@ -89,6 +90,12 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       setState(() {
         _statusMessage = AppLocalizations.of(context).cameraCancelled;
       });
+      if (mounted) {
+        SnackbarHelper.showWarning(
+          context,
+          AppLocalizations.of(context).snackbarCameraRequired,
+        );
+      }
     }
   }
 
@@ -102,8 +109,14 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       if (mood == null) {
         // User cancelled mood selection
         setState(() {
-          _statusMessage = 'Check-in cancelled. Please select your mood.';
+          _statusMessage = AppLocalizations.of(context).snackbarMoodRequired;
         });
+        if (mounted) {
+          SnackbarHelper.showWarning(
+            context,
+            AppLocalizations.of(context).snackbarMoodRequired,
+          );
+        }
         return;
       }
       _selectedMood = mood;
@@ -113,8 +126,16 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       _isVerifying = true;
       _isVerified = false;
       _verificationFailed = false;
-      _statusMessage = 'Processing work entry...';
+      _statusMessage = AppLocalizations.of(context).snackbarVerifyingFace;
     });
+
+    if (mounted) {
+      SnackbarHelper.showInfo(
+        context,
+        AppLocalizations.of(context).snackbarVerifyingFace,
+        duration: const Duration(seconds: 4),
+      );
+    }
 
     try {
       final result = await _workEntryService.performCompleteWorkEntry(
@@ -134,8 +155,8 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           _isVerified = true;
           _isVerifying = false;
           _verificationFailed = false;
-          _statusMessage = 'Work entry successful!';
-          _employeeName = employee?.individual != null 
+          _statusMessage = AppLocalizations.of(context).workEntrySuccess;
+          _employeeName = employee?.individual != null
               ? '${employee!.individual!.firstName} ${employee.individual!.lastName}'
               : 'Employee';
           _employeePhoto = employee?.individual?.photoUrl;
@@ -143,9 +164,13 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
         });
         
         print('🔄 Status updated - UI rebuilt with new status from API');
-        
-        // Show success dialog
+
         if (mounted) {
+          SnackbarHelper.showSuccess(
+            context,
+            AppLocalizations.of(context).snackbarFaceVerifSuccess,
+          );
+          // Show success dialog
           _showSuccessDialog(result['data'], _currentEmployeeStatus);
         }
       } else {
@@ -153,18 +178,26 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           _isVerified = false;
           _isVerifying = false;
           _verificationFailed = true;
-          _statusMessage = result?['message'] ?? 'Work entry failed. Please try again.';
+          _statusMessage = _localizedErrorMessage(result?['error_type']);
         });
         
-        // Show beautiful error dialog based on error type
         if (mounted) {
-          final errorType = result?['error_type'];
+          // Show a clear localized snackbar first, then the action dialog
+          final errorType = result?['error_type'] as String?;
+          SnackbarHelper.showError(
+            context,
+            _localizedErrorMessage(errorType),
+          );
+
+          await Future.delayed(const Duration(milliseconds: 600));
+
+          if (!mounted) return;
           if (errorType == 'face_verification_failed') {
-            _showFaceVerificationErrorDialog(result?['message'] ?? 'Face verification failed');
+            _showFaceVerificationErrorDialog(AppLocalizations.of(context).snackbarFaceVerifFailed);
           } else if (errorType == 'location_error') {
-            _showLocationErrorDialog(result?['message'] ?? 'Location error');
+            _showLocationErrorDialog(AppLocalizations.of(context).locationError);
           } else {
-            _showGenericErrorDialog(result?['message'] ?? 'Work entry failed. Please try again.');
+            _showGenericErrorDialog(_localizedErrorMessage(errorType));
           }
         }
       }
@@ -174,9 +207,32 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
         _isVerified = false;
         _isVerifying = false;
         _verificationFailed = true;
-        _statusMessage = 'An error occurred. Please try again.';
+        _statusMessage = AppLocalizations.of(context).snackbarUnexpectedError;
       });
+      if (mounted) {
+        SnackbarHelper.showError(
+          context,
+          AppLocalizations.of(context).snackbarUnexpectedError,
+        );
+      }
     }
+  }
+
+  /// Returns a localized, user-friendly message for each known error type.
+  String _localizedErrorMessage(String? errorType) {
+    final l = AppLocalizations.of(context);
+    return switch (errorType) {
+      'no_employee_data'              => l.snackbarNoEmployeeData,
+      'day_session_failed'            => l.snackbarDaySessionFailed,
+      'no_profile_photo'              => l.snackbarNoProfilePhoto,
+      'profile_photo_download_failed' => l.snackbarProfilePhotoDownloadFailed,
+      'face_verification_failed'      => l.snackbarFaceVerifFailed,
+      'photo_upload_failed'           => l.snackbarPhotoUploadFailed,
+      'status_fetch_failed'           => l.snackbarStatusFetchFailed,
+      'work_entry_creation_failed'    => l.snackbarWorkEntryFailed,
+      'network_error'                 => l.snackbarNetworkError,
+      _                               => l.snackbarUnexpectedError,
+    };
   }
 
   Future<int?> _showMoodSelectionDialog() async {

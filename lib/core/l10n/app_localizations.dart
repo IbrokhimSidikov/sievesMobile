@@ -182,6 +182,23 @@ class AppLocalizations {
       'newVerification': 'New Verification',
       'processing': 'Processing...',
       'captureFace': 'Capture Face',
+      // Face verification snackbar messages
+      'snackbarNoEmployeeData': 'Employee data not found. Please log in again.',
+      'snackbarDaySessionFailed': 'Could not fetch today\'s work session. Please try again.',
+      'snackbarNoProfilePhoto': 'No profile photo found. Please contact HR.',
+      'snackbarProfilePhotoDownloadFailed': 'Failed to download your profile photo. Check your connection.',
+      'snackbarFaceVerifFailed': 'Face does not match your profile. Please try again.',
+      'snackbarPhotoUploadFailed': 'Failed to upload your photo. Please retry.',
+      'snackbarStatusFetchFailed': 'Could not fetch your work status. Please retry.',
+      'snackbarWorkEntryFailed': 'Work entry could not be saved. Please try again.',
+      'snackbarMoodRequired': 'Please choose your mood to proceed with check-in.',
+      'snackbarCameraRequired': 'Camera was cancelled. Tap the button to try again.',
+      'snackbarLocationUnavailable': 'Location unavailable — proceeding without it.',
+      'snackbarNetworkError': 'Network error. Please check your internet connection.',
+      'snackbarVerifyingFace': 'Verifying your identity, please wait…',
+      'snackbarFaceVerifSuccess': 'Identity verified successfully!',
+      'snackbarWorkEntryCreating': 'Recording your attendance…',
+      'snackbarUnexpectedError': 'An unexpected error occurred. Please try again.',
       //checklist
       'mySubmissions': 'My Submissions',
       'submissionsFound': 'submissions found',
@@ -363,7 +380,13 @@ class AppLocalizations {
       'submissionError': 'Submission Error',
       'submissionErrorMessage': 'We couldn\'t process your feedback. Please try again later.',
       'tryAgain': 'Try Again',
-      'close': 'Close'
+      'close': 'Close',
+      //Trainings modal
+      'trainings': 'Trainings',
+      'trainingsCompletedLabel': 'completed',
+      'trainingsCompletedBadge': 'Completed',
+      'trainingsLoadError': 'Could not load trainings',
+      'trainingsNoData': 'No trainings available'
     },
     'uz': {
       'title': 'Sieves',
@@ -539,6 +562,23 @@ class AppLocalizations {
       "newVerification": "Yangi tasdiqlash",
       "processing": "Qayta ishlanmoqda...",
       "captureFace": "Yuzni suratga olish",
+      // Face verification snackbar messages
+      'snackbarNoEmployeeData': 'Xodim ma\'lumotlari topilmadi. Iltimos, qayta kiring.',
+      'snackbarDaySessionFailed': 'Bugungi ish sessiyasini olishda xatolik yuz berdi. Qayta urining.',
+      'snackbarNoProfilePhoto': 'Profil rasmi topilmadi. HR bilan bog\'laning.',
+      'snackbarProfilePhotoDownloadFailed': 'Profil rasmini yuklab bo\'lmadi. Internetni tekshiring.',
+      'snackbarFaceVerifFailed': 'Yuz profilingizga mos kelmadi. Qayta urining.',
+      'snackbarPhotoUploadFailed': 'Rasmni yuklashda xatolik. Qayta urining.',
+      'snackbarStatusFetchFailed': 'Ish holatini olishda xatolik. Qayta urining.',
+      'snackbarWorkEntryFailed': 'Keldi-ketdi yozib bo\'lmadi. Qayta urining.',
+      'snackbarMoodRequired': 'Kirish uchun kayfiyatingizni tanlang.',
+      'snackbarCameraRequired': 'Kamera bekor qilindi. Qayta urinish uchun tugmani bosing.',
+      'snackbarLocationUnavailable': 'Manzil aniqlanmadi — joylashuvizsiz davom etilmoqda.',
+      'snackbarNetworkError': 'Tarmoq xatosi. Internet aloqasini tekshiring.',
+      'snackbarVerifyingFace': 'Shaxsingiz tasdiqlanmoqda, kuting…',
+      'snackbarFaceVerifSuccess': 'Shaxsingiz muvaffaqiyatli tasdiqlandi!',
+      'snackbarWorkEntryCreating': 'Davomat qayd etilmoqda…',
+      'snackbarUnexpectedError': 'Kutilmagan xatolik yuz berdi. Qayta urining.',
       //checklist
       'mySubmissions': 'Mening cheklistlarim',
       'submissionsFound': 'ta topshiriq topildi',
@@ -722,7 +762,13 @@ class AppLocalizations {
       "submissionError": "Xatolik",
       "submissionErrorMessage": "Formani yuborishda xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring.",
       "tryAgain": "Qayta urinish",
-      "close": "Yopish"
+      "close": "Yopish",
+      //Trainings modal
+      'trainings': 'Treninglar',
+      'trainingsCompletedLabel': 'bajarildi',
+      'trainingsCompletedBadge': 'Qatnashildi',
+      'trainingsLoadError': 'Treninglarni yuklab bo\'lmadi',
+      'trainingsNoData': 'Treninglar mavjud emas'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -925,6 +971,23 @@ class AppLocalizations {
       'newVerification': 'Новая проверка',
       'processing': 'Обработка...',
       'captureFace': 'Сделать селфи',
+      // Face verification snackbar messages
+      'snackbarNoEmployeeData': 'Данные сотрудника не найдены. Пожалуйста, войдите снова.',
+      'snackbarDaySessionFailed': 'Не удалось получить текущую сессию. Попробуйте снова.',
+      'snackbarNoProfilePhoto': 'Фото профиля не найдено. Обратитесь в HR.',
+      'snackbarProfilePhotoDownloadFailed': 'Не удалось загрузить фото профиля. Проверьте соединение.',
+      'snackbarFaceVerifFailed': 'Лицо не совпадает с профилем. Попробуйте снова.',
+      'snackbarPhotoUploadFailed': 'Не удалось загрузить фото. Попробуйте снова.',
+      'snackbarStatusFetchFailed': 'Не удалось получить статус. Попробуйте снова.',
+      'snackbarWorkEntryFailed': 'Не удалось сохранить отметку. Попробуйте снова.',
+      'snackbarMoodRequired': 'Пожалуйста, выберите настроение для отметки прихода.',
+      'snackbarCameraRequired': 'Камера отменена. Нажмите кнопку, чтобы попробовать снова.',
+      'snackbarLocationUnavailable': 'Местоположение недоступно — продолжаем без него.',
+      'snackbarNetworkError': 'Ошибка сети. Проверьте подключение к интернету.',
+      'snackbarVerifyingFace': 'Подтверждение личности, подождите…',
+      'snackbarFaceVerifSuccess': 'Личность успешно подтверждена!',
+      'snackbarWorkEntryCreating': 'Запись посещения…',
+      'snackbarUnexpectedError': 'Произошла неожиданная ошибка. Попробуйте снова.',
       //checklist
       'mySubmissions': 'Мои задания',
       'submissionsFound': 'заданий найдено',
@@ -1092,7 +1155,13 @@ class AppLocalizations {
       "submissionError": "Ошибка отправки",
       "submissionErrorMessage": "Не удалось обработать ваш отзыв. Пожалуйста, попробуйте позже.",
       "tryAgain": "Попробовать снова",
-      "close": "Закрыть"
+      "close": "Закрыть",
+      //Trainings modal
+      'trainings': 'Тренинги',
+      'trainingsCompletedLabel': 'пройдено',
+      'trainingsCompletedBadge': 'Пройдено',
+      'trainingsLoadError': 'Не удалось загрузить тренинги',
+      'trainingsNoData': 'Тренингов пока нет'
     },
   };
 
@@ -1274,6 +1343,23 @@ class AppLocalizations {
   String get newVerification => translate('newVerification');
   String get processing => translate('processing');
   String get captureFace => translate('captureFace');
+  // Face verification snackbar messages
+  String get snackbarNoEmployeeData => translate('snackbarNoEmployeeData');
+  String get snackbarDaySessionFailed => translate('snackbarDaySessionFailed');
+  String get snackbarNoProfilePhoto => translate('snackbarNoProfilePhoto');
+  String get snackbarProfilePhotoDownloadFailed => translate('snackbarProfilePhotoDownloadFailed');
+  String get snackbarFaceVerifFailed => translate('snackbarFaceVerifFailed');
+  String get snackbarPhotoUploadFailed => translate('snackbarPhotoUploadFailed');
+  String get snackbarStatusFetchFailed => translate('snackbarStatusFetchFailed');
+  String get snackbarWorkEntryFailed => translate('snackbarWorkEntryFailed');
+  String get snackbarMoodRequired => translate('snackbarMoodRequired');
+  String get snackbarCameraRequired => translate('snackbarCameraRequired');
+  String get snackbarLocationUnavailable => translate('snackbarLocationUnavailable');
+  String get snackbarNetworkError => translate('snackbarNetworkError');
+  String get snackbarVerifyingFace => translate('snackbarVerifyingFace');
+  String get snackbarFaceVerifSuccess => translate('snackbarFaceVerifSuccess');
+  String get snackbarWorkEntryCreating => translate('snackbarWorkEntryCreating');
+  String get snackbarUnexpectedError => translate('snackbarUnexpectedError');
   //checklist
   String get mySubmissions => translate('mySubmissions');
   String get submissionsFound => translate('submissionsFound');

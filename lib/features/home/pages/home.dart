@@ -12,7 +12,7 @@ import '../../../core/providers/locale_provider.dart';
 import '../../../core/services/api/api_service.dart';
 import '../../../core/model/story_model.dart';
 import '../../stories/pages/story_viewer.dart';
-import '../../stories/widgets/story_avatar.dart';
+import '../../trainings/pages/trainings_modal.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -122,22 +122,53 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   }
 
   // Helper method to get user's display name
-  String _getUserDisplayName() {
+  Widget _getUserDisplayName(BuildContext context) {
     final identity = _authManager.currentIdentity;
+
+    String text;
 
     if (identity != null) {
       if (identity.employee?.individual != null) {
         final firstName = identity.employee!.individual!.firstName;
         final lastName = identity.employee!.individual!.lastName;
-        if (firstName != null && lastName != null) {
-          return '$firstName $lastName 👋';
-        }
-      }
 
-      return '${identity.username} 👋';
+        if (firstName != null && lastName != null) {
+          text = '$firstName $lastName';
+        } else {
+          text = identity.username ?? '';
+        }
+      } else {
+        text = identity.username ?? '';
+      }
+    } else {
+      text = 'Welcome';
     }
 
-    return 'Welcome 👋';
+    final theme = Theme.of(context);
+
+    return RichText(
+      text: TextSpan(
+        style: TextStyle(
+          fontSize: 20.sp,
+          fontWeight: FontWeight.w600,
+          color: theme.colorScheme.onSurface,
+        ),
+        children: [
+          TextSpan(text: text),
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Padding(
+              padding: const EdgeInsets.only(left: 6),
+              child: Icon(
+                Icons.verified,
+                size: 20.sp,
+                color: const Color(0xFF0378fe),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   void _navigateToModule(_ModuleItem module) {
@@ -423,17 +454,21 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              _getUserDisplayName(),
-                              style: TextStyle(
-                                fontSize: 20.sp,
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.onSurface,
-                              ),
-                            ),
+                            _getUserDisplayName(context),
                             SizedBox(height: 4.h),
                             _buildStatusBadge(theme),
                           ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => showTrainingsModal(context),
+                        child: Padding(
+                          padding: EdgeInsets.only(right: 16.w),
+                          child: Icon(
+                            Icons.school,
+                            size: 30.sp,
+                            color: theme.colorScheme.onSurface,
+                          ),
                         ),
                       ),
                     ],
@@ -640,12 +675,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   Widget _buildUserAvatar() {
     final identity = _authManager.currentIdentity;
     final userPhoto = identity?.employee?.individual?.photoUrl;
-    final firstUserStories = _userStories.isNotEmpty
-        ? _userStories.first
-        : null;
-    final hasStories =
-        firstUserStories != null && firstUserStories.stories.isNotEmpty;
-    final hasUnviewed = hasStories && firstUserStories.hasUnviewedStories;
+    final firstUserStories = _userStories.isNotEmpty ? _userStories.first : null;
+    final hasStories = firstUserStories != null && firstUserStories.stories.isNotEmpty;
+    final stories = hasStories ? firstUserStories.stories : <Story>[];
+
+    // Build a list of viewed flags per story segment
+    final viewedFlags = stories.map((s) => s.isViewed).toList();
 
     return GestureDetector(
       onTap: hasStories
@@ -658,49 +693,34 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               );
             }
           : null,
-      child: Container(
-        width: 60.w,
-        height: 60.h,
-        padding: hasStories ? EdgeInsets.all(3.w) : null,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: hasStories && hasUnviewed
-              ? const LinearGradient(
-                  colors: [
-                    Color(0xFFF58529),
-                    Color(0xFFDD2A7B),
-                    Color(0xFF8134AF),
-                    Color(0xFF515BD4),
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
+      child: SizedBox(
+        width: 66.w,
+        height: 66.h,
+        child: CustomPaint(
+          painter: hasStories
+              ? _StoryRingPainter(
+                  segmentCount: stories.length,
+                  viewedFlags: viewedFlags,
+                  ringColor: const Color(0xFFDD2A7B),
+                  viewedColor: Colors.grey.shade400,
+                  strokeWidth: 2.5.w,
+                  gapDegrees: stories.length == 1 ? 0 : 5,
+                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
                 )
               : null,
-          border: hasStories && !hasUnviewed
-              ? Border.all(color: Colors.grey.shade400, width: 2.w)
-              : null,
-        ),
-        child: Container(
-          decoration: hasStories
-              ? BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: Theme.of(context).scaffoldBackgroundColor,
-                    width: 3.w,
-                  ),
-                )
-              : null,
-          child: CircleAvatar(
-            radius: hasStories ? (60 - 12).r : 30.r,
-            backgroundImage: userPhoto != null ? NetworkImage(userPhoto) : null,
-            backgroundColor: Colors.grey.shade300,
-            child: userPhoto == null
-                ? Icon(
-                    Icons.person,
-                    size: hasStories ? (60 - 20).sp : 30.sp,
-                    color: Colors.grey.shade600,
-                  )
-                : null,
+          child: Center(
+            child: CircleAvatar(
+              radius: hasStories ? 27.r : 30.r,
+              backgroundImage: userPhoto != null ? NetworkImage(userPhoto) : null,
+              backgroundColor: Colors.grey.shade300,
+              child: userPhoto == null
+                  ? Icon(
+                      Icons.person,
+                      size: hasStories ? 26.sp : 30.sp,
+                      color: Colors.grey.shade600,
+                    )
+                  : null,
+            ),
           ),
         ),
       ),
@@ -1099,37 +1119,37 @@ class _BentoCardState extends State<_BentoCard>
 
         // Title + subtitle
         Flexible(
-         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              widget.module.title,
-              style: TextStyle(
-                fontSize: isLarge ? 18.sp : 14.sp,
-                fontWeight: FontWeight.w700,
-                color: titleColor,
-                letterSpacing: -0.3,
-                height: 1.2,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-            if (isLarge) ...[
-              SizedBox(height: 4.h),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
               Text(
-                _getSubtitle(widget.module.title, context),
+                widget.module.title,
                 style: TextStyle(
-                  fontSize: 11.sp,
-                  fontWeight: FontWeight.w500,
-                  color: subtitleColor,
-                  height: 1.3,
+                  fontSize: isLarge ? 18.sp : 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: titleColor,
+                  letterSpacing: -0.3,
+                  height: 1.2,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),
+              if (isLarge) ...[
+                SizedBox(height: 4.h),
+                Text(
+                  _getSubtitle(widget.module.title, context),
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w500,
+                    color: subtitleColor,
+                    height: 1.3,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
             ],
-          ],
-         ),
+          ),
         ),
       ],
     );
@@ -1158,3 +1178,104 @@ class _BentoCardState extends State<_BentoCard>
     return 'Tap to explore';
   }
 }
+
+// ────────────────────────────────────────────
+//  Story Ring Painter
+// ────────────────────────────────────────────
+class _StoryRingPainter extends CustomPainter {
+  final int segmentCount;
+  final List<bool> viewedFlags;
+  final Color ringColor;
+  final Color viewedColor;
+  final double strokeWidth;
+  final double gapDegrees;
+  final Color backgroundColor;
+
+  _StoryRingPainter({
+    required this.segmentCount,
+    required this.viewedFlags,
+    required this.ringColor,
+    required this.viewedColor,
+    required this.strokeWidth,
+    required this.gapDegrees,
+    required this.backgroundColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (segmentCount == 0) return;
+
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width / 2) - strokeWidth / 2;
+    final rect = Rect.fromCircle(center: center, radius: radius);
+
+    // Total degrees for all gaps
+    final totalGapDegrees = gapDegrees * segmentCount;
+    final segmentDegrees = (360.0 - totalGapDegrees) / segmentCount;
+
+    // Start from top (-90 degrees)
+    double startAngle = -90.0;
+
+    for (int i = 0; i < segmentCount; i++) {
+      final isViewed = i < viewedFlags.length ? viewedFlags[i] : false;
+
+      // Gap paint (background color to create separation)
+      if (segmentCount > 1) {
+        final gapPaint = Paint()
+          ..color = backgroundColor
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = strokeWidth + 1
+          ..strokeCap = StrokeCap.round;
+
+        canvas.drawArc(
+          rect,
+          _toRadians(startAngle - gapDegrees / 2),
+          _toRadians(gapDegrees),
+          false,
+          gapPaint,
+        );
+      }
+
+      // Segment paint
+      final segmentPaint = Paint()
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = strokeWidth
+        ..strokeCap = segmentCount == 1 ? StrokeCap.butt : StrokeCap.round;
+
+      if (isViewed) {
+        segmentPaint.color = viewedColor;
+      } else {
+        // Gradient for unviewed segments
+        segmentPaint.shader = const LinearGradient(
+          colors: [
+            Color(0xFFF58529),
+            Color(0xFFDD2A7B),
+            Color(0xFF8134AF),
+            Color(0xFF515BD4),
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ).createShader(Rect.fromCircle(center: center, radius: radius));
+      }
+
+      canvas.drawArc(
+        rect,
+        _toRadians(startAngle),
+        _toRadians(segmentDegrees),
+        false,
+        segmentPaint,
+      );
+
+      startAngle += segmentDegrees + gapDegrees;
+    }
+  }
+
+  double _toRadians(double degrees) => degrees * 3.141592653589793 / 180.0;
+
+  @override
+  bool shouldRepaint(_StoryRingPainter oldDelegate) =>
+      oldDelegate.segmentCount != segmentCount ||
+      oldDelegate.viewedFlags != viewedFlags ||
+      oldDelegate.strokeWidth != strokeWidth;
+}
+

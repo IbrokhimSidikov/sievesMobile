@@ -197,7 +197,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                   SizedBox(height: 50),
                   Text(
-                    '1.34.0',
+                    '1.35.0',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

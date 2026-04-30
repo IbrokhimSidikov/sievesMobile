@@ -246,7 +246,7 @@ class WorkEntryService {
       final identity = _authManager.currentIdentity;
       if (identity?.employee == null) {
         print('❌ [WORK ENTRY] No employee data available');
-        return {'success': false, 'message': 'No employee data available'};
+        return {'success': false, 'message': 'No employee data available', 'error_type': 'no_employee_data'};
       }
 
       final employee = identity!.employee!;
@@ -265,7 +265,7 @@ class WorkEntryService {
       final daySessionId = await getCurrentDaySessionId();
       if (daySessionId == null) {
         print('❌ [WORK ENTRY] Failed to get day session ID');
-        return {'success': false, 'message': 'Failed to get day session'};
+        return {'success': false, 'message': 'Failed to get day session', 'error_type': 'day_session_failed'};
       }
       print('✅ Day Session ID: $daySessionId');
       print('');
@@ -276,12 +276,12 @@ class WorkEntryService {
       final photoUrl = employee.individual?.photoUrl;
       if (photoUrl == null || photoUrl.isEmpty) {
         print('❌ [WORK ENTRY] No profile photo URL available');
-        return {'success': false, 'message': 'No profile photo available'};
+        return {'success': false, 'message': 'No profile photo available', 'error_type': 'no_profile_photo'};
       }
       final profileImageFile = await downloadProfileImage(photoUrl);
       if (profileImageFile == null) {
         print('❌ [WORK ENTRY] Failed to download profile image');
-        return {'success': false, 'message': 'Failed to download profile image'};
+        return {'success': false, 'message': 'Failed to download profile image', 'error_type': 'profile_photo_download_failed'};
       }
       print('✅ Profile image downloaded');
       print('');
@@ -326,7 +326,7 @@ class WorkEntryService {
       final photoId = await uploadPhoto(capturedPhoto);
       if (photoId == null) {
         print('❌ [WORK ENTRY] Failed to upload photo');
-        return {'success': false, 'message': 'Failed to upload photo'};
+        return {'success': false, 'message': 'Failed to upload photo', 'error_type': 'photo_upload_failed'};
       }
       print('✅ Photo ID: $photoId');
       print('');
@@ -361,7 +361,7 @@ class WorkEntryService {
       final currentStatus = await _apiService.getCurrentEmployeeStatus(employeeId!);
       if (currentStatus == null) {
         print('❌ [WORK ENTRY] Failed to get current employee status');
-        return {'success': false, 'message': 'Failed to get employee status'};
+        return {'success': false, 'message': 'Failed to get employee status', 'error_type': 'status_fetch_failed'};
       }
       final isOnline = currentStatus.toLowerCase() == 'online';
       print('📊 Employee Status (from API): $currentStatus');
@@ -418,7 +418,6 @@ class WorkEntryService {
       );
 
       if (result != null) {
-        print('✅ [WORK ENTRY] Complete flow successful!');
         print('');
         print('┌─────────────────────────────────────────────────────────────┐');
         print('│ WORK ENTRY RESPONSE                                         │');
@@ -437,11 +436,11 @@ class WorkEntryService {
         return {'success': true, 'data': result};
       } else {
         print('❌ [WORK ENTRY] Failed to create work entry');
-        return {'success': false, 'message': 'Failed to create work entry'};
+        return {'success': false, 'message': 'Failed to create work entry', 'error_type': 'work_entry_creation_failed'};
       }
     } catch (e) {
       print('❌ [WORK ENTRY] Exception in complete flow: $e');
-      return {'success': false, 'message': 'Exception: $e'};
+      return {'success': false, 'message': 'Exception: $e', 'error_type': 'network_error'};
     }
   }
 }
