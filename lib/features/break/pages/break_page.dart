@@ -115,7 +115,7 @@ class _BreakPageState extends State<BreakPage>
   bool _isWithinOrderTime() {
     // Bypass time restriction for department IDs 16 and 28
     final departmentId = _authManager.currentIdentity?.employee?.departmentId;
-    if (departmentId == 16 || departmentId == 28 || departmentId == 20) {
+    if (departmentId == 16 || departmentId == 28 || departmentId == 20 || departmentId == 69) {
       return true;
     }
     if (_authManager.currentIdentity?.employee?.branchId == 6) {
