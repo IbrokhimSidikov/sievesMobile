@@ -189,6 +189,70 @@ class BreakRecordsCacheService {
     }
   }
 
+  // ============ Month-Aware Break Orders Caching ============
+
+  /// Generate cache key for break orders scoped to a specific month (YYYY-MM)
+  String _getBreakOrdersMonthCacheKey(int employeeId, String month) {
+    return '${_breakOrdersCacheKey}${employeeId}_$month';
+  }
+
+  String _getBreakOrdersMonthTimestampKey(int employeeId, String month) {
+    return '${_breakOrdersTimestampKey}${employeeId}_$month';
+  }
+
+  /// Save break orders for a specific month to cache
+  Future<void> cacheBreakOrdersForMonth(
+    int employeeId,
+    String month,
+    List<BreakOrder> orders,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getBreakOrdersMonthCacheKey(employeeId, month);
+      final timestampKey = _getBreakOrdersMonthTimestampKey(employeeId, month);
+
+      final jsonList = orders.map((order) => order.toJson()).toList();
+      final jsonString = jsonEncode(jsonList);
+
+      await prefs.setString(cacheKey, jsonString);
+      await prefs.setInt(timestampKey, DateTime.now().millisecondsSinceEpoch);
+
+      print('✅ Cached ${orders.length} break orders for employee $employeeId month $month');
+    } catch (e) {
+      print('❌ Error caching break orders for month: $e');
+    }
+  }
+
+  /// Retrieve break orders for a specific month from cache
+  Future<List<BreakOrder>?> getCachedBreakOrdersForMonth(
+    int employeeId,
+    String month,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cacheKey = _getBreakOrdersMonthCacheKey(employeeId, month);
+      final timestampKey = _getBreakOrdersMonthTimestampKey(employeeId, month);
+
+      final isValid = await _isCacheValid(timestampKey);
+      if (!isValid) {
+        print('⚠️ Break orders cache expired for employee $employeeId month $month');
+        return null;
+      }
+
+      final jsonString = prefs.getString(cacheKey);
+      if (jsonString == null) return null;
+
+      final jsonList = jsonDecode(jsonString) as List<dynamic>;
+      final orders = jsonList.map((json) => BreakOrder.fromJson(json)).toList();
+
+      print('✅ Retrieved ${orders.length} break orders from cache (month $month)');
+      return orders;
+    } catch (e) {
+      print('❌ Error retrieving cached break orders for month: $e');
+      return null;
+    }
+  }
+
   // ============ Clear All Caches ============
 
   /// Clear all break-related caches for a specific employee

@@ -1116,39 +1116,41 @@ class _BentoCardState extends State<_BentoCard>
             color: iconColor,
           ),
         ),
-
         // Title + subtitle
         Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                widget.module.title,
-                style: TextStyle(
-                  fontSize: isLarge ? 18.sp : 14.sp,
-                  fontWeight: FontWeight.w700,
-                  color: titleColor,
-                  letterSpacing: -0.3,
-                  height: 1.2,
-                ),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-              ),
-              if (isLarge) ...[
-                SizedBox(height: 4.h),
+          child: Padding(
+            padding: EdgeInsets.only(top: 8.h),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
                 Text(
-                  _getSubtitle(widget.module.title, context),
+                  widget.module.title,
                   style: TextStyle(
-                    fontSize: 11.sp,
-                    fontWeight: FontWeight.w500,
-                    color: subtitleColor,
-                    height: 1.3,
+                    fontSize: isLarge ? 18.sp : 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: titleColor,
+                    letterSpacing: -0.3,
+                    height: 1.2,
                   ),
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
+                if (isLarge) ...[
+                  SizedBox(height: 4.h),
+                  Text(
+                    _getSubtitle(widget.module.title, context),
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      fontWeight: FontWeight.w500,
+                      color: subtitleColor,
+                      height: 1.3,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
       ],

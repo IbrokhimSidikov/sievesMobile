@@ -2084,188 +2084,176 @@ class _ProfileState extends State<Profile> {
     final employee = _profileData?['employee'];
     final employeeIndividual = employee?['individual'];
 
-    // Debug logging
     print('🖼️ [Profile] Individual data: $individual');
     print('🖼️ [Profile] Photo data: ${individual?['photo']}');
 
-    // Get the photo URL from the individual's photo object
     String? photoUrl;
     final photoData = individual?['photo'];
     if (photoData != null && photoData is Map) {
       final path = photoData['path'] as String?;
       final name = photoData['name'] as String?;
       final format = photoData['format'] as String?;
-
-      print('🖼️ [Profile] Photo path: $path, name: $name, format: $format');
-
       if (path != null && name != null && format != null) {
         photoUrl =
             'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
-        print('🖼️ [Profile] Constructed photo URL: $photoUrl');
       }
-    } else {
-      print('🖼️ [Profile] Photo data is null or not a Map');
     }
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+    const accent = AppColors.cxRoyalBlue;
+    final cardBg = isDarkMode ? colorScheme.surface : AppColors.cxPureWhite;
+    final borderColor = isDarkMode
+        ? accent.withOpacity(0.18)
+        : accent.withOpacity(0.12);
+    final primaryText = colorScheme.onSurface;
+    final secondaryText = isDarkMode
+        ? colorScheme.onSurfaceVariant
+        : const Color(0xFF6B7280);
+
+    final fullName =
+        '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'
+            .trim();
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.cxRoyalBlue, AppColors.cxEmeraldGreen],
-        ),
-        borderRadius: BorderRadius.circular(24.r),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxRoyalBlue.withOpacity(0.3),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: Colors.black.withOpacity(isDarkMode ? 0.18 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(24.w),
-        child: Column(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
-            // Profile Photo
+            // ── Avatar ───────────────────────────────────────────────
             Container(
-              width: 100.w,
-              height: 100.h,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: AppColors.cxPureWhite.withOpacity(0.3),
-                  width: 3,
+                  color: accent.withOpacity(0.25),
+                  width: 2,
                 ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.2),
-                    blurRadius: 10,
-                    offset: Offset(0, 5),
-                  ),
-                ],
               ),
               child: ClipOval(
-                child: photoUrl != null
-                    ? Image.network(
-                        photoUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            _buildDefaultAvatar(),
-                      )
-                    : _buildDefaultAvatar(),
+                child: SizedBox(
+                  width: 72.w,
+                  height: 72.h,
+                  child: photoUrl != null
+                      ? Image.network(
+                          photoUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, __, ___) =>
+                              _buildDefaultAvatar(accent),
+                        )
+                      : _buildDefaultAvatar(accent),
+                ),
               ),
             ),
-            SizedBox(height: 16.h),
-            // Name
-            Text(
-              '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'
-                      .trim()
-                      .isNotEmpty
-                  ? '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'
-                        .trim()
-                  : 'No name',
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.w700,
-                color: AppColors.cxPureWhite,
-                letterSpacing: 0.5,
-              ),
-            ),
-            SizedBox(height: 8.h),
-            // Email
-            Text(
-              identity?['email'] ?? 'No email',
-              style: TextStyle(
-                fontSize: 16.sp,
-                color: AppColors.cxPureWhite.withOpacity(0.9),
-              ),
-            ),
-            // Role and Job Position
-            if (_role != null || _jobPositionName != null) ...[
-              SizedBox(height: 16.h),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 16.w, vertical: 12.h),
-                decoration: BoxDecoration(
-                  color: AppColors.cxPureWhite.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: AppColors.cxPureWhite.withOpacity(0.2),
-                    width: 1,
+            SizedBox(width: 16.w),
+
+            // ── Info ─────────────────────────────────────────────────
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    fullName.isNotEmpty ? fullName : 'No name',
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: primaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-                child: Column(
-                  children: [
-                    if (_role != null) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.admin_panel_settings_rounded,
-                            color: AppColors.cxPureWhite.withOpacity(0.9),
-                            size: 18.sp,
+                  SizedBox(height: 3.h),
+                  Text(
+                    identity?['email'] ?? 'No email',
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      color: secondaryText,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  if (_role != null || _jobPositionName != null) ...[
+                    SizedBox(height: 10.h),
+                    Wrap(
+                      spacing: 6.w,
+                      runSpacing: 6.h,
+                      children: [
+                        if (_role != null)
+                          _buildChip(
+                            icon: Icons.admin_panel_settings_rounded,
+                            label: _role!,
+                            accent: accent,
+                            isDarkMode: isDarkMode,
                           ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            _role!,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.cxPureWhite.withOpacity(0.95),
-                            ),
+                        if (_jobPositionName != null)
+                          _buildChip(
+                            icon: Icons.work_outline_rounded,
+                            label: _jobPositionName!,
+                            accent: accent,
+                            isDarkMode: isDarkMode,
                           ),
-                        ],
-                      ),
-                    ],
-                    if (_role != null && _jobPositionName != null)
-                      SizedBox(height: 8.h),
-                    if (_jobPositionName != null) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.work_outline_rounded,
-                            color: AppColors.cxPureWhite.withOpacity(0.9),
-                            size: 18.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Text(
-                            _jobPositionName!,
-                            style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.cxPureWhite.withOpacity(0.95),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                      ],
+                    ),
                   ],
-                ),
+                ],
               ),
-            ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDefaultAvatar() {
+  Widget _buildChip({
+    required IconData icon,
+    required String label,
+    required Color accent,
+    required bool isDarkMode,
+  }) {
     return Container(
+      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
       decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        gradient: LinearGradient(
-          colors: [
-            AppColors.cxPureWhite.withOpacity(0.3),
-            AppColors.cxPureWhite.withOpacity(0.1),
-          ],
-        ),
+        color: accent.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(20.r),
       ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: accent, size: 12.sp),
+          SizedBox(width: 4.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11.sp,
+              fontWeight: FontWeight.w600,
+              color: accent,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatar(Color accent) {
+    return Container(
+      color: accent.withOpacity(0.1),
       child: Icon(
-        Icons.person,
-        size: 50.sp,
-        color: AppColors.cxPureWhite.withOpacity(0.8),
+        Icons.person_rounded,
+        size: 36.sp,
+        color: accent.withOpacity(0.6),
       ),
     );
   }
@@ -2294,6 +2282,18 @@ class _ProfileState extends State<Profile> {
       currentMonthEntries,
     );
     final isOvertime = WorkTimeCalculator.isOvertime(currentMonthEntries);
+
+    // Calculate days worked (unique dates with closed entries)
+    final uniqueDays = <String>{};
+    for (final entry in currentMonthEntries) {
+      if (!entry.isOpen && entry.checkInTime != null) {
+        try {
+          final dt = DateTime.parse(entry.checkInTime!);
+          uniqueDays.add('${dt.year}-${dt.month}-${dt.day}');
+        } catch (_) {}
+      }
+    }
+    final daysWorked = uniqueDays.length;
 
     // Display current month
     final month = _getCurrentMonthString();
@@ -2363,6 +2363,59 @@ class _ProfileState extends State<Profile> {
                           ],
                         ),
                       ),
+                      // Days worked compact stat
+                      Tooltip(
+                        message: AppLocalizations.of(context).daysWorkedTooltip(daysWorked, month),
+                        triggerMode: TooltipTriggerMode.tap,
+                        showDuration: const Duration(seconds: 3),
+                        decoration: BoxDecoration(
+                          color: AppColors.cxPureWhite.withOpacity(0.9),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        textStyle: TextStyle(
+                          color: AppColors.cxEmeraldGreen,
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                          height: 1.5,
+                        ),
+                        preferBelow: true,
+                        child: Container(
+                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxPureWhite.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12.r),
+                            border: Border.all(
+                              color: AppColors.cxPureWhite.withOpacity(0.4),
+                              width: 1,
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                '$daysWorked',
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.cxPureWhite,
+                                  height: 1,
+                                ),
+                              ),
+                              SizedBox(height: 2.h),
+                              Text(
+                                AppLocalizations.of(context).daysWorkedLabel,
+                                style: TextStyle(
+                                  fontSize: 9.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.cxPureWhite.withOpacity(0.8),
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: 8.w),
                       // Overtime badge
                       if (isOvertime)
                         Container(
@@ -2712,974 +2765,103 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildBonusCard() {
-    // Use real bonus data from API
     final bonusAmount = _bonusAmount;
     final bonusMonth = _bonusMonth.isNotEmpty ? _bonusMonth : 'Previous Month';
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
 
-    // Color scheme for light and dark modes
-    final cardBgStart = isDarkMode
-        ? const Color(0xFF2D1B4E)
-        : const Color(0xFFFFF5F7);
-    final cardBgMid = isDarkMode
-        ? const Color(0xFF3D2563)
-        : const Color(0xFFFFE8EC);
-    final cardBgEnd = isDarkMode
-        ? const Color(0xFF4A2F7A)
-        : const Color(0xFFFFD6DD);
+    const accent = AppColors.cxPurple;
+    final cardBg = isDarkMode
+        ? colorScheme.surface
+        : const Color(0xFFF9F5FF);
     final borderColor = isDarkMode
-        ? const Color(0xFF7C4DFF)
-        : const Color(0xFFFF6B9D);
-    final primaryText = isDarkMode
-        ? const Color(0xFFF0F0F5)
-        : AppColors.cxBlack;
+        ? accent.withOpacity(0.18)
+        : accent.withOpacity(0.14);
+    final primaryText = colorScheme.onSurface;
     final secondaryText = isDarkMode
-        ? const Color(0xFFB8B8C8)
-        : AppColors.cxBlack;
-    final purpleColor = isDarkMode
-        ? const Color(0xFFB388FF)
-        : const Color(0xFFAF52DE);
-    final purpleColorLight = isDarkMode
-        ? const Color(0xFF9C7AFF)
-        : const Color(0xFFC77DFF);
-    final accentGlow = isDarkMode
-        ? const Color(0xFFB388FF)
-        : const Color(0xFFFF6B9D);
+        ? colorScheme.onSurfaceVariant
+        : const Color(0xFF6B7280);
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [cardBgStart, cardBgMid, cardBgEnd],
-          stops: [0.0, 0.5, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(
-          color: borderColor.withOpacity(isDarkMode ? 0.5 : 0.3),
-          width: 1.5,
-        ),
-        boxShadow: [
-          // Primary shadow
-          BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(
-              isDarkMode ? 0.6 : 0.15,
-            ),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-            spreadRadius: isDarkMode ? -2 : 0,
-          ),
-          // Accent glow
-          BoxShadow(
-            color: accentGlow.withOpacity(isDarkMode ? 0.2 : 0.1),
-            blurRadius: 32,
-            offset: Offset(0, 0),
-            spreadRadius: isDarkMode ? -8 : -4,
-          ),
-          // Secondary shadow for depth
-          BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : purpleColor).withOpacity(
-              isDarkMode ? 0.4 : 0.08,
-            ),
-            blurRadius: 40,
-            offset: Offset(0, 20),
-            spreadRadius: isDarkMode ? -10 : -5,
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          // Decorative circles in background
-          Positioned(
-            top: -30,
-            right: -30,
-            child: Container(
-              width: 120.w,
-              height: 120.h,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    purpleColor.withOpacity(isDarkMode ? 0.15 : 0.1),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-          Positioned(
-            bottom: -20,
-            left: -20,
-            child: Container(
-              width: 80.w,
-              height: 80.h,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  colors: [
-                    purpleColorLight.withOpacity(isDarkMode ? 0.12 : 0.08),
-                    Colors.transparent,
-                  ],
-                ),
-              ),
-            ),
-          ),
-
-          Padding(
-            padding: EdgeInsets.all(24.w),
-            child: _isLoadingBonus
-                ? _buildBonusShimmer(isDarkMode, purpleColor, purpleColorLight)
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with icon and title
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(12.w),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  purpleColor.withOpacity(
-                                    isDarkMode ? 0.25 : 0.2,
-                                  ),
-                                  purpleColorLight.withOpacity(
-                                    isDarkMode ? 0.2 : 0.15,
-                                  ),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16.r),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: purpleColor.withOpacity(0.3),
-                                  blurRadius: 12,
-                                  offset: Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: Icon(
-                              Icons.card_giftcard_rounded,
-                              color: isDarkMode ? purpleColor : purpleColor,
-                              size: 28.sp,
-                            ),
-                          ),
-                          SizedBox(width: 16.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).bonus,
-                                  style: TextStyle(
-                                    fontSize: 22.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: primaryText,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                                Text(
-                                  bonusMonth,
-                                  style: TextStyle(
-                                    fontSize: 14.sp,
-                                    color: secondaryText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                          // Bonus badge
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 12.w,
-                              vertical: 6.h,
-                            ),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  purpleColor.withOpacity(
-                                    isDarkMode ? 0.3 : 0.2,
-                                  ),
-                                  purpleColorLight.withOpacity(
-                                    isDarkMode ? 0.25 : 0.15,
-                                  ),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(12.r),
-                              border: Border.all(
-                                color: purpleColor.withOpacity(0.4),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.star_rounded,
-                                  color: isDarkMode ? purpleColor : purpleColor,
-                                  size: 16.sp,
-                                ),
-                                SizedBox(width: 4.w),
-                                Text(
-                                  'Active',
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: primaryText,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 24.h),
-
-                      // Bonus amount - prominent display
-                      Center(
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  bonusAmount
-                                      .toStringAsFixed(0)
-                                      .replaceAllMapped(
-                                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                        (Match m) => '${m[1]} ',
-                                      ),
-                                  style: TextStyle(
-                                    fontSize: 52.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: primaryText,
-                                    height: 1.0,
-                                    fontFeatures: [
-                                      FontFeature.tabularFigures(),
-                                    ],
-                                    shadows: [
-                                      Shadow(
-                                        color: purpleColor.withOpacity(0.3),
-                                        blurRadius: 20,
-                                        offset: Offset(0, 4),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(width: 8.w),
-                                Padding(
-                                  padding: EdgeInsets.only(top: 8.h),
-                                  child: Text(
-                                    'UZS',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: secondaryText,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8.h),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 16.w,
-                                vertical: 8.h,
-                              ),
-                              decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  colors: [
-                                    purpleColor.withOpacity(
-                                      isDarkMode ? 0.2 : 0.15,
-                                    ),
-                                    purpleColorLight.withOpacity(
-                                      isDarkMode ? 0.15 : 0.1,
-                                    ),
-                                  ],
-                                ),
-                                borderRadius: BorderRadius.circular(20.r),
-                                border: Border.all(
-                                  color: purpleColor.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.trending_up_rounded,
-                                    color: purpleColor,
-                                    size: 16.sp,
-                                  ),
-                                  SizedBox(width: 6.w),
-                                  Text(
-                                    AppLocalizations.of(
-                                      context,
-                                    ).currentBonusAmount,
-                                    style: TextStyle(
-                                      fontSize: 13.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: primaryText,
-                                      letterSpacing: 0.3,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: 20.h),
-
-                      // Info message
-                      Container(
-                        padding: EdgeInsets.all(16.w),
-                        decoration: BoxDecoration(
-                          color: (isDarkMode ? Colors.white : Colors.black)
-                              .withOpacity(isDarkMode ? 0.05 : 0.03),
-                          borderRadius: BorderRadius.circular(16.r),
-                          border: Border.all(
-                            color: (isDarkMode ? Colors.white : Colors.black)
-                                .withOpacity(isDarkMode ? 0.1 : 0.05),
-                            width: 1,
-                          ),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              Icons.info_outline_rounded,
-                              color: secondaryText,
-                              size: 20.sp,
-                            ),
-                            SizedBox(width: 12.w),
-                            Expanded(
-                              child: Text(
-                                bonusAmount > 0
-                                    ? AppLocalizations.of(context).bonusDesc
-                                    : AppLocalizations.of(context).noBonus,
-                                style: TextStyle(
-                                  fontSize: 13.sp,
-                                  color: secondaryText,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildBonusShimmer(
-    bool isDarkMode,
-    Color purpleColor,
-    Color purpleColorLight,
-  ) {
-    final shimmerBase = (isDarkMode ? Colors.white : purpleColor).withOpacity(
-      isDarkMode ? 0.05 : 0.2,
-    );
-    final shimmerHighlight = (isDarkMode ? Colors.white : purpleColor)
-        .withOpacity(isDarkMode ? 0.1 : 0.4);
-
-    return Shimmer.fromColors(
-      baseColor: shimmerBase,
-      highlightColor: shimmerHighlight,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header shimmer
-          Row(
-            children: [
-              Container(
-                width: 52.w,
-                height: 52.h,
-                decoration: BoxDecoration(
-                  color: shimmerBase,
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 100.w,
-                      height: 24.h,
-                      decoration: BoxDecoration(
-                        color: shimmerBase,
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Container(
-                      width: 140.w,
-                      height: 14.h,
-                      decoration: BoxDecoration(
-                        color: shimmerBase,
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                width: 70.w,
-                height: 28.h,
-                decoration: BoxDecoration(
-                  color: shimmerBase,
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 24.h),
-
-          // Amount shimmer - prominent display
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 200.w,
-                  height: 60.h,
-                  decoration: BoxDecoration(
-                    color: shimmerBase,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                Container(
-                  width: 160.w,
-                  height: 32.h,
-                  decoration: BoxDecoration(
-                    color: shimmerBase,
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 20.h),
-
-          // Info message shimmer
-          Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: shimmerBase.withOpacity(0.5),
-              borderRadius: BorderRadius.circular(16.r),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 20.w,
-                  height: 20.h,
-                  decoration: BoxDecoration(
-                    color: shimmerBase,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: double.infinity,
-                        height: 14.h,
-                        decoration: BoxDecoration(
-                          color: shimmerBase,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Container(
-                        width: 180.w,
-                        height: 14.h,
-                        decoration: BoxDecoration(
-                          color: shimmerBase,
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrePaidCard() {
-    // Use actual data from API
-    final double prePaidAmount = _prePaidAmount;
-    final String month = _getCurrentMonthString();
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // Dark mode colors - more luxurious palette
-    final cardBgStart = isDarkMode
-        ? const Color(0xFF1E1E2E)
-        : AppColors.cxPureWhite;
-    final cardBgMid = isDarkMode ? const Color(0xFF252538) : AppColors.cxF7F6F9;
-    final cardBgEnd = isDarkMode ? const Color(0xFF2A2A3E) : AppColors.cxF5F7F9;
-    final borderColor = isDarkMode
-        ? const Color(0xFF3D3D5C)
-        : AppColors.cxEmeraldGreen;
-    final primaryText = isDarkMode
-        ? const Color(0xFFF0F0F5)
-        : AppColors.cxBlack;
-    final secondaryText = isDarkMode
-        ? const Color(0xFFA8A8B8)
-        : AppColors.cxBlack;
-    final greenColor = isDarkMode
-        ? const Color(0xFF3DDBA4)
-        : AppColors.cxEmeraldGreen;
-    final greenColorLight = isDarkMode
-        ? const Color(0xFF2BC990)
-        : Color(0xFF4AC1A7);
-    final accentGlow = isDarkMode
-        ? const Color(0xFF3DDBA4)
-        : AppColors.cxEmeraldGreen;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [cardBgStart, cardBgMid, cardBgEnd],
-          stops: [0.0, 0.5, 1.0],
-        ),
-        borderRadius: BorderRadius.circular(24.r),
-        border: Border.all(
-          color: borderColor.withOpacity(isDarkMode ? 0.4 : 0.2),
-          width: isDarkMode ? 1.5 : 1.5,
-        ),
-        boxShadow: [
-          // Primary shadow
-          BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(
-              isDarkMode ? 0.5 : 0.1,
-            ),
-            blurRadius: 24,
-            offset: Offset(0, 10),
-            spreadRadius: isDarkMode ? -2 : 0,
-          ),
-          // Accent glow for dark mode
-          if (isDarkMode)
-            BoxShadow(
-              color: accentGlow.withOpacity(0.15),
-              blurRadius: 32,
-              offset: Offset(0, 0),
-              spreadRadius: -8,
-            ),
-          // Secondary shadow for depth
-          BoxShadow(
-            color: (isDarkMode ? AppColors.cxBlack : greenColor).withOpacity(
-              isDarkMode ? 0.3 : 0.05,
-            ),
-            blurRadius: 40,
-            offset: Offset(0, 20),
-            spreadRadius: isDarkMode ? -10 : -5,
-          ),
-        ],
-      ),
-      child: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.all(24.w),
-            child: _isLoadingPrePaid
-                ? _buildPrePaidShimmer()
-                : Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Header with icon and title
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(12.w),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [
-                                  greenColor.withOpacity(
-                                    isDarkMode ? 0.2 : 0.15,
-                                  ),
-                                  greenColorLight.withOpacity(
-                                    isDarkMode ? 0.15 : 0.15,
-                                  ),
-                                ],
-                              ),
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                            child: Icon(
-                              Icons.account_balance_wallet_rounded,
-                              color: greenColor,
-                              size: 28.sp,
-                            ),
-                          ),
-                          SizedBox(width: 16.w),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  AppLocalizations.of(context).prePaid,
-                                  style: TextStyle(
-                                    fontSize: 20.sp,
-                                    fontWeight: FontWeight.w700,
-                                    color: primaryText,
-                                    letterSpacing: 0.3,
-                                  ),
-                                ),
-                                Text(
-                                  month,
-                                  style: TextStyle(
-                                    fontSize: 13.sp,
-                                    fontWeight: FontWeight.w500,
-                                    color: secondaryText.withOpacity(0.5),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 20.h),
-
-                      // Amount display - prominent and elegant
-                      Container(
-                        padding: EdgeInsets.all(20.w),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [greenColor, greenColorLight],
-                          ),
-                          borderRadius: BorderRadius.circular(20.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: greenColor.withOpacity(0.3),
-                              blurRadius: 12,
-                              offset: Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: EdgeInsets.only(top: 6.h),
-                                  child: Text(
-                                    'UZS',
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.w600,
-                                      color: AppColors.cxPureWhite.withOpacity(
-                                        0.9,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                SizedBox(width: 8.w),
-                                Text(
-                                  prePaidAmount
-                                      .toStringAsFixed(0)
-                                      .replaceAllMapped(
-                                        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-                                        (Match m) => '${m[1]} ',
-                                      ),
-                                  style: TextStyle(
-                                    fontSize: 42.sp,
-                                    fontWeight: FontWeight.w800,
-                                    color: AppColors.cxPureWhite,
-                                    height: 1.0,
-                                    fontFeatures: [
-                                      FontFeature.tabularFigures(),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                            SizedBox(height: 8.h),
-                            Container(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: 14.w,
-                                vertical: 6.h,
-                              ),
-                              decoration: BoxDecoration(
-                                color: AppColors.cxPureWhite.withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(20.r),
-                              ),
-                              child: Text(
-                                AppLocalizations.of(
-                                  context,
-                                ).currentMonthBalance,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.cxPureWhite.withOpacity(
-                                    0.95,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-
-                      SizedBox(height: 16.h),
-
-                      // Info note with icon
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            color: greenColor,
-                            size: 18.sp,
-                          ),
-                          SizedBox(width: 8.w),
-                          Expanded(
-                            child: Text(
-                              AppLocalizations.of(context).prePaidDesc,
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                fontWeight: FontWeight.w500,
-                                color: secondaryText.withOpacity(0.6),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-          ),
-          // Details button in top-right corner
-          if (!_isLoadingPrePaid && _currentMonthTransactions.isNotEmpty)
-            Positioned(
-              top: 16.h,
-              right: 16.w,
-              child: InkWell(
-                onTap: _showTransactionDetails,
-                borderRadius: BorderRadius.circular(12.r),
-                child: Container(
-                  padding: EdgeInsets.all(10.w),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        greenColor.withOpacity(isDarkMode ? 0.2 : 0.15),
-                        greenColorLight.withOpacity(isDarkMode ? 0.15 : 0.15),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12.r),
-                    border: Border.all(
-                      color: greenColor.withOpacity(isDarkMode ? 0.4 : 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.receipt_long_rounded,
-                    color: greenColor,
-                    size: 20.sp,
-                  ),
-                ),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrePaidShimmer() {
-    return Shimmer.fromColors(
-      baseColor: AppColors.cxF5F7F9,
-      highlightColor: AppColors.cxPureWhite,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header shimmer
-          Row(
-            children: [
-              Container(
-                width: 52.w,
-                height: 52.h,
-                decoration: BoxDecoration(
-                  color: AppColors.cxF5F7F9,
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 140.w,
-                      height: 20.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.cxF5F7F9,
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    SizedBox(height: 6.h),
-                    Container(
-                      width: 80.w,
-                      height: 13.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.cxF5F7F9,
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 20.h),
-
-          // Amount box shimmer
-          Container(
-            padding: EdgeInsets.all(20.w),
-            decoration: BoxDecoration(
-              color: AppColors.cxF5F7F9,
-              borderRadius: BorderRadius.circular(20.r),
-            ),
-            child: Column(
-              children: [
-                Container(
-                  width: 180.w,
-                  height: 42.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-                SizedBox(height: 12.h),
-                Container(
-                  width: 140.w,
-                  height: 24.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.5),
-                    borderRadius: BorderRadius.circular(20.r),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          SizedBox(height: 16.h),
-
-          // Info row shimmer
-          Row(
-            children: [
-              Container(
-                width: 18.w,
-                height: 18.h,
-                decoration: BoxDecoration(
-                  color: AppColors.cxF5F7F9,
-                  shape: BoxShape.circle,
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Expanded(
-                child: Container(
-                  height: 12.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxF5F7F9,
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildVacationDaysCard() {
-    // Dynamic data from API calculation
-    final int availableVacationDays =
-        _availableVacationDays; // Days available to use
-    final int usedVacationDays =
-        _totalVacationDays; // Days already used (total vacation entries)
-    final int maxVacationDays = 7; // Maximum vacation days that can be earned
-
-    // Calculate percentage for progress bar (based on max 7 days)
-    final double usagePercentage = availableVacationDays > 0
-        ? (availableVacationDays / maxVacationDays) * 100
-        : 0;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.cxRoyalBlue,
-            AppColors.cxRoyalBlue.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24.r),
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: borderColor, width: 1),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxRoyalBlue.withOpacity(0.3),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: Colors.black.withOpacity(isDarkMode ? 0.18 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(24.w),
-        child: _isLoadingVacation
-            ? _buildVacationShimmer()
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        child: _isLoadingBonus
+            ? _buildBonusShimmer(isDarkMode, accent)
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with icon and title
+                  // ── Header row ──────────────────────────────────────────
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(12.w),
+                        padding: EdgeInsets.all(10.w),
                         decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16.r),
+                          color: accent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Icon(
-                          Icons.beach_access_rounded,
-                          color: AppColors.cxPureWhite,
-                          size: 28.sp,
+                          Icons.card_giftcard_rounded,
+                          color: accent,
+                          size: 22.sp,
                         ),
                       ),
-                      SizedBox(width: 16.w),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context).vacationDays,
+                              AppLocalizations.of(context).bonus,
                               style: TextStyle(
-                                fontSize: 22.sp,
+                                fontSize: 17.sp,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.cxPureWhite,
+                                color: primaryText,
                               ),
                             ),
                             Text(
-                              AppLocalizations.of(context).earnedLeaveBalance,
+                              bonusMonth,
                               style: TextStyle(
-                                fontSize: 14.sp,
-                                color: AppColors.cxPureWhite.withOpacity(0.8),
+                                fontSize: 12.sp,
+                                color: secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Active pill
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.circle, color: accent, size: 7.sp),
+                            SizedBox(width: 5.w),
+                            Text(
+                              'Active',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w600,
+                                color: accent,
                               ),
                             ),
                           ],
@@ -3687,152 +2869,90 @@ class _ProfileState extends State<Profile> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 24.h),
 
-                  // Available days - prominent display
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          '$availableVacationDays',
-                          style: TextStyle(
-                            fontSize: 56.sp,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.cxPureWhite,
-                            height: 1,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        SizedBox(height: 8.h),
-                        Text(
-                          AppLocalizations.of(context).daysAvailable,
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.cxPureWhite.withOpacity(0.9),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    child: Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: borderColor,
                     ),
                   ),
 
-                  SizedBox(height: 24.h),
-
-                  // Progress bar
-                  Container(
-                    height: 8.h,
-                    decoration: BoxDecoration(
-                      color: AppColors.cxPureWhite.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(10.r),
-                    ),
-                    child: FractionallySizedBox(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: usagePercentage / 100,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              AppColors.cxPureWhite,
-                              AppColors.cxPureWhite.withOpacity(0.8),
-                            ],
-                          ),
-                          borderRadius: BorderRadius.circular(10.r),
-                          boxShadow: [
-                            BoxShadow(
-                              color: AppColors.cxPureWhite.withOpacity(0.3),
-                              blurRadius: 8,
-                              offset: Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  // Usage breakdown
+                  // ── Amount row ───────────────────────────────────────────
                   Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(16.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxPureWhite.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: AppColors.cxPureWhite.withOpacity(0.2),
-                              width: 1,
+                      Text(
+                        bonusAmount
+                            .toStringAsFixed(0)
+                            .replaceAllMapped(
+                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                              (Match m) => '${m[1]} ',
                             ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.check_circle_outline_rounded,
-                                color: AppColors.cxPureWhite,
-                                size: 24.sp,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                '$usedVacationDays',
-                                style: TextStyle(
-                                  fontSize: 24.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.cxPureWhite,
-                                  fontFeatures: [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                AppLocalizations.of(context).daysUsed,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.cxPureWhite.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
+                        style: TextStyle(
+                          fontSize: 36.sp,
+                          fontWeight: FontWeight.w800,
+                          color: primaryText,
+                          height: 1.0,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 3.h),
+                        child: Text(
+                          'UZS',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: secondaryText,
                           ),
                         ),
                       ),
-                      SizedBox(width: 16.w),
-                      Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(16.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxPureWhite.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: AppColors.cxPureWhite.withOpacity(0.2),
-                              width: 1,
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.trending_up_rounded,
+                            color: accent,
+                            size: 16.sp,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            AppLocalizations.of(context).currentBonusAmount,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: accent,
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.calendar_today_rounded,
-                                color: AppColors.cxPureWhite,
-                                size: 24.sp,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                '$maxVacationDays',
-                                style: TextStyle(
-                                  fontSize: 24.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.cxPureWhite,
-                                  fontFeatures: [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                AppLocalizations.of(context).maxDays,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.cxPureWhite.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 14.h),
+
+                  // ── Info strip ───────────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: secondaryText,
+                        size: 15.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          bonusAmount > 0
+                              ? AppLocalizations.of(context).bonusDesc
+                              : AppLocalizations.of(context).noBonus,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: secondaryText,
+                            height: 1.4,
                           ),
                         ),
                       ),
@@ -3844,44 +2964,51 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Widget _buildVacationShimmer() {
+  Widget _buildBonusShimmer(bool isDarkMode, Color accent) {
+    final base = isDarkMode
+        ? Colors.white.withOpacity(0.06)
+        : accent.withOpacity(0.08);
+    final highlight = isDarkMode
+        ? Colors.white.withOpacity(0.12)
+        : accent.withOpacity(0.18);
+
     return Shimmer.fromColors(
-      baseColor: AppColors.cxPureWhite.withOpacity(0.2),
-      highlightColor: AppColors.cxPureWhite.withOpacity(0.4),
+      baseColor: base,
+      highlightColor: highlight,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header shimmer
+          // Header
           Row(
             children: [
               Container(
-                width: 52.w,
-                height: 52.h,
+                width: 42.w,
+                height: 42.h,
                 decoration: BoxDecoration(
-                  color: AppColors.cxPureWhite.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16.r),
+                  color: base,
+                  borderRadius: BorderRadius.circular(12.r),
                 ),
               ),
-              SizedBox(width: 16.w),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Container(
-                      width: 140.w,
-                      height: 24.h,
+                      width: 110.w,
+                      height: 16.h,
                       decoration: BoxDecoration(
-                        color: AppColors.cxPureWhite.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8.r),
+                        color: base,
+                        borderRadius: BorderRadius.circular(6.r),
                       ),
                     ),
-                    SizedBox(height: 8.h),
+                    SizedBox(height: 6.h),
                     Container(
-                      width: 100.w,
-                      height: 14.h,
+                      width: 80.w,
+                      height: 12.h,
                       decoration: BoxDecoration(
-                        color: AppColors.cxPureWhite.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(6.r),
+                        color: base,
+                        borderRadius: BorderRadius.circular(4.r),
                       ),
                     ),
                   ],
@@ -3889,125 +3016,797 @@ class _ProfileState extends State<Profile> {
               ),
             ],
           ),
-          SizedBox(height: 24.h),
-
-          // Available days shimmer
-          Center(
-            child: Column(
-              children: [
-                Container(
-                  width: 100.w,
-                  height: 56.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
+          SizedBox(height: 14.h),
+          Container(height: 1, color: base),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Container(
+                width: 60.w,
+                height: 40.h,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(8.r),
                 ),
-                SizedBox(height: 8.h),
-                Container(
-                  width: 120.w,
-                  height: 18.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(6.r),
-                  ),
+              ),
+              SizedBox(width: 30.w),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: base,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Container(
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: base,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
-
-          SizedBox(height: 24.h),
-
-          // Progress bar shimmer
+          SizedBox(height: 14.h),
           Container(
-            height: 8.h,
+            height: 6.h,
             decoration: BoxDecoration(
-              color: AppColors.cxPureWhite.withOpacity(0.3),
+              color: base,
               borderRadius: BorderRadius.circular(10.r),
             ),
           ),
-
-          SizedBox(height: 20.h),
-
-          // Breakdown shimmer
+          SizedBox(height: 14.h),
           Row(
             children: [
+              Container(
+                width: 15.w,
+                height: 15.h,
+                decoration: BoxDecoration(color: base, shape: BoxShape.circle),
+              ),
+              SizedBox(width: 8.w),
               Expanded(
                 child: Container(
-                  padding: EdgeInsets.all(16.w),
+                  height: 12.h,
                   decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16.r),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 24.w,
-                        height: 24.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Container(
-                        width: 40.w,
-                        height: 24.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Container(
-                        width: 60.w,
-                        height: 12.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                    ],
+                    color: base,
+                    borderRadius: BorderRadius.circular(4.r),
                   ),
                 ),
               ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16.r),
-                  ),
-                  child: Column(
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPrePaidCard() {
+    final double prePaidAmount = _prePaidAmount;
+    final String month = _getCurrentMonthString();
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    const accent = AppColors.cxEmeraldGreen;
+    final cardBg = isDarkMode
+        ? colorScheme.surface
+        : const Color(0xFFF2FBF7);
+    final borderColor = isDarkMode
+        ? accent.withOpacity(0.18)
+        : accent.withOpacity(0.14);
+    final primaryText = colorScheme.onSurface;
+    final secondaryText = isDarkMode
+        ? colorScheme.onSurfaceVariant
+        : const Color(0xFF6B7280);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.18 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        child: _isLoadingPrePaid
+            ? _buildPrePaidShimmer(isDarkMode, accent)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header row ─────────────────────────────────────────
+                  Row(
                     children: [
                       Container(
-                        width: 24.w,
-                        height: 24.h,
+                        padding: EdgeInsets.all(10.w),
                         decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          shape: BoxShape.circle,
+                          color: accent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: accent,
+                          size: 22.sp,
                         ),
                       ),
-                      SizedBox(height: 8.h),
-                      Container(
-                        width: 40.w,
-                        height: 24.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(6.r),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).prePaid,
+                              style: TextStyle(
+                                fontSize: 17.sp,
+                                fontWeight: FontWeight.w700,
+                                color: primaryText,
+                              ),
+                            ),
+                            Text(
+                              month,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: secondaryText,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                      SizedBox(height: 4.h),
-                      Container(
-                        width: 60.w,
-                        height: 12.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4.r),
+                      // Transactions count pill / receipt button
+                      if (_currentMonthTransactions.isNotEmpty)
+                        GestureDetector(
+                          onTap: _showTransactionDetails,
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: 10.w,
+                              vertical: 4.h,
+                            ),
+                            decoration: BoxDecoration(
+                              color: accent.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20.r),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.receipt_long_rounded,
+                                  color: accent,
+                                  size: 13.sp,
+                                ),
+                                SizedBox(width: 5.w),
+                                Text(
+                                  '${_currentMonthTransactions.length}',
+                                  style: TextStyle(
+                                    fontSize: 11.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: accent,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    child: Divider(height: 1, thickness: 1, color: borderColor),
+                  ),
+
+                  // ── Amount row ──────────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        prePaidAmount
+                            .toStringAsFixed(0)
+                            .replaceAllMapped(
+                              RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+                              (Match m) => '${m[1]} ',
+                            ),
+                        style: TextStyle(
+                          fontSize: 36.sp,
+                          fontWeight: FontWeight.w800,
+                          color: primaryText,
+                          height: 1.0,
+                          fontFeatures: [FontFeature.tabularFigures()],
+                        ),
+                      ),
+                      SizedBox(width: 6.w),
+                      Padding(
+                        padding: EdgeInsets.only(bottom: 3.h),
+                        child: Text(
+                          'UZS',
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: secondaryText,
+                          ),
+                        ),
+                      ),
+                      const Spacer(),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_month_rounded,
+                            color: accent,
+                            size: 14.sp,
+                          ),
+                          SizedBox(width: 4.w),
+                          Text(
+                            AppLocalizations.of(context).currentMonthBalance,
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              fontWeight: FontWeight.w500,
+                              color: accent,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 14.h),
+
+                  // ── Info strip ──────────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: secondaryText,
+                        size: 15.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          AppLocalizations.of(context).prePaidDesc,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: secondaryText,
+                            height: 1.4,
+                          ),
                         ),
                       ),
                     ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildPrePaidShimmer(bool isDarkMode, Color accent) {
+    final base = isDarkMode
+        ? Colors.white.withOpacity(0.06)
+        : accent.withOpacity(0.08);
+    final highlight = isDarkMode
+        ? Colors.white.withOpacity(0.12)
+        : accent.withOpacity(0.18);
+
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 42.w,
+                height: 42.h,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 110.w,
+                      height: 16.h,
+                      decoration: BoxDecoration(
+                        color: base,
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Container(
+                      width: 80.w,
+                      height: 12.h,
+                      decoration: BoxDecoration(
+                        color: base,
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Container(height: 1, color: base),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Container(
+                width: 60.w,
+                height: 40.h,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              SizedBox(width: 30.w),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: base,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Container(
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: base,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Container(
+            height: 6.h,
+            decoration: BoxDecoration(
+              color: base,
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Container(
+                width: 15.w,
+                height: 15.h,
+                decoration: BoxDecoration(color: base, shape: BoxShape.circle),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Container(
+                  height: 12.h,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(4.r),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVacationDaysCard() {
+    final int availableVacationDays = _availableVacationDays;
+    final int usedVacationDays = _totalVacationDays;
+    const int maxVacationDays = 7;
+    final double usagePercentage = availableVacationDays > 0
+        ? (availableVacationDays / maxVacationDays).clamp(0.0, 1.0)
+        : 0.0;
+
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final colorScheme = Theme.of(context).colorScheme;
+
+    const accent = AppColors.cxBlue;
+    final cardBg = isDarkMode
+        ? colorScheme.surface
+        : const Color(0xFFF2F6FF);
+    final borderColor = isDarkMode
+        ? accent.withOpacity(0.18)
+        : accent.withOpacity(0.14);
+    final primaryText = colorScheme.onSurface;
+    final secondaryText = isDarkMode
+        ? colorScheme.onSurfaceVariant
+        : const Color(0xFF6B7280);
+    final trackColor = isDarkMode
+        ? accent.withOpacity(0.15)
+        : accent.withOpacity(0.12);
+
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: borderColor, width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDarkMode ? 0.18 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+        child: _isLoadingVacation
+            ? _buildVacationShimmer(isDarkMode, accent)
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header row ─────────────────────────────────────────
+                  Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(10.w),
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(12.r),
+                        ),
+                        child: Icon(
+                          Icons.beach_access_rounded,
+                          color: accent,
+                          size: 22.sp,
+                        ),
+                      ),
+                      SizedBox(width: 12.w),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              AppLocalizations.of(context).vacationDays,
+                              style: TextStyle(
+                                fontSize: 17.sp,
+                                fontWeight: FontWeight.w700,
+                                color: primaryText,
+                              ),
+                            ),
+                            Text(
+                              AppLocalizations.of(context).earnedLeaveBalance,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                color: secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Available pill
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 4.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: accent.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(20.r),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.circle, color: accent, size: 7.sp),
+                            SizedBox(width: 5.w),
+                            Text(
+                              '$availableVacationDays / $maxVacationDays',
+                              style: TextStyle(
+                                fontSize: 11.sp,
+                                fontWeight: FontWeight.w700,
+                                color: accent,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    child: Divider(height: 1, thickness: 1, color: borderColor),
+                  ),
+
+                  // ── Stats row ───────────────────────────────────────────
+                  Row(
+                    children: [
+                      // Available (large)
+                      Expanded(
+                        flex: 2,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              '$availableVacationDays',
+                              style: TextStyle(
+                                fontSize: 40.sp,
+                                fontWeight: FontWeight.w800,
+                                color: primaryText,
+                                height: 1.0,
+                                fontFeatures: [FontFeature.tabularFigures()],
+                              ),
+                            ),
+                            SizedBox(height: 2.h),
+                            Text(
+                              AppLocalizations.of(context).daysAvailable,
+                              style: TextStyle(
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                                color: secondaryText,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      // Divider line
+                      Container(
+                        width: 1,
+                        height: 48.h,
+                        color: borderColor,
+                        margin: EdgeInsets.symmetric(horizontal: 16.w),
+                      ),
+                      // Used + Max
+                      Expanded(
+                        flex: 3,
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '$usedVacationDays',
+                                    style: TextStyle(
+                                      fontSize: 22.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryText,
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    AppLocalizations.of(context).daysUsed,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: secondaryText,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Container(
+                              width: 1,
+                              height: 36.h,
+                              color: borderColor,
+                              margin: EdgeInsets.symmetric(horizontal: 10.w),
+                            ),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                children: [
+                                  Text(
+                                    '$maxVacationDays',
+                                    style: TextStyle(
+                                      fontSize: 22.sp,
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryText,
+                                      fontFeatures: [
+                                        FontFeature.tabularFigures(),
+                                      ],
+                                    ),
+                                  ),
+                                  SizedBox(height: 2.h),
+                                  Text(
+                                    AppLocalizations.of(context).maxDays,
+                                    style: TextStyle(
+                                      fontSize: 11.sp,
+                                      color: secondaryText,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: 14.h),
+
+                  // ── Progress bar ────────────────────────────────────────
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10.r),
+                    child: LinearProgressIndicator(
+                      value: usagePercentage,
+                      backgroundColor: trackColor,
+                      color: accent,
+                      minHeight: 6.h,
+                    ),
+                  ),
+
+                  SizedBox(height: 14.h),
+
+                  // ── Info strip ──────────────────────────────────────────
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.info_outline_rounded,
+                        color: secondaryText,
+                        size: 15.sp,
+                      ),
+                      SizedBox(width: 8.w),
+                      Expanded(
+                        child: Text(
+                          availableVacationDays > 0
+                              ? AppLocalizations.of(context).earnedLeaveBalance
+                              : AppLocalizations.of(context).earnedLeaveBalance,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            color: secondaryText,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildVacationShimmer(bool isDarkMode, Color accent) {
+    final base = isDarkMode
+        ? Colors.white.withOpacity(0.06)
+        : accent.withOpacity(0.08);
+    final highlight = isDarkMode
+        ? Colors.white.withOpacity(0.12)
+        : accent.withOpacity(0.18);
+
+    return Shimmer.fromColors(
+      baseColor: base,
+      highlightColor: highlight,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header
+          Row(
+            children: [
+              Container(
+                width: 42.w,
+                height: 42.h,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 110.w,
+                      height: 16.h,
+                      decoration: BoxDecoration(
+                        color: base,
+                        borderRadius: BorderRadius.circular(6.r),
+                      ),
+                    ),
+                    SizedBox(height: 6.h),
+                    Container(
+                      width: 80.w,
+                      height: 12.h,
+                      decoration: BoxDecoration(
+                        color: base,
+                        borderRadius: BorderRadius.circular(4.r),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Container(height: 1, color: base),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Container(
+                width: 60.w,
+                height: 40.h,
+                decoration: BoxDecoration(
+                  color: base,
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+              ),
+              SizedBox(width: 30.w),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Container(
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: base,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: Container(
+                        height: 36.h,
+                        decoration: BoxDecoration(
+                          color: base,
+                          borderRadius: BorderRadius.circular(8.r),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 14.h),
+          Container(
+            height: 6.h,
+            decoration: BoxDecoration(
+              color: base,
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+          ),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Container(
+                width: 15.w,
+                height: 15.h,
+                decoration: BoxDecoration(color: base, shape: BoxShape.circle),
+              ),
+              SizedBox(width: 8.w),
+              Expanded(
+                child: Container(
+                  height: 12.h,
+                  decoration: BoxDecoration(
+                    color: base,
+                    borderRadius: BorderRadius.circular(4.r),
                   ),
                 ),
               ),

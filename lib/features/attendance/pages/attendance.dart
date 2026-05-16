@@ -89,6 +89,20 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
     return DateFormat('MMMM yyyy').format(selectedDate);
   }
 
+  // Calculate days worked: unique dates that have at least one closed (check-in + check-out) entry
+  int get _daysWorked {
+    final uniqueDays = <String>{};
+    for (final entry in workEntries) {
+      if (!entry.isOpen && entry.checkInTime != null) {
+        try {
+          final dt = DateTime.parse(entry.checkInTime!);
+          uniqueDays.add('${dt.year}-${dt.month}-${dt.day}');
+        } catch (_) {}
+      }
+    }
+    return uniqueDays.length;
+  }
+
   // Load work entries from cache or API
   Future<void> _loadWorkEntries({bool forceRefresh = false}) async {
     setState(() {
@@ -464,12 +478,78 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
               ],
             ),
           ),
-          // Cache indicator and refresh button
+          // Days worked + cache indicator + refresh button
           Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
+              // Days worked compact stat
+              if (!isLoading) ...[
+                Tooltip(
+                  message: AppLocalizations.of(context).daysWorkedTooltip(_daysWorked, currentMonth),
+                  triggerMode: TooltipTriggerMode.tap,
+                  showDuration: const Duration(seconds: 3),
+                  decoration: BoxDecoration(
+                    color: AppColors.cx43C19F,
+                    borderRadius: BorderRadius.circular(10.r),
+                  ),
+                  textStyle: TextStyle(
+                    color: AppColors.cxWhite,
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    height: 1.5,
+                  ),
+                  preferBelow: true,
+                  child: Builder(builder: (context) {
+                    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+                    return Container(
+                    padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          AppColors.cx43C19F.withOpacity(0.15),
+                          AppColors.cx4AC1A7.withOpacity(0.08),
+                        ],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      borderRadius: BorderRadius.circular(12.r),
+                      border: Border.all(
+                        color: AppColors.cx43C19F.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          '$_daysWorked',
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w800,
+                            color: isDarkMode ? AppColors.cxWhite : AppColors.cxBlack,
+                            height: 1,
+                          ),
+                        ),
+                        SizedBox(height: 2.h),
+                      Text(
+                        AppLocalizations.of(context).daysWorkedLabel,
+                        style: TextStyle(
+                            fontSize: 9.sp,
+                            fontWeight: FontWeight.w600,
+                            color: (isDarkMode ? AppColors.cxWhite : AppColors.cxBlack).withOpacity(0.75),
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                  }),
+                ),
+                SizedBox(width: 4.w),
+              ],
               if (_isFromCache)
                 Padding(
-                  padding: EdgeInsets.only(right: 8.w),
+                  padding: EdgeInsets.only(right: 4.w),
                   child: Tooltip(
                     message: 'Loaded from cache',
                     child: Icon(

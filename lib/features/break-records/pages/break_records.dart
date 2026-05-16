@@ -29,10 +29,12 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   bool _isBalanceFromCache = false;
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
+  late DateTime _selectedMonth;
 
   @override
   void initState() {
     super.initState();
+    _selectedMonth = DateTime(DateTime.now().year, DateTime.now().month);
     _shimmerController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1500),
@@ -46,8 +48,8 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
       curve: Curves.easeInOut,
     ));
     
-    _fetchBreakBalance();
-    _fetchBreakOrders();
+    _fetchBreakBalance(forceRefresh: true);
+    _fetchBreakOrders(forceRefresh: true);
   }
 
   @override
@@ -145,9 +147,10 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
 
       // Try to load from cache first (if not forcing refresh)
       if (!forceRefresh) {
-        final cachedOrders = await _cacheService.getCachedBreakOrders(employeeId);
+        final monthKey = '${_selectedMonth.year}-${_selectedMonth.month.toString().padLeft(2, '0')}';
+        final cachedOrders = await _cacheService.getCachedBreakOrdersForMonth(employeeId, monthKey);
         if (cachedOrders != null) {
-          print('✅ Loaded break orders from cache');
+          print('✅ Loaded break orders from cache (month $monthKey)');
           setState(() {
             _breakOrders = cachedOrders;
             _isLoading = false;
@@ -159,11 +162,17 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
 
       print('🔍 Fetching break orders for employee ID: $employeeId');
       
-      final orders = await _authManager.apiService.getBreakOrders(employeeId);
-      
-      // Cache the orders
-      await _cacheService.cacheBreakOrders(employeeId, orders);
-      
+      final firstDay = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+      final lastDay = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0);
+      final startDate = '${firstDay.year}-${firstDay.month.toString().padLeft(2, '0')}-${firstDay.day.toString().padLeft(2, '0')}';
+      final endDate = '${lastDay.year}-${lastDay.month.toString().padLeft(2, '0')}-${lastDay.day.toString().padLeft(2, '0')}';
+
+      final orders = await _authManager.apiService.getBreakOrders(employeeId, startDate: startDate, endDate: endDate);
+
+      // Cache the orders with month key
+      final monthKey = '${_selectedMonth.year}-${_selectedMonth.month.toString().padLeft(2, '0')}';
+      await _cacheService.cacheBreakOrdersForMonth(employeeId, monthKey, orders);
+
       setState(() {
         _breakOrders = orders;
         _isLoading = false;
@@ -217,6 +226,21 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     );
   }
 
+  void _changeMonth(int delta) {
+    final newMonth = DateTime(_selectedMonth.year, _selectedMonth.month + delta);
+    // Don't allow selecting future months
+    final now = DateTime.now();
+    if (newMonth.year > now.year || (newMonth.year == now.year && newMonth.month > now.month)) return;
+    setState(() {
+      _selectedMonth = newMonth;
+    });
+    _fetchBreakOrders(forceRefresh: true);
+  }
+
+  String _formatSelectedMonth() {
+    return DateFormat('MMMM yyyy').format(_selectedMonth);
+  }
+
   Widget _buildBreakBalanceCard() {
     return Container(
       padding: EdgeInsets.all(20.w),
@@ -243,10 +267,13 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
           ),
         ],
       ),
-      child: Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Wallet Icon Container
-          Container(
+          Row(
+            children: [
+              // Wallet Icon Container
+              Container(
             padding: EdgeInsets.all(16.w),
             decoration: BoxDecoration(
               color: AppColors.cxWhite.withOpacity(0.25),
@@ -368,12 +395,95 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
 
         ],
       ),
+
+      // Month Selector
+      SizedBox(height: 14.h),
+      Container(
+        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+        decoration: BoxDecoration(
+          color: AppColors.cxWhite.withOpacity(0.2),
+          borderRadius: BorderRadius.circular(12.r),
+          border: Border.all(
+            color: AppColors.cxWhite.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Previous month
+            GestureDetector(
+              onTap: () => _changeMonth(-1),
+              child: Container(
+                padding: EdgeInsets.all(6.w),
+                decoration: BoxDecoration(
+                  color: AppColors.cxWhite.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(8.r),
+                ),
+                child: Icon(
+                  Icons.chevron_left_rounded,
+                  color: AppColors.cxWhite,
+                  size: 20.sp,
+                ),
+              ),
+            ),
+
+            // Month label
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.calendar_month_rounded,
+                  color: AppColors.cxWhite,
+                  size: 16.sp,
+                ),
+                SizedBox(width: 6.w),
+                Text(
+                  _formatSelectedMonth(),
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.cxWhite,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+
+            // Next month (disabled if current month)
+            GestureDetector(
+              onTap: () => _changeMonth(1),
+              child: Opacity(
+                opacity: (_selectedMonth.year == DateTime.now().year &&
+                        _selectedMonth.month == DateTime.now().month)
+                    ? 0.35
+                    : 1.0,
+                child: Container(
+                  padding: EdgeInsets.all(6.w),
+                  decoration: BoxDecoration(
+                    color: AppColors.cxWhite.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(8.r),
+                  ),
+                  child: Icon(
+                    Icons.chevron_right_rounded,
+                    color: AppColors.cxWhite,
+                    size: 20.sp,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+        ],
+      ),
     );
   }
 
   Widget _buildBackButton() {
     final theme = Theme.of(context);
     return Row(
+
       children: [
         Container(
           decoration: BoxDecoration(

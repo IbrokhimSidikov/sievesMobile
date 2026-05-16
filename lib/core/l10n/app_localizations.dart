@@ -87,6 +87,8 @@ class AppLocalizations {
       'closed': 'Closed',
       'noEntries': 'No work entries found for this month',
       'noPhotosAvailable': 'No photos available for this entry',
+      'daysWorkedLabel': 'days',
+      'daysWorkedTooltip': '{count} days worked in {month}\n(closed entries: check-in & check-out)',
 
       //Break Records
       'availableBreakBalance': 'Available Balance',
@@ -465,6 +467,8 @@ class AppLocalizations {
       'closed': 'Yopiq',
       'noEntries': 'Bu oy uchun ish yozuvlari topilmadi',
       'noPhotosAvailable': 'Bu yozuv uchun rasmlar mavjud emas',
+      'daysWorkedLabel': 'kun',
+      'daysWorkedTooltip': '{month} ichida {count} kun ishlandi\n(yopilgan kunlar: kirish & chiqish)',
 
       //Break Records
       'availableBreakBalance': 'Mavjud balans',
@@ -875,6 +879,8 @@ class AppLocalizations {
       'closed': 'Закрыт',
       'noEntries': 'За этот месяц рабочие записи не найдены',
       'noPhotosAvailable': 'Фотографии для этой записи недоступны',
+      'daysWorkedLabel': 'дней',
+      'daysWorkedTooltip': '{count} дней отработано в {month}\n(закрытые записи: приход & уход)',
 
       //Break Records
       'availableBreakBalance': 'Доступный баланс',
@@ -1246,6 +1252,10 @@ class AppLocalizations {
   String get closed => translate('closed');
   String get noEntries => translate('noEntries');
   String get noPhotosAvailable => translate('noPhotosAvailable');
+  String get daysWorkedLabel => translate('daysWorkedLabel');
+  String daysWorkedTooltip(int count, String month) => translate('daysWorkedTooltip')
+      .replaceAll('{count}', '$count')
+      .replaceAll('{month}', month);
 
   //Break Records
   String get availableBreakBalance => translate('availableBreakBalance');
