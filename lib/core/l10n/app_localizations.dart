@@ -388,7 +388,30 @@ class AppLocalizations {
       'trainingsCompletedLabel': 'completed',
       'trainingsCompletedBadge': 'Completed',
       'trainingsLoadError': 'Could not load trainings',
-      'trainingsNoData': 'No trainings available'
+      'trainingsNoData': 'No trainings available',
+      //Task Management
+      'tasks': 'Tasks',
+      'tasksSubtitle': 'My assigned tasks',
+      'taskDetails': 'Task Details',
+      'noTasksInStatus': 'No tasks in {status}',
+      'priority': 'Priority',
+      'taskList': 'List',
+      'dueDate': 'Due date',
+      'startDate': 'Start date',
+      'estimatedHours': 'Estimated',
+      'description': 'Description',
+      'comments': 'Comments',
+      'noComments': 'No comments yet',
+      'addCommentHint': 'Add a comment...',
+      'changeStatusTitle': 'Change status?',
+      'changeStatusBody': 'Move this task from {from} to {to}?',
+      'confirm': 'Confirm',
+      'cancelTask': 'Cancel task',
+      'cancelTaskConfirm': 'Mark this task as cancelled?',
+      'reopenTask': 'Reopen task',
+      'reopenTaskConfirm': 'Move this task back to To Do?',
+      'taskCancelledBanner': 'This task is cancelled',
+      'tapToChange': 'Tap a step to change status'
     },
     'uz': {
       'title': 'Sieves',
@@ -772,7 +795,30 @@ class AppLocalizations {
       'trainingsCompletedLabel': 'bajarildi',
       'trainingsCompletedBadge': 'Qatnashildi',
       'trainingsLoadError': 'Treninglarni yuklab bo\'lmadi',
-      'trainingsNoData': 'Treninglar mavjud emas'
+      'trainingsNoData': 'Treninglar mavjud emas',
+      //Task Management
+      'tasks': 'Vazifalar',
+      'tasksSubtitle': 'Mening vazifalarim',
+      'taskDetails': 'Vazifa tafsilotlari',
+      'noTasksInStatus': '{status} holatida vazifalar yo\'q',
+      'priority': 'Muhimlik',
+      'taskList': 'Ro\'yxat',
+      'dueDate': 'Muddat',
+      'startDate': 'Boshlanish',
+      'estimatedHours': 'Taxminiy',
+      'description': 'Tavsif',
+      'comments': 'Izohlar',
+      'noComments': 'Hali izohlar yo\'q',
+      'addCommentHint': 'Izoh yozing...',
+      'changeStatusTitle': 'Holatni o\'zgartirasizmi?',
+      'changeStatusBody': 'Vazifani {from} dan {to} ga o\'tkazasizmi?',
+      'confirm': 'Tasdiqlash',
+      'cancelTask': 'Vazifani bekor qilish',
+      'cancelTaskConfirm': 'Ushbu vazifani bekor qilingan deb belgilaysizmi?',
+      'reopenTask': 'Vazifani qayta ochish',
+      'reopenTaskConfirm': 'Vazifani To Do holatiga qaytarasizmi?',
+      'taskCancelledBanner': 'Vazifa bekor qilingan',
+      'tapToChange': 'Holatni o\'zgartirish uchun bosqichni bosing'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1167,7 +1213,30 @@ class AppLocalizations {
       'trainingsCompletedLabel': 'пройдено',
       'trainingsCompletedBadge': 'Пройдено',
       'trainingsLoadError': 'Не удалось загрузить тренинги',
-      'trainingsNoData': 'Тренингов пока нет'
+      'trainingsNoData': 'Тренингов пока нет',
+      //Task Management
+      'tasks': 'Задачи',
+      'tasksSubtitle': 'Мои назначенные задачи',
+      'taskDetails': 'Детали задачи',
+      'noTasksInStatus': 'Нет задач в статусе «{status}»',
+      'priority': 'Приоритет',
+      'taskList': 'Список',
+      'dueDate': 'Срок',
+      'startDate': 'Начало',
+      'estimatedHours': 'Оценка',
+      'description': 'Описание',
+      'comments': 'Комментарии',
+      'noComments': 'Пока нет комментариев',
+      'addCommentHint': 'Добавьте комментарий...',
+      'changeStatusTitle': 'Изменить статус?',
+      'changeStatusBody': 'Перевести задачу из «{from}» в «{to}»?',
+      'confirm': 'Подтвердить',
+      'cancelTask': 'Отменить задачу',
+      'cancelTaskConfirm': 'Отметить задачу как отменённую?',
+      'reopenTask': 'Открыть заново',
+      'reopenTaskConfirm': 'Вернуть задачу в статус «To Do»?',
+      'taskCancelledBanner': 'Задача отменена',
+      'tapToChange': 'Нажмите этап, чтобы изменить статус'
     },
   };
 
@@ -1210,6 +1279,32 @@ class AppLocalizations {
       translate('productivityTimerSubtitle');
   String get checklist => translate('checklist');
   String get checklistSubtitle => translate('checklistSubtitle');
+  // Task Management
+  String get tasks => translate('tasks');
+  String get tasksSubtitle => translate('tasksSubtitle');
+  String get taskDetails => translate('taskDetails');
+  String noTasksInStatus(String status) =>
+      translate('noTasksInStatus').replaceAll('{status}', status);
+  String get priority => translate('priority');
+  String get taskList => translate('taskList');
+  String get dueDate => translate('dueDate');
+  String get startDate => translate('startDate');
+  String get estimatedHours => translate('estimatedHours');
+  String get description => translate('description');
+  String get comments => translate('comments');
+  String get noComments => translate('noComments');
+  String get addCommentHint => translate('addCommentHint');
+  String get changeStatusTitle => translate('changeStatusTitle');
+  String changeStatusBody(String from, String to) => translate('changeStatusBody')
+      .replaceAll('{from}', from)
+      .replaceAll('{to}', to);
+  String get confirm => translate('confirm');
+  String get cancelTask => translate('cancelTask');
+  String get cancelTaskConfirm => translate('cancelTaskConfirm');
+  String get reopenTask => translate('reopenTask');
+  String get reopenTaskConfirm => translate('reopenTaskConfirm');
+  String get taskCancelledBanner => translate('taskCancelledBanner');
+  String get tapToChange => translate('tapToChange');
   String get faceIdSubtitle => translate('faceIdSubtitle');
   String get calendar => translate('calendar');
   String get calendarSubtitle => translate('calendarSubtitle');

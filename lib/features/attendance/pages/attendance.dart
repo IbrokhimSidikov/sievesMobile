@@ -479,7 +479,7 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
             ),
           ),
           // Days worked + cache indicator + refresh button
-          Row(
+          Row (
             mainAxisSize: MainAxisSize.min,
             children: [
               // Days worked compact stat

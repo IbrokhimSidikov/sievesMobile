@@ -117,6 +117,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         const Color(0xFF887060),
         '/checklist',
       ),
+      _ModuleItem(
+        localizations.tasks,
+        Icons.task_alt,
+        const Color(0xFF6E5E4E),
+        '/taskManagement',
+      ),
     ];
     return allModules;
   }
@@ -1177,6 +1183,7 @@ class _BentoCardState extends State<_BentoCard>
     if (title == l.checklist) return l.checklistSubtitle;
     if (title == l.faceVerification) return l.faceIdSubtitle;
     if (title == l.calendar) return l.calendarSubtitle;
+    if (title == l.tasks) return l.tasksSubtitle;
     return 'Tap to explore';
   }
 }

@@ -31,6 +31,8 @@ import '../../features/training-game-test/pages/training_game_landing_page.dart'
 import '../../features/wallet/pages/wallet_page.dart';
 import '../../features/profile/pages/feedback_form_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
+import '../../features/task-management/pages/task_management_page.dart';
+import '../../features/task-management/pages/task_detail_page.dart';
 import '../services/auth/auth_manager.dart';
 
 
@@ -62,6 +64,8 @@ class AppRoutes {
   static const String trainingGameTestPage = '/trainingGameTestPage';
   static const String hrPage = '/hrPage';
   static const String feedbackForm = '/feedbackForm';
+  static const String taskManagement = '/taskManagement';
+  static const String taskDetail = '/taskDetail';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -256,6 +260,19 @@ class AppRoutes {
           path: '/feedbackForm',
           name: feedbackForm,
           builder: (context, state) => const FeedbackFormPage(),
+        ),
+        GoRoute(
+          path: '/taskManagement',
+          name: taskManagement,
+          builder: (context, state) => const TaskManagementPage(),
+        ),
+        GoRoute(
+          path: '/taskDetail/:id',
+          name: taskDetail,
+          builder: (context, state) {
+            final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+            return TaskDetailPage(taskId: id);
+          },
         ),
       ],
     );
