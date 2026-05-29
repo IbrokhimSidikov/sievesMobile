@@ -411,7 +411,23 @@ class AppLocalizations {
       'reopenTask': 'Reopen task',
       'reopenTaskConfirm': 'Move this task back to To Do?',
       'taskCancelledBanner': 'This task is cancelled',
-      'tapToChange': 'Tap a step to change status'
+      'tapToChange': 'Tap a step to change status',
+      // Create Task
+      'createTask': 'New Task',
+      'createTaskTitleHint': 'Title',
+      'createTaskDescriptionHint': 'Description (optional)',
+      'taskSpace': 'Space',
+      'assignees': 'Assignees',
+      'selectDepartment': 'Select a department',
+      'selectSpace': 'Select a space',
+      'selectList': 'Select a list',
+      'selectAssignees': 'Select assignees',
+      'noSpacesForDepartment': 'No spaces in this department',
+      'noListsForSpace': 'No lists in this space',
+      'noEmployees': 'No employees found',
+      'taskCreated': 'Task created',
+      'searchEmployees': 'Search employees…',
+      'pickDueDate': 'Pick due date'
     },
     'uz': {
       'title': 'Sieves',
@@ -818,7 +834,23 @@ class AppLocalizations {
       'reopenTask': 'Vazifani qayta ochish',
       'reopenTaskConfirm': 'Vazifani To Do holatiga qaytarasizmi?',
       'taskCancelledBanner': 'Vazifa bekor qilingan',
-      'tapToChange': 'Holatni o\'zgartirish uchun bosqichni bosing'
+      'tapToChange': 'Holatni o\'zgartirish uchun bosqichni bosing',
+      // Create Task
+      'createTask': 'Yangi vazifa',
+      'createTaskTitleHint': 'Sarlavha',
+      'createTaskDescriptionHint': 'Tavsif (ixtiyoriy)',
+      'taskSpace': 'Bo\'shliq',
+      'assignees': 'Mas\'ullar',
+      'selectDepartment': 'Bo\'limni tanlang',
+      'selectSpace': 'Bo\'shliqni tanlang',
+      'selectList': 'Ro\'yxatni tanlang',
+      'selectAssignees': 'Mas\'ullarni tanlang',
+      'noSpacesForDepartment': 'Bu bo\'limda bo\'shliqlar yo\'q',
+      'noListsForSpace': 'Bu bo\'shliqda ro\'yxatlar yo\'q',
+      'noEmployees': 'Xodimlar topilmadi',
+      'taskCreated': 'Vazifa yaratildi',
+      'searchEmployees': 'Xodimlarni qidirish…',
+      'pickDueDate': 'Muddatni tanlash'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1236,7 +1268,23 @@ class AppLocalizations {
       'reopenTask': 'Открыть заново',
       'reopenTaskConfirm': 'Вернуть задачу в статус «To Do»?',
       'taskCancelledBanner': 'Задача отменена',
-      'tapToChange': 'Нажмите этап, чтобы изменить статус'
+      'tapToChange': 'Нажмите этап, чтобы изменить статус',
+      // Create Task
+      'createTask': 'Новая задача',
+      'createTaskTitleHint': 'Заголовок',
+      'createTaskDescriptionHint': 'Описание (необязательно)',
+      'taskSpace': 'Пространство',
+      'assignees': 'Исполнители',
+      'selectDepartment': 'Выберите отдел',
+      'selectSpace': 'Выберите пространство',
+      'selectList': 'Выберите список',
+      'selectAssignees': 'Выберите исполнителей',
+      'noSpacesForDepartment': 'В этом отделе нет пространств',
+      'noListsForSpace': 'В этом пространстве нет списков',
+      'noEmployees': 'Сотрудники не найдены',
+      'taskCreated': 'Задача создана',
+      'searchEmployees': 'Поиск сотрудников…',
+      'pickDueDate': 'Выберите срок'
     },
   };
 
@@ -1305,6 +1353,23 @@ class AppLocalizations {
   String get reopenTaskConfirm => translate('reopenTaskConfirm');
   String get taskCancelledBanner => translate('taskCancelledBanner');
   String get tapToChange => translate('tapToChange');
+  // Create Task
+  String get createTask => translate('createTask');
+  String get createTaskTitleHint => translate('createTaskTitleHint');
+  String get createTaskDescriptionHint =>
+      translate('createTaskDescriptionHint');
+  String get taskSpace => translate('taskSpace');
+  String get assignees => translate('assignees');
+  String get selectDepartment => translate('selectDepartment');
+  String get selectSpace => translate('selectSpace');
+  String get selectList => translate('selectList');
+  String get selectAssignees => translate('selectAssignees');
+  String get noSpacesForDepartment => translate('noSpacesForDepartment');
+  String get noListsForSpace => translate('noListsForSpace');
+  String get noEmployees => translate('noEmployees');
+  String get taskCreated => translate('taskCreated');
+  String get searchEmployees => translate('searchEmployees');
+  String get pickDueDate => translate('pickDueDate');
   String get faceIdSubtitle => translate('faceIdSubtitle');
   String get calendar => translate('calendar');
   String get calendarSubtitle => translate('calendarSubtitle');
@@ -1475,6 +1540,7 @@ class AppLocalizations {
   String get noChecklists => translate('noChecklists');
   String get noChecklistBranch => translate('noChecklistBranch');
   String get retry => translate('retry');
+  String get create => translate('create');
   String get addNoteOptional => translate('addNoteOptional');
   String get submitChecklist => translate('submitChecklist');
   String get submittingChecklist => translate('submittingChecklist');

@@ -71,6 +71,16 @@ class _TaskManagementViewState extends State<_TaskManagementView>
         ),
         actions: [
           IconButton(
+            tooltip: l.createTask,
+            icon: Icon(Icons.add, color: theme.colorScheme.onSurface),
+            onPressed: () async {
+              final created = await context.push<bool>('/taskCreate');
+              if (created == true && context.mounted) {
+                context.read<TaskListCubit>().loadMyTasks();
+              }
+            },
+          ),
+          IconButton(
             icon: Icon(Icons.refresh, color: theme.colorScheme.onSurface),
             onPressed: () => context.read<TaskListCubit>().loadMyTasks(),
           ),

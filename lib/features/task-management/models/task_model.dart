@@ -96,14 +96,90 @@ class TaskSpaceRef {
   final int id;
   final String name;
   final String? color;
+  final int? departmentId;
 
-  const TaskSpaceRef({required this.id, required this.name, this.color});
+  const TaskSpaceRef({
+    required this.id,
+    required this.name,
+    this.color,
+    this.departmentId,
+  });
 
   factory TaskSpaceRef.fromJson(Map<String, dynamic> json) {
     return TaskSpaceRef(
       id: json['id'] as int,
       name: (json['name'] ?? '') as String,
       color: json['color'] as String?,
+      departmentId: json['department_id'] as int?,
+    );
+  }
+}
+
+class DepartmentBrief {
+  final int id;
+  final String name;
+  final int? branchId;
+
+  const DepartmentBrief({
+    required this.id,
+    required this.name,
+    this.branchId,
+  });
+
+  factory DepartmentBrief.fromJson(Map<String, dynamic> json) {
+    return DepartmentBrief(
+      id: json['id'] as int,
+      name: (json['name'] ?? '') as String,
+      branchId: json['branch_id'] as int?,
+    );
+  }
+}
+
+class EmployeeBrief {
+  final int id;
+  final String fullName;
+  final int? departmentId;
+  final String? departmentName;
+  final String? photoUrl;
+
+  const EmployeeBrief({
+    required this.id,
+    required this.fullName,
+    this.departmentId,
+    this.departmentName,
+    this.photoUrl,
+  });
+
+  factory EmployeeBrief.fromJson(Map<String, dynamic> json) {
+    final individual = json['individual'];
+    final firstName = individual is Map
+        ? (individual['first_name'] ?? '') as String
+        : '';
+    final lastName = individual is Map
+        ? (individual['last_name'] ?? '') as String
+        : '';
+    final fullName = ('$firstName $lastName').trim();
+
+    String? photoUrl;
+    if (individual is Map && individual['photo'] is Map) {
+      final photo = individual['photo'] as Map;
+      final path = photo['path'];
+      final name = photo['name'];
+      final format = photo['format'];
+      if (path != null && name != null && format != null) {
+        photoUrl =
+            'https://sieveserp.ams3.cdn.digitaloceanspaces.com/$path/$name.$format';
+      }
+    }
+
+    final dept = json['department'];
+
+    return EmployeeBrief(
+      id: json['id'] as int,
+      fullName: fullName.isEmpty ? 'Employee #${json['id']}' : fullName,
+      departmentId: json['department_id'] as int?,
+      departmentName: dept is Map ? dept['name'] as String? : null,
+      photoUrl: photoUrl,
     );
   }
 }

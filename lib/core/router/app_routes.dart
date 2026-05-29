@@ -33,6 +33,7 @@ import '../../features/profile/pages/feedback_form_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
 import '../../features/task-management/pages/task_management_page.dart';
 import '../../features/task-management/pages/task_detail_page.dart';
+import '../../features/task-management/pages/create_task_page.dart';
 import '../services/auth/auth_manager.dart';
 
 
@@ -66,6 +67,7 @@ class AppRoutes {
   static const String feedbackForm = '/feedbackForm';
   static const String taskManagement = '/taskManagement';
   static const String taskDetail = '/taskDetail';
+  static const String taskCreate = '/taskCreate';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -273,6 +275,11 @@ class AppRoutes {
             final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
             return TaskDetailPage(taskId: id);
           },
+        ),
+        GoRoute(
+          path: '/taskCreate',
+          name: taskCreate,
+          builder: (context, state) => const CreateTaskPage(),
         ),
       ],
     );
