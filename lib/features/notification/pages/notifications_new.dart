@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:go_router/go_router.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
@@ -43,6 +46,42 @@ class _NotificationsPageState extends State<NotificationsPage>
       }
     } catch (e) {
       if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  int? _taskIdFor(NotificationModel n) {
+    final data = n.data;
+    if (data == null) return null;
+    final raw = data['task_id'] ?? data['taskId'];
+    if (raw == null) return null;
+    if (raw is num) return raw.toInt();
+    return int.tryParse(raw.toString());
+  }
+
+  Future<void> _markOneAsRead(NotificationModel n) async {
+    if (n.isRead) return;
+    setState(() {
+      _notifications = _notifications
+          .map((item) => item.id == n.id
+              ? item.copyWith(isRead: true, readAt: DateTime.now())
+              : item)
+          .toList();
+    });
+    final numericId = int.tryParse(n.id);
+    if (numericId == null) return;
+    try {
+      await _api.markNotificationAsRead(numericId);
+    } catch (_) {
+      // best-effort: UI already reflects read state
+    }
+  }
+
+  Future<void> _onNotificationTap(NotificationModel n) async {
+    final taskId = _taskIdFor(n);
+    // Fire-and-forget the read update so navigation isn't blocked by network.
+    unawaited(_markOneAsRead(n));
+    if (taskId != null && taskId > 0) {
+      context.push('/taskDetail/$taskId');
     }
   }
 
@@ -516,6 +555,8 @@ class _NotificationsPageState extends State<NotificationsPage>
     final Color from = n.colorFrom;
     final Color to = n.colorTo;
     final bool isUnread = !n.isRead;
+    final int? taskId = _taskIdFor(n);
+    final bool tappable = taskId != null && taskId > 0;
 
     return AnimatedContainer(
       duration: const Duration(milliseconds: 300),
@@ -543,7 +584,13 @@ class _NotificationsPageState extends State<NotificationsPage>
           ),
         ],
       ),
-      child: Padding(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18.r),
+        child: InkWell(
+          onTap: tappable || isUnread ? () => _onNotificationTap(n) : null,
+          borderRadius: BorderRadius.circular(18.r),
+          child: Padding(
         padding: EdgeInsets.all(14.w),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -651,6 +698,8 @@ class _NotificationsPageState extends State<NotificationsPage>
               ),
             ),
           ],
+        ),
+          ),
         ),
       ),
     );

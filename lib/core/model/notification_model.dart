@@ -99,7 +99,11 @@ class NotificationModel {
 
   // Get icon based on type
   IconData get icon {
-    switch (type.toLowerCase()) {
+    final t = type.toLowerCase();
+    if (t == 'task_comment') return Icons.mode_comment_rounded;
+    if (t == 'task_status_changed') return Icons.published_with_changes_rounded;
+    if (t.startsWith('task_')) return Icons.task_alt_rounded;
+    switch (t) {
       case 'attendance':
         return Icons.login_rounded;
       case 'break':
@@ -119,7 +123,9 @@ class NotificationModel {
 
   // Get color based on type
   Color get colorFrom {
-    switch (type.toLowerCase()) {
+    final t = type.toLowerCase();
+    if (t.startsWith('task_')) return const Color(0xFF14B8A6); // Teal
+    switch (t) {
       case 'attendance':
         return const Color(0xFF34C759); // Green
       case 'break':
@@ -138,7 +144,9 @@ class NotificationModel {
   }
 
   Color get colorTo {
-    switch (type.toLowerCase()) {
+    final t = type.toLowerCase();
+    if (t.startsWith('task_')) return const Color(0xFF0EA5A4);
+    switch (t) {
       case 'attendance':
         return const Color(0xFF43C19F);
       case 'break':
