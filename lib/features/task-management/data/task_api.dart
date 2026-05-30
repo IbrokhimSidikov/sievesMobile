@@ -210,29 +210,71 @@ class TaskApi {
     return all.where((d) => d.branchId == branchId).toList();
   }
 
-  Future<List<EmployeeBrief>> fetchEmployees({int? departmentId}) async {
-    final qp = <String, String>{
-      'pagination': '0',
-      'expand': 'individual,individual.photo,department',
-    };
-    if (departmentId != null) qp['department_id'] = '$departmentId';
-    final url =
-        Uri.parse('$_v1BaseUrl/employee').replace(queryParameters: qp);
-    final res = await http.get(url, headers: await _authHeaders());
-    if (res.statusCode != 200) {
-      throw TaskApiException(
-        'Failed to load employees',
-        statusCode: res.statusCode,
-      );
+  // Job positions that can be assigned tasks regardless of branch
+  // (used alongside branch_id=2 to include cross-branch staff like managers,
+  // teamleaders, etc. — adjust the list to match the company's roles).
+  static const List<int> _crossBranchJobPositionIds = [
+    14, 31, 88, 107, 119, 137, 145, 171, 207, 273, 286,
+  ];
+
+  Future<List<EmployeeBrief>> fetchEmployees({
+    int branchId = 2,
+    List<int> crossBranchJobPositionIds = _crossBranchJobPositionIds,
+  }) async {
+    final headers = await _authHeaders();
+
+    Future<List<EmployeeBrief>> fetchOne(Map<String, String> extra) async {
+      final qp = <String, String>{
+        'pagination': '0',
+        'expand': 'individual,individual.photo,department',
+        ...extra,
+      };
+      final url =
+          Uri.parse('$_v1BaseUrl/employee').replace(queryParameters: qp);
+      final res = await http.get(url, headers: headers);
+      if (res.statusCode != 200) {
+        throw TaskApiException(
+          'Failed to load employees',
+          statusCode: res.statusCode,
+        );
+      }
+      final decoded = json.decode(res.body);
+      final List<dynamic> list = decoded is List
+          ? decoded
+          : (decoded is Map && decoded['items'] is List
+              ? decoded['items'] as List<dynamic>
+              : const <dynamic>[]);
+      return list
+          .map((e) => EmployeeBrief.fromJson(e as Map<String, dynamic>))
+          .toList();
     }
-    final decoded = json.decode(res.body);
-    final List<dynamic> list = decoded is List
-        ? decoded
-        : (decoded is Map && decoded['items'] is List
-            ? decoded['items'] as List<dynamic>
-            : const <dynamic>[]);
-    return list
-        .map((e) => EmployeeBrief.fromJson(e as Map<String, dynamic>))
-        .toList();
+
+    final results = await Future.wait([
+      fetchOne({'branch_id': '$branchId'}),
+      if (crossBranchJobPositionIds.isNotEmpty)
+        fetchOne({
+          'job_position_id': crossBranchJobPositionIds.join(','),
+        }),
+    ]);
+
+    // Merge + dedupe by id; client-side guards in case the server ignores
+    // unknown params or returns extras.
+    final seen = <int>{};
+    final merged = <EmployeeBrief>[];
+    final allowedJobs = crossBranchJobPositionIds.toSet();
+    for (final group in results) {
+      for (final e in group) {
+        if (!seen.add(e.id)) continue;
+        if (e.fullName.startsWith('Employee #')) continue;
+        final inBranch = e.branchId == branchId;
+        final hasAllowedJob =
+            e.jobPositionId != null && allowedJobs.contains(e.jobPositionId);
+        if (inBranch || hasAllowedJob) {
+          merged.add(e);
+        }
+      }
+    }
+    merged.sort((a, b) => a.fullName.compareTo(b.fullName));
+    return merged;
   }
 }

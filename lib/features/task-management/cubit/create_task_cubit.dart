@@ -15,9 +15,17 @@ class CreateTaskCubit extends Cubit<CreateTaskState> {
     emit(state.copyWith(loadingForm: true, clearFormError: true));
     try {
       final departments = await _api.fetchDepartments(branchId: 2);
+      final allSpaces = await _api.fetchSpaces();
+      // Keep only spaces that belong to the branch's departments.
+      final departmentIds = departments.map((d) => d.id).toSet();
+      final spaces = allSpaces
+          .where((s) =>
+              s.departmentId == null || departmentIds.contains(s.departmentId))
+          .toList();
       emit(state.copyWith(
         loadingForm: false,
         departments: departments,
+        spaces: spaces,
       ));
     } on TaskApiException catch (e) {
       emit(state.copyWith(loadingForm: false, formError: e.message));

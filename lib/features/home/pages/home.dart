@@ -111,18 +111,20 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           const Color(0xFF7A6555),
           '/employeeProductivity',
         ),
-      _ModuleItem(
-        localizations.checklist,
-        Icons.checklist_outlined,
-        const Color(0xFF887060),
-        '/checklist',
-      ),
+      if (_authManager.hasStopwatchAccess)
       _ModuleItem(
         localizations.tasks,
         Icons.task_alt,
         const Color(0xFF6E5E4E),
         '/taskManagement',
       ),
+      _ModuleItem(
+        localizations.checklist,
+        Icons.checklist_outlined,
+        const Color(0xFF887060),
+        '/checklist',
+      ),
+
     ];
     return allModules;
   }

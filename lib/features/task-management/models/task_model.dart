@@ -138,6 +138,8 @@ class DepartmentBrief {
 class EmployeeBrief {
   final int id;
   final String fullName;
+  final int? branchId;
+  final int? jobPositionId;
   final int? departmentId;
   final String? departmentName;
   final String? photoUrl;
@@ -145,6 +147,8 @@ class EmployeeBrief {
   const EmployeeBrief({
     required this.id,
     required this.fullName,
+    this.branchId,
+    this.jobPositionId,
     this.departmentId,
     this.departmentName,
     this.photoUrl,
@@ -177,6 +181,8 @@ class EmployeeBrief {
     return EmployeeBrief(
       id: json['id'] as int,
       fullName: fullName.isEmpty ? 'Employee #${json['id']}' : fullName,
+      branchId: json['branch_id'] as int?,
+      jobPositionId: json['job_position_id'] as int?,
       departmentId: json['department_id'] as int?,
       departmentName: dept is Map ? dept['name'] as String? : null,
       photoUrl: photoUrl,

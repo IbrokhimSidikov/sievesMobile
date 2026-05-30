@@ -65,12 +65,12 @@ class _CreateTaskView extends StatelessWidget {
                 color: theme.colorScheme.onSurface,
               ),
             ),
+            centerTitle: true,
             actions: [
               Padding(
                 padding: EdgeInsets.only(right: 8.w),
                 child: TextButton(
-                  onPressed:
-                      state.canSubmit ? () => cubit.submit() : null,
+                  onPressed: state.canSubmit ? () => cubit.submit() : null,
                   child: state.submitting
                       ? SizedBox(
                           width: 18.w,
@@ -93,14 +93,18 @@ class _CreateTaskView extends StatelessWidget {
               ),
             ],
           ),
-          body: state.loadingForm
-              ? const Center(child: CircularProgressIndicator())
-              : state.formError != null
-                  ? _ErrorView(
-                      message: state.formError!,
-                      onRetry: () => cubit.loadForm(),
-                    )
-                  : _Form(state: state, cubit: cubit),
+          body: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: state.loadingForm
+                ? const Center(child: CircularProgressIndicator())
+                : state.formError != null
+                ? _ErrorView(
+                    message: state.formError!,
+                    onRetry: () => cubit.loadForm(),
+                  )
+                : _Form(state: state, cubit: cubit),
+          ),
         );
       },
     );
@@ -115,7 +119,7 @@ class _Form extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context);
-
+    final theme = Theme.of(context);
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 32.h),
       child: Column(
@@ -124,6 +128,12 @@ class _Form extends StatelessWidget {
           _SectionLabel(l.createTaskTitleHint),
           SizedBox(height: 6.h),
           TextField(
+            cursorColor: theme.colorScheme.onSurface,
+            style: TextStyle(
+              fontSize: 16.sp,
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w600,
+            ),
             decoration: _inputDecoration(context, l.createTaskTitleHint),
             onChanged: cubit.setTitle,
           ),
@@ -132,9 +142,14 @@ class _Form extends StatelessWidget {
           _SectionLabel(l.description),
           SizedBox(height: 6.h),
           TextField(
+            cursorColor: theme.colorScheme.onSurface,
+            style: TextStyle(
+              fontSize: 14.sp,
+              color: theme.colorScheme.onSurface,
+              fontWeight: FontWeight.w500,
+            ),
             maxLines: 3,
-            decoration:
-                _inputDecoration(context, l.createTaskDescriptionHint),
+            decoration: _inputDecoration(context, l.createTaskDescriptionHint),
             onChanged: cubit.setDescription,
           ),
           SizedBox(height: 16.h),
@@ -145,51 +160,35 @@ class _Form extends StatelessWidget {
             spacing: 8.w,
             runSpacing: 8.h,
             children: TaskPriority.values
-                .map((p) => _PriorityChip(
-                      priority: p,
-                      selected: state.priority == p,
-                      onTap: () => cubit.setPriority(p),
-                    ))
+                .map(
+                  (p) => _PriorityChip(
+                    priority: p,
+                    selected: state.priority == p,
+                    onTap: () => cubit.setPriority(p),
+                  ),
+                )
                 .toList(),
           ),
           SizedBox(height: 16.h),
 
-          _SectionLabel(l.department),
+          _SectionLabel(l.taskSpace),
           SizedBox(height: 6.h),
-          _Dropdown<int>(
-            hint: l.selectDepartment,
-            value: state.selectedDepartmentId,
-            items: state.departments
-                .map((d) => DropdownMenuItem(value: d.id, child: Text(d.name)))
-                .toList(),
-            onChanged: (v) {
-              if (v != null) cubit.selectDepartment(v);
-            },
-          ),
+          state.spaces.isEmpty
+              ? _EmptyHint(l.noSpacesForDepartment)
+              : _Dropdown<int>(
+                  hint: l.selectSpace,
+                  value: state.selectedSpaceId,
+                  items: state.spaces
+                      .map(
+                        (s) =>
+                            DropdownMenuItem(value: s.id, child: Text(s.name)),
+                      )
+                      .toList(),
+                  onChanged: (v) {
+                    if (v != null) cubit.selectSpace(v);
+                  },
+                ),
           SizedBox(height: 16.h),
-
-          if (state.selectedDepartmentId != null) ...[
-            _SectionLabel(l.taskSpace),
-            SizedBox(height: 6.h),
-            state.loadingSpaces
-                ? const LinearProgressIndicator(minHeight: 2)
-                : state.spaces.isEmpty
-                    ? _EmptyHint(l.noSpacesForDepartment)
-                    : _Dropdown<int>(
-                        hint: l.selectSpace,
-                        value: state.selectedSpaceId,
-                        items: state.spaces
-                            .map((s) => DropdownMenuItem(
-                                  value: s.id,
-                                  child: Text(s.name),
-                                ))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) cubit.selectSpace(v);
-                        },
-                      ),
-            SizedBox(height: 16.h),
-          ],
 
           if (state.selectedSpaceId != null) ...[
             _SectionLabel(l.taskList),
@@ -197,20 +196,22 @@ class _Form extends StatelessWidget {
             state.loadingLists
                 ? const LinearProgressIndicator(minHeight: 2)
                 : state.lists.isEmpty
-                    ? _EmptyHint(l.noListsForSpace)
-                    : _Dropdown<int>(
-                        hint: l.selectList,
-                        value: state.selectedListId,
-                        items: state.lists
-                            .map((l) => DropdownMenuItem(
-                                  value: l.id,
-                                  child: Text(l.name),
-                                ))
-                            .toList(),
-                        onChanged: (v) {
-                          if (v != null) cubit.selectList(v);
-                        },
-                      ),
+                ? _EmptyHint(l.noListsForSpace)
+                : _Dropdown<int>(
+                    hint: l.selectList,
+                    value: state.selectedListId,
+                    items: state.lists
+                        .map(
+                          (l) => DropdownMenuItem(
+                            value: l.id,
+                            child: Text(l.name),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (v) {
+                      if (v != null) cubit.selectList(v);
+                    },
+                  ),
             SizedBox(height: 16.h),
           ],
 
@@ -226,10 +227,7 @@ class _Form extends StatelessWidget {
 
           _SectionLabel('${l.assignees} (${state.selectedAssigneeIds.length})'),
           SizedBox(height: 6.h),
-          _AssigneeField(
-            state: state,
-            cubit: cubit,
-          ),
+          _AssigneeField(state: state, cubit: cubit),
         ],
       ),
     );
@@ -245,15 +243,11 @@ class _Form extends StatelessWidget {
           : Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.r),
-        borderSide: BorderSide(
-          color: theme.dividerColor.withOpacity(0.5),
-        ),
+        borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.r),
-        borderSide: BorderSide(
-          color: theme.dividerColor.withOpacity(0.5),
-        ),
+        borderSide: BorderSide(color: theme.dividerColor.withOpacity(0.5)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12.r),
@@ -305,9 +299,7 @@ class _Dropdown<T> extends StatelessWidget {
             ? const Color(0xFF1F1F1F)
             : Colors.white,
         borderRadius: BorderRadius.circular(12.r),
-        border: Border.all(
-          color: theme.dividerColor.withOpacity(0.5),
-        ),
+        border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
       ),
       child: DropdownButtonHideUnderline(
         child: DropdownButton<T>(
@@ -322,10 +314,7 @@ class _Dropdown<T> extends StatelessWidget {
           value: value,
           items: items,
           onChanged: onChanged,
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: theme.colorScheme.onSurface,
-          ),
+          style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.onSurface),
           iconEnabledColor: theme.colorScheme.onSurface.withOpacity(0.65),
           dropdownColor: theme.brightness == Brightness.dark
               ? const Color(0xFF1F1F1F)
@@ -350,10 +339,7 @@ class _EmptyHint extends StatelessWidget {
       ),
       child: Text(
         text,
-        style: TextStyle(
-          fontSize: 12.sp,
-          color: theme.colorScheme.error,
-        ),
+        style: TextStyle(fontSize: 12.sp, color: theme.colorScheme.error),
       ),
     );
   }
@@ -441,9 +427,7 @@ class _DateField extends StatelessWidget {
               ? const Color(0xFF1F1F1F)
               : Colors.white,
           borderRadius: BorderRadius.circular(12.r),
-          border: Border.all(
-            color: theme.dividerColor.withOpacity(0.5),
-          ),
+          border: Border.all(color: theme.dividerColor.withOpacity(0.5)),
         ),
         child: Row(
           children: [
@@ -531,25 +515,28 @@ class _AssigneeField extends StatelessWidget {
                       spacing: 6.w,
                       runSpacing: 4.h,
                       children: selectedEmployees
-                          .map((e) => Container(
-                                padding: EdgeInsets.symmetric(
-                                  horizontal: 8.w,
-                                  vertical: 3.h,
+                          .map(
+                            (e) => Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 8.w,
+                                vertical: 3.h,
+                              ),
+                              decoration: BoxDecoration(
+                                color: const Color(
+                                  0xFF6366F1,
+                                ).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10.r),
+                              ),
+                              child: Text(
+                                e.fullName,
+                                style: TextStyle(
+                                  fontSize: 11.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: const Color(0xFF6366F1),
                                 ),
-                                decoration: BoxDecoration(
-                                  color: const Color(0xFF6366F1)
-                                      .withOpacity(0.12),
-                                  borderRadius: BorderRadius.circular(10.r),
-                                ),
-                                child: Text(
-                                  e.fullName,
-                                  style: TextStyle(
-                                    fontSize: 11.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: const Color(0xFF6366F1),
-                                  ),
-                                ),
-                              ))
+                              ),
+                            ),
+                          )
                           .toList(),
                     ),
             ),
@@ -574,10 +561,7 @@ class _AssigneeField extends StatelessWidget {
         borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
       ),
       builder: (sheetContext) {
-        return BlocProvider.value(
-          value: cubit,
-          child: const _AssigneeSheet(),
-        );
+        return BlocProvider.value(value: cubit, child: const _AssigneeSheet());
       },
     );
   }
@@ -606,18 +590,23 @@ class _AssigneeSheetState extends State<_AssigneeSheet> {
         final filtered = q.isEmpty
             ? state.employees
             : state.employees
-                .where((e) =>
-                    e.fullName.toLowerCase().contains(q) ||
-                    (e.departmentName ?? '').toLowerCase().contains(q))
-                .toList();
+                  .where(
+                    (e) =>
+                        e.fullName.toLowerCase().contains(q) ||
+                        (e.departmentName ?? '').toLowerCase().contains(q),
+                  )
+                  .toList();
 
-        return Padding(
-          padding: EdgeInsets.only(bottom: viewInsets.bottom),
-          child: SizedBox(
-            height: MediaQuery.of(context).size.height * 0.75,
-            child: Column(
-              children: [
-                SizedBox(height: 8.h),
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => FocusScope.of(context).unfocus(),
+          child: Padding(
+            padding: EdgeInsets.only(bottom: viewInsets.bottom),
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.75,
+              child: Column(
+                children: [
+                  SizedBox(height: 8.h),
                 Container(
                   width: 36.w,
                   height: 4.h,
@@ -681,12 +670,14 @@ class _AssigneeSheetState extends State<_AssigneeSheet> {
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
                         borderSide: BorderSide(
-                            color: theme.dividerColor.withOpacity(0.5)),
+                          color: theme.dividerColor.withOpacity(0.5),
+                        ),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
                         borderSide: BorderSide(
-                            color: theme.dividerColor.withOpacity(0.5)),
+                          color: theme.dividerColor.withOpacity(0.5),
+                        ),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12.r),
@@ -704,10 +695,9 @@ class _AssigneeSheetState extends State<_AssigneeSheet> {
                   ),
                 ),
                 SizedBox(height: 10.h),
-                Expanded(
-                  child: _buildBody(state, cubit, filtered, theme, l),
-                ),
+                Expanded(child: _buildBody(state, cubit, filtered, theme, l)),
               ],
+              ),
             ),
           ),
         );
@@ -745,10 +735,8 @@ class _AssigneeSheetState extends State<_AssigneeSheet> {
     return ListView.separated(
       padding: EdgeInsets.fromLTRB(16.w, 4.h, 16.w, 16.h),
       itemCount: filtered.length,
-      separatorBuilder: (_, __) => Divider(
-        height: 1,
-        color: theme.dividerColor.withOpacity(0.3),
-      ),
+      separatorBuilder: (_, __) =>
+          Divider(height: 1, color: theme.dividerColor.withOpacity(0.3)),
       itemBuilder: (_, i) {
         final e = filtered[i];
         final isSelected = state.selectedAssigneeIds.contains(e.id);
@@ -760,8 +748,7 @@ class _AssigneeSheetState extends State<_AssigneeSheet> {
               children: [
                 CircleAvatar(
                   radius: 16.r,
-                  backgroundColor:
-                      const Color(0xFF6366F1).withOpacity(0.15),
+                  backgroundColor: const Color(0xFF6366F1).withOpacity(0.15),
                   backgroundImage: e.photoUrl != null
                       ? NetworkImage(e.photoUrl!)
                       : null,
@@ -799,8 +786,9 @@ class _AssigneeSheetState extends State<_AssigneeSheet> {
                           e.departmentName!,
                           style: TextStyle(
                             fontSize: 11.sp,
-                            color: theme.colorScheme.onSurface
-                                .withOpacity(0.55),
+                            color: theme.colorScheme.onSurface.withOpacity(
+                              0.55,
+                            ),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
