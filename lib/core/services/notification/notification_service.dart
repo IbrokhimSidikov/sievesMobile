@@ -1,7 +1,10 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import '../../model/notification_model.dart';
+import '../../utils/global_keys.dart';
+import '../../../features/notification/widgets/announcement_dialog.dart';
 import 'notification_storage_service.dart';
 import '../api/api_service.dart';
 import '../auth/auth_manager.dart';
@@ -253,7 +256,18 @@ class NotificationService {
     // Save notification to storage (important for iOS where background handler may not run)
     await _saveNotificationToStorage(message);
     print('✅ Notification saved on tap');
-    
+
+    // Announcement notifications open as a clean in-app pop-up
+    if ((data['type'] as String?) == 'announcement') {
+      final title = message.notification?.title ??
+          (data['title'] as String?) ??
+          'Announcement';
+      final body =
+          message.notification?.body ?? (data['body'] as String?) ?? '';
+      _showAnnouncementWhenReady(title, body);
+      return;
+    }
+
     // Navigate to notifications page by default
     // Use a delay to ensure app is fully loaded
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -280,6 +294,28 @@ class NotificationService {
       //   AppRoutes.router.go('/history');
       // }
     }
+  }
+
+  /// Show the announcement pop-up once the navigator/UI is ready.
+  ///
+  /// Retries because the app may have been launched from a terminated state
+  /// (via [getInitialMessage]) where the widget tree isn't mounted yet.
+  Future<void> _showAnnouncementWhenReady(String title, String body) async {
+    for (int attempt = 0; attempt < 40; attempt++) {
+      final context = rootNavigatorKey.currentContext;
+      if (context != null) {
+        print('📣 Showing announcement pop-up');
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          barrierColor: Colors.black.withOpacity(0.55),
+          builder: (_) => AnnouncementDialog(title: title, body: body),
+        );
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    print('⚠️ Could not show announcement: navigator context unavailable');
   }
 
   /// Subscribe to a topic

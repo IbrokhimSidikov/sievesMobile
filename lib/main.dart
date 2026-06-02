@@ -14,6 +14,7 @@ import 'core/l10n/app_localizations_delegate.dart';
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
 import 'core/router/app_routes.dart';
+import 'core/utils/global_keys.dart';
 import 'core/services/auth/auth_cubit.dart';
 import 'core/services/auth/auth_manager.dart';
 import 'core/services/auth/auth_state.dart';
@@ -74,7 +75,6 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> {
   late final VersionService _versionService;
   bool _isInitialized = false;
-  final _navigatorKey = GlobalKey<NavigatorState>();
   final localeProvider = LocaleProvider();
   String _initialRoute = '/onboard';
   late GoRouter _router;
@@ -113,7 +113,7 @@ class _MyAppState extends State<MyApp> {
       
       setState(() {
         _initialRoute = isAuthenticated ? '/home' : '/onboard';
-        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: _navigatorKey);
+        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: rootNavigatorKey);
         _isInitialized = true;
       });
       
@@ -125,7 +125,7 @@ class _MyAppState extends State<MyApp> {
       print('❌ Error checking auth status: $e');
       setState(() {
         _initialRoute = '/onboard';
-        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: _navigatorKey);
+        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: rootNavigatorKey);
         _isInitialized = true;
       });
     }
@@ -147,7 +147,7 @@ class _MyAppState extends State<MyApp> {
 
       // Show update dialog if needed
       if (updateStatus.isUpdateRequired || updateStatus.isUpdateAvailable) {
-        final context = _navigatorKey.currentContext;
+        final context = rootNavigatorKey.currentContext;
         if (context != null && mounted) {
           showDialog(
             context: context,
@@ -237,7 +237,7 @@ class _MyAppState extends State<MyApp> {
                   return BlocListener<AuthCubit, AuthState>(
                     listener: (context, state) {
                       if (state is AuthLoggingOut) {
-                        final navContext = _navigatorKey.currentContext;
+                        final navContext = rootNavigatorKey.currentContext;
                         if (navContext != null) {
                           showDialog(
                             context: navContext,
@@ -247,7 +247,7 @@ class _MyAppState extends State<MyApp> {
                           );
                         }
                       } else if (state is AuthError) {
-                        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+                        rootNavigatorKey.currentState?.popUntil((route) => route.isFirst);
                         print('❌ [GLOBAL] Auth error: ${state.message}');
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
@@ -257,7 +257,7 @@ class _MyAppState extends State<MyApp> {
                           ),
                         );
                       } else if (state is AuthUnauthenticated) {
-                        _navigatorKey.currentState?.popUntil((route) => route.isFirst);
+                        rootNavigatorKey.currentState?.popUntil((route) => route.isFirst);
                         print('🔐 [GLOBAL] Session expired - navigating to onboard');
                         _router.go('/onboard');
                       }
