@@ -104,6 +104,8 @@ class NotificationModel {
     if (t == 'task_status_changed') return Icons.published_with_changes_rounded;
     if (t.startsWith('task_')) return Icons.task_alt_rounded;
     switch (t) {
+      case 'announcement':
+        return Icons.campaign_rounded;
       case 'attendance':
         return Icons.login_rounded;
       case 'break':
@@ -126,6 +128,8 @@ class NotificationModel {
     final t = type.toLowerCase();
     if (t.startsWith('task_')) return const Color(0xFF14B8A6); // Teal
     switch (t) {
+      case 'announcement':
+        return const Color(0xFF43C19F); // Brand teal
       case 'attendance':
         return const Color(0xFF34C759); // Green
       case 'break':
@@ -147,6 +151,8 @@ class NotificationModel {
     final t = type.toLowerCase();
     if (t.startsWith('task_')) return const Color(0xFF0EA5A4);
     switch (t) {
+      case 'announcement':
+        return const Color(0xFF2E9B7E); // Brand teal (darker)
       case 'attendance':
         return const Color(0xFF43C19F);
       case 'break':

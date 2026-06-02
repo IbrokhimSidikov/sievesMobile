@@ -130,10 +130,21 @@ class _NotificationsPageState extends State<NotificationsPage>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final unreadCount = _notifications.where((n) => !n.isRead).length;
+    final announcementCount =
+        _notifications.where((n) => n.type == 'announcement').length;
 
-    final filtered = _filter == 'All'
-        ? _notifications
-        : _notifications.where((n) => !n.isRead).toList();
+    List<NotificationModel> filtered;
+    switch (_filter) {
+      case 'Unread':
+        filtered = _notifications.where((n) => !n.isRead).toList();
+        break;
+      case 'Announcement':
+        filtered =
+            _notifications.where((n) => n.type == 'announcement').toList();
+        break;
+      default:
+        filtered = _notifications;
+    }
 
     return Scaffold(
       backgroundColor: isDark ? const Color(0xFF0A0A0F) : const Color(0xFFF2F4F8),
@@ -142,7 +153,7 @@ class _NotificationsPageState extends State<NotificationsPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(isDark, unreadCount),
-            _buildFilters(isDark, unreadCount),
+            _buildFilters(isDark, unreadCount, announcementCount),
             Expanded(
               child: _isLoading
                   ? _buildShimmer(isDark)
@@ -337,8 +348,8 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
-  Widget _buildFilters(bool isDark, int unreadCount) {
-    final filters = ['All', 'Unread'];
+  Widget _buildFilters(bool isDark, int unreadCount, int announcementCount) {
+    final filters = ['All', 'Unread', 'Announcement'];
 
     return Container(
       padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
@@ -350,7 +361,11 @@ class _NotificationsPageState extends State<NotificationsPage>
         child: Row(
           children: filters.map((f) {
             final bool selected = _filter == f;
-            final bool showBadge = f == 'Unread' && unreadCount > 0;
+            final int badgeCount =
+                f == 'Announcement' ? announcementCount : unreadCount;
+            final bool showBadge =
+                (f == 'Unread' && unreadCount > 0) ||
+                (f == 'Announcement' && announcementCount > 0);
             return Padding(
               padding: EdgeInsets.only(right: 10.w),
               child: GestureDetector(
@@ -418,7 +433,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: Text(
-                            '$unreadCount',
+                            '$badgeCount',
                             style: TextStyle(
                               color: Colors.white,
                               fontSize: 10.sp,
