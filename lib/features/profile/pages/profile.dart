@@ -39,6 +39,15 @@ class _ProfileState extends State<Profile> {
   bool _isLoadingBonus = true;
   double _prePaidAmount = 0.0;
   List<Map<String, dynamic>> _currentMonthTransactions = [];
+  // Full transaction list kept in memory so switching months re-filters
+  // locally instead of re-fetching from the API every time.
+  List<Map<String, dynamic>>? _allPrePaidTransactions;
+  // The month currently shown in the Pre-Paid card (defaults to current month)
+  DateTime _selectedPrePaidMonth = DateTime(
+    DateTime.now().year,
+    DateTime.now().month,
+    1,
+  );
   int _availableVacationDays = 0;
   int _totalVacationDays = 0;
   double _bonusAmount = 0.0;
@@ -305,8 +314,11 @@ class _ProfileState extends State<Profile> {
         return;
       }
 
+      // Cache only applies to the current month (default view).
+      final bool isCurrentMonth = _isCurrentMonth(_selectedPrePaidMonth);
+
       // Try to load from cache first (if not forcing refresh)
-      if (!forceRefresh) {
+      if (!forceRefresh && isCurrentMonth) {
         final cachedData = await _cacheService.getCachedPrePaidData(
           individualId,
         );
@@ -354,66 +366,41 @@ class _ProfileState extends State<Profile> {
       }
 
       if (response != null && response['models'] != null) {
-        final transactions = response['models'] as List;
+        final transactions = (response['models'] as List)
+            .cast<Map<String, dynamic>>();
 
-        // Get current month and year
-        final now = DateTime.now();
-        final currentMonth = now.month;
-        final currentYear = now.year;
+        // Keep the full list in memory so switching months re-filters
+        // locally without another network call.
+        _allPrePaidTransactions = transactions;
 
-        print('📅 Filtering for current month: $currentMonth/$currentYear');
+        // Filter to the selected month and update the UI.
+        final result = _filterPrePaidForSelectedMonth();
 
-        // Filter transactions for current month and sum amounts
-        double totalAmount = 0.0;
-        int transactionCount = 0;
-        List<Map<String, dynamic>> currentMonthTxns = [];
-
-        for (var transaction in transactions) {
-          try {
-            final dateStr = transaction['date'] as String?;
-            if (dateStr != null) {
-              final transactionDate = DateTime.parse(dateStr);
-
-              // Check if transaction is in current month
-              if (transactionDate.month == currentMonth &&
-                  transactionDate.year == currentYear) {
-                final amount =
-                    (transaction['amount'] as num?)?.toDouble() ?? 0.0;
-                totalAmount += amount;
-                transactionCount++;
-                currentMonthTxns.add(transaction as Map<String, dynamic>);
-                print(
-                  '✅ Current month transaction: ${transaction['id']} - Amount: $amount - Date: $dateStr',
-                );
-              }
-            }
-          } catch (e) {
-            print('⚠️ Error parsing transaction date: $e');
-          }
+        // Cache the pre-paid data (only for the current month default view)
+        if (isCurrentMonth) {
+          await _cacheService.cachePrePaidData(
+            individualId,
+            result.amount,
+            result.transactions,
+          );
         }
-
-        // Cache the pre-paid data
-        await _cacheService.cachePrePaidData(
-          individualId,
-          totalAmount,
-          currentMonthTxns,
-        );
 
         if (mounted) {
           setState(() {
-            _prePaidAmount = totalAmount;
-            _currentMonthTransactions = currentMonthTxns;
+            _prePaidAmount = result.amount;
+            _currentMonthTransactions = result.transactions;
             _isLoadingPrePaid = false;
             _isPrePaidFromCache = false;
           });
           print(
-            '💰 Total pre-paid amount: $totalAmount UZS from $transactionCount transactions',
+            '💰 Total pre-paid amount: ${result.amount} UZS from ${result.transactions.length} transactions',
           );
         }
       } else {
         print('⚠️ No models found in response');
         if (mounted) {
           setState(() {
+            _allPrePaidTransactions = [];
             _prePaidAmount = 0.0;
             _currentMonthTransactions = [];
             _isLoadingPrePaid = false;
@@ -430,6 +417,34 @@ class _ProfileState extends State<Profile> {
         });
       }
     }
+  }
+
+  /// Filter the in-memory transaction list down to [_selectedPrePaidMonth]
+  /// and return the total amount + matching transactions.
+  ({double amount, List<Map<String, dynamic>> transactions})
+  _filterPrePaidForSelectedMonth() {
+    final month = _selectedPrePaidMonth.month;
+    final year = _selectedPrePaidMonth.year;
+
+    double totalAmount = 0.0;
+    final List<Map<String, dynamic>> monthTxns = [];
+
+    for (var transaction in _allPrePaidTransactions ?? []) {
+      try {
+        final dateStr = transaction['date'] as String?;
+        if (dateStr != null) {
+          final transactionDate = DateTime.parse(dateStr);
+          if (transactionDate.month == month && transactionDate.year == year) {
+            totalAmount += (transaction['amount'] as num?)?.toDouble() ?? 0.0;
+            monthTxns.add(transaction);
+          }
+        }
+      } catch (e) {
+        print('⚠️ Error parsing transaction date: $e');
+      }
+    }
+
+    return (amount: totalAmount, transactions: monthTxns);
   }
 
   Future<void> _handleLogout() async {
@@ -682,7 +697,11 @@ class _ProfileState extends State<Profile> {
 
   /// Get formatted current month string
   String _getCurrentMonthString() {
-    final now = DateTime.now();
+    return _getMonthLabel(DateTime.now());
+  }
+
+  /// Format any [date] as a "Month Year" label
+  String _getMonthLabel(DateTime date) {
     const months = [
       'January',
       'February',
@@ -697,7 +716,44 @@ class _ProfileState extends State<Profile> {
       'November',
       'December',
     ];
-    return '${months[now.month - 1]} ${now.year}';
+    return '${months[date.month - 1]} ${date.year}';
+  }
+
+  /// Whether [date] falls within the current calendar month
+  bool _isCurrentMonth(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month;
+  }
+
+  /// Shift the Pre-Paid card's selected month by [delta] months and reload.
+  /// Going past the current month is not allowed.
+  void _changePrePaidMonth(int delta) {
+    final candidate = DateTime(
+      _selectedPrePaidMonth.year,
+      _selectedPrePaidMonth.month + delta,
+      1,
+    );
+
+    // Don't allow navigating into the future
+    final now = DateTime.now();
+    final currentMonth = DateTime(now.year, now.month, 1);
+    if (candidate.isAfter(currentMonth)) return;
+
+    setState(() {
+      _selectedPrePaidMonth = candidate;
+    });
+
+    // If the full transaction list is already in memory, just re-filter
+    // locally (no network call, no shimmer). Otherwise fetch it once.
+    if (_allPrePaidTransactions != null) {
+      final result = _filterPrePaidForSelectedMonth();
+      setState(() {
+        _prePaidAmount = result.amount;
+        _currentMonthTransactions = result.transactions;
+      });
+    } else {
+      _loadPrePaidAmount();
+    }
   }
 
   /// Force refresh all profile data (clear cache and reload)
@@ -3092,7 +3148,8 @@ class _ProfileState extends State<Profile> {
 
   Widget _buildPrePaidCard() {
     final double prePaidAmount = _prePaidAmount;
-    final String month = _getCurrentMonthString();
+    final String month = _getMonthLabel(_selectedPrePaidMonth);
+    final bool isCurrentMonth = _isCurrentMonth(_selectedPrePaidMonth);
     final isDarkMode = Theme.of(context).brightness == Brightness.dark;
     final colorScheme = Theme.of(context).colorScheme;
 
@@ -3157,12 +3214,35 @@ class _ProfileState extends State<Profile> {
                                 color: primaryText,
                               ),
                             ),
-                            Text(
-                              month,
-                              style: TextStyle(
-                                fontSize: 12.sp,
-                                color: secondaryText,
-                              ),
+                            SizedBox(height: 2.h),
+                            Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                _buildMonthArrow(
+                                  icon: Icons.chevron_left_rounded,
+                                  accent: accent,
+                                  secondaryText: secondaryText,
+                                  enabled: true,
+                                  onTap: () => _changePrePaidMonth(-1),
+                                ),
+                                SizedBox(width: 4.w),
+                                Text(
+                                  month,
+                                  style: TextStyle(
+                                    fontSize: 12.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: secondaryText,
+                                  ),
+                                ),
+                                SizedBox(width: 4.w),
+                                _buildMonthArrow(
+                                  icon: Icons.chevron_right_rounded,
+                                  accent: accent,
+                                  secondaryText: secondaryText,
+                                  enabled: !isCurrentMonth,
+                                  onTap: () => _changePrePaidMonth(1),
+                                ),
+                              ],
                             ),
                           ],
                         ),
@@ -3250,7 +3330,11 @@ class _ProfileState extends State<Profile> {
                           ),
                           SizedBox(width: 4.w),
                           Text(
-                            AppLocalizations.of(context).currentMonthBalance,
+                            isCurrentMonth
+                                ? AppLocalizations.of(
+                                    context,
+                                  ).currentMonthBalance
+                                : month,
                             style: TextStyle(
                               fontSize: 12.sp,
                               fontWeight: FontWeight.w500,
@@ -3288,6 +3372,32 @@ class _ProfileState extends State<Profile> {
                   ),
                 ],
               ),
+      ),
+    );
+  }
+
+  /// Small chevron button used to step the Pre-Paid card between months.
+  Widget _buildMonthArrow({
+    required IconData icon,
+    required Color accent,
+    required Color secondaryText,
+    required bool enabled,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: enabled ? onTap : null,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: EdgeInsets.all(2.w),
+        decoration: BoxDecoration(
+          color: enabled ? accent.withOpacity(0.1) : Colors.transparent,
+          borderRadius: BorderRadius.circular(6.r),
+        ),
+        child: Icon(
+          icon,
+          size: 18.sp,
+          color: enabled ? accent : secondaryText.withOpacity(0.3),
+        ),
       ),
     );
   }
