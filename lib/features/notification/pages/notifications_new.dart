@@ -60,6 +60,7 @@ class _NotificationsPageState extends State<NotificationsPage>
 
   Future<void> _markOneAsRead(NotificationModel n) async {
     if (n.isRead) return;
+    // Optimistically flip to read…
     setState(() {
       _notifications = _notifications
           .map((item) => item.id == n.id
@@ -69,10 +70,17 @@ class _NotificationsPageState extends State<NotificationsPage>
     });
     final numericId = int.tryParse(n.id);
     if (numericId == null) return;
-    try {
-      await _api.markNotificationAsRead(numericId);
-    } catch (_) {
-      // best-effort: UI already reflects read state
+
+    // …then persist. markNotificationAsRead returns null on failure (it does
+    // not throw), so revert the UI if the server didn't accept the change.
+    final result = await _api.markNotificationAsRead(numericId);
+    if (result == null && mounted) {
+      setState(() {
+        _notifications = _notifications
+            .map((item) =>
+                item.id == n.id ? item.copyWith(isRead: false) : item)
+            .toList();
+      });
     }
   }
 
