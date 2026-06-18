@@ -250,7 +250,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                 SizedBox(height: 2.h),
                 Text(
                   unreadCount > 0
-                      ? '$unreadCount unread message${unreadCount == 1 ? '' : 's'}'
+                      ? AppLocalizations.of(context).unreadMessages(unreadCount)
                       : AppLocalizations.of(context).notificationsSubtitle,
                   style: TextStyle(
                     fontSize: 12.sp,
@@ -348,6 +348,18 @@ class _NotificationsPageState extends State<NotificationsPage>
     );
   }
 
+  String _filterLabel(String key) {
+    final l10n = AppLocalizations.of(context);
+    switch (key) {
+      case 'Unread':
+        return l10n.filterUnread;
+      case 'Announcement':
+        return l10n.filterAnnouncement;
+      default:
+        return l10n.filterAll;
+    }
+  }
+
   Widget _buildFilters(bool isDark, int unreadCount, int announcementCount) {
     final filters = ['All', 'Unread', 'Announcement'];
 
@@ -411,7 +423,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        f,
+                        _filterLabel(f),
                         style: TextStyle(
                           fontSize: 13.sp,
                           fontWeight: FontWeight.w700,
@@ -429,7 +441,7 @@ class _NotificationsPageState extends State<NotificationsPage>
                           decoration: BoxDecoration(
                             color: selected
                                 ? Colors.white.withOpacity(0.3)
-                                : const Color(0xFFEF4444),
+                                : const Color(0xFF6366F1),
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                           child: Text(

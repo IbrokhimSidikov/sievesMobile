@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:shimmer/shimmer.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
@@ -131,6 +134,8 @@ class _TaskDetailViewState extends State<_TaskDetailView> {
                 SizedBox(height: 16.h),
                 _buildDescriptionSection(theme, task),
               ],
+              SizedBox(height: 16.h),
+              _buildImagesSection(context, state),
               SizedBox(height: 20.h),
               _buildCommentsSection(theme, state.comments),
               SizedBox(height: 12.h),
@@ -428,6 +433,188 @@ class _TaskDetailViewState extends State<_TaskDetailView> {
     );
   }
 
+  Future<void> _pickAndUploadImages(BuildContext context) async {
+    final cubit = context.read<TaskDetailCubit>();
+    try {
+      final picker = ImagePicker();
+      final picked = await picker.pickMultiImage(imageQuality: 80);
+      if (picked.isEmpty) return;
+      final files = picked.map((x) => File(x.path)).toList();
+      await cubit.uploadImages(files);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not pick images'),
+          backgroundColor: Color(0xFFEF4444),
+        ),
+      );
+    }
+  }
+
+  Future<void> _confirmDeleteImage(
+    BuildContext context,
+    TaskImageModel image,
+  ) async {
+    final l = AppLocalizations.of(context);
+    final cubit = context.read<TaskDetailCubit>();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(l.deleteImage),
+        content: Text(l.deleteImageConfirm),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: Text(l.cancelButton),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFEF4444),
+            ),
+            onPressed: () => Navigator.of(ctx).pop(true),
+            child: Text(l.deleteImage.replaceAll('?', '')),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true) {
+      await cubit.deleteImage(image.id);
+    }
+  }
+
+  void _openImageViewer(BuildContext context, String url) {
+    showDialog<void>(
+      context: context,
+      barrierColor: Colors.black87,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        insetPadding: EdgeInsets.all(12.w),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            InteractiveViewer(
+              minScale: 0.5,
+              maxScale: 4,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12.r),
+                child: Image.network(
+                  url,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white54,
+                    size: 48.sp,
+                  ),
+                ),
+              ),
+            ),
+            Positioned(
+              top: 8.h,
+              right: 8.w,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () => Navigator.of(ctx).pop(),
+                  child: Padding(
+                    padding: EdgeInsets.all(6.sp),
+                    child: Icon(Icons.close, color: Colors.white, size: 20.sp),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImagesSection(BuildContext context, TaskDetailLoaded state) {
+    final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
+    final images = state.task.images;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(14.sp),
+      decoration: _cardDecoration(theme),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.image_outlined,
+                size: 16.sp,
+                color: theme.colorScheme.onSurface.withOpacity(0.7),
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                '${l.attachments} (${images.length})',
+                style: TextStyle(
+                  fontSize: 13.sp,
+                  fontWeight: FontWeight.w700,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              const Spacer(),
+              if (state.isUploadingImage)
+                SizedBox(
+                  width: 16.w,
+                  height: 16.w,
+                  child: const CircularProgressIndicator(strokeWidth: 2),
+                )
+              else
+                TextButton.icon(
+                  onPressed: () => _pickAndUploadImages(context),
+                  icon: Icon(Icons.add_photo_alternate_outlined, size: 16.sp),
+                  label: Text(
+                    l.addPhoto,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF6366F1),
+                    padding: EdgeInsets.symmetric(horizontal: 8.w),
+                    minimumSize: Size.zero,
+                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  ),
+                ),
+            ],
+          ),
+          SizedBox(height: 10.h),
+          if (images.isEmpty)
+            Padding(
+              padding: EdgeInsets.symmetric(vertical: 8.h),
+              child: Text(
+                l.noAttachments,
+                style: TextStyle(
+                  fontSize: 12.sp,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 8.w,
+              runSpacing: 8.h,
+              children: images
+                  .map((img) => _TaskImageThumb(
+                        image: img,
+                        onTap: () => _openImageViewer(context, img.url),
+                        onDelete: () => _confirmDeleteImage(context, img),
+                      ))
+                  .toList(),
+            ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCommentsSection(
     ThemeData theme,
     List<TaskCommentModel> comments,
@@ -646,6 +833,82 @@ class _MetaRow extends StatelessWidget {
             fontSize: 13.sp,
             fontWeight: FontWeight.w600,
             color: color ?? theme.colorScheme.onSurface,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _TaskImageThumb extends StatelessWidget {
+  final TaskImageModel image;
+  final VoidCallback onTap;
+  final VoidCallback onDelete;
+
+  const _TaskImageThumb({
+    required this.image,
+    required this.onTap,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final size = 84.w;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        GestureDetector(
+          onTap: onTap,
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(10.r),
+            child: Image.network(
+              image.url,
+              width: size,
+              height: size,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, progress) {
+                if (progress == null) return child;
+                return Container(
+                  width: size,
+                  height: size,
+                  color: theme.dividerColor.withOpacity(0.2),
+                  alignment: Alignment.center,
+                  child: const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                );
+              },
+              errorBuilder: (_, __, ___) => Container(
+                width: size,
+                height: size,
+                color: theme.dividerColor.withOpacity(0.2),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  size: 22.sp,
+                  color: theme.colorScheme.onSurface.withOpacity(0.4),
+                ),
+              ),
+            ),
+          ),
+        ),
+        Positioned(
+          top: -6.h,
+          right: -6.w,
+          child: GestureDetector(
+            onTap: onDelete,
+            child: Container(
+              padding: EdgeInsets.all(2.sp),
+              decoration: BoxDecoration(
+                color: const Color(0xFFEF4444),
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.scaffoldBackgroundColor, width: 1.5),
+              ),
+              child: Icon(Icons.close, size: 13.sp, color: Colors.white),
+            ),
           ),
         ),
       ],

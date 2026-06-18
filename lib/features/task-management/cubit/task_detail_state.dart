@@ -18,12 +18,14 @@ class TaskDetailLoaded extends TaskDetailState {
   final List<TaskCommentModel> comments;
   final bool isUpdatingStatus;
   final bool isSendingComment;
+  final bool isUploadingImage;
 
   const TaskDetailLoaded({
     required this.task,
     required this.comments,
     this.isUpdatingStatus = false,
     this.isSendingComment = false,
+    this.isUploadingImage = false,
   });
 
   TaskDetailLoaded copyWith({
@@ -31,12 +33,14 @@ class TaskDetailLoaded extends TaskDetailState {
     List<TaskCommentModel>? comments,
     bool? isUpdatingStatus,
     bool? isSendingComment,
+    bool? isUploadingImage,
   }) {
     return TaskDetailLoaded(
       task: task ?? this.task,
       comments: comments ?? this.comments,
       isUpdatingStatus: isUpdatingStatus ?? this.isUpdatingStatus,
       isSendingComment: isSendingComment ?? this.isSendingComment,
+      isUploadingImage: isUploadingImage ?? this.isUploadingImage,
     );
   }
 }

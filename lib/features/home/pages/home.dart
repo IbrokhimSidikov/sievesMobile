@@ -97,6 +97,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           const Color(0xFF9E8272),
           '/breakOrder',
         ),
+      if (_authManager.hasStopwatchAccess)
+        _ModuleItem(
+          localizations.tasks,
+          Icons.task_alt,
+          const Color(0xFF6E5E4E),
+          '/taskManagement',
+        ),
       if (_authManager.hasBreakAccess)
         _ModuleItem(
           localizations.faceVerification,
@@ -111,20 +118,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           const Color(0xFF7A6555),
           '/employeeProductivity',
         ),
-      if (_authManager.hasStopwatchAccess)
-      _ModuleItem(
-        localizations.tasks,
-        Icons.task_alt,
-        const Color(0xFF6E5E4E),
-        '/taskManagement',
-      ),
       _ModuleItem(
         localizations.checklist,
         Icons.checklist_outlined,
         const Color(0xFF887060),
         '/checklist',
       ),
-
     ];
     return allModules;
   }
@@ -683,8 +682,11 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   Widget _buildUserAvatar() {
     final identity = _authManager.currentIdentity;
     final userPhoto = identity?.employee?.individual?.photoUrl;
-    final firstUserStories = _userStories.isNotEmpty ? _userStories.first : null;
-    final hasStories = firstUserStories != null && firstUserStories.stories.isNotEmpty;
+    final firstUserStories = _userStories.isNotEmpty
+        ? _userStories.first
+        : null;
+    final hasStories =
+        firstUserStories != null && firstUserStories.stories.isNotEmpty;
     final stories = hasStories ? firstUserStories.stories : <Story>[];
 
     // Build a list of viewed flags per story segment
@@ -719,7 +721,9 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           child: Center(
             child: CircleAvatar(
               radius: hasStories ? 27.r : 30.r,
-              backgroundImage: userPhoto != null ? NetworkImage(userPhoto) : null,
+              backgroundImage: userPhoto != null
+                  ? NetworkImage(userPhoto)
+                  : null,
               backgroundColor: Colors.grey.shade300,
               child: userPhoto == null
                   ? Icon(
@@ -1289,4 +1293,3 @@ class _StoryRingPainter extends CustomPainter {
       oldDelegate.viewedFlags != viewedFlags ||
       oldDelegate.strokeWidth != strokeWidth;
 }
-

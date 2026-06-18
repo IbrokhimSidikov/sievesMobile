@@ -1,5 +1,7 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../models/task_comment_model.dart';
 import '../models/task_model.dart';
@@ -146,6 +148,57 @@ class TaskApi {
       );
     }
     return TaskModel.fromJson(json.decode(res.body) as Map<String, dynamic>);
+  }
+
+  /// Upload one or more images to a task. Returns the refreshed task
+  /// (including the newly attached images).
+  Future<TaskModel> uploadTaskImages(int taskId, List<File> files) async {
+    final token = await _authManager.authService.getAccessToken();
+    if (token == null) {
+      throw TaskApiException('Not authenticated');
+    }
+    final uri = Uri.parse('$_baseUrl/task/$taskId/images');
+    final request = http.MultipartRequest('POST', uri);
+    request.headers['Authorization'] = 'Bearer $token';
+
+    for (final file in files) {
+      final ext = file.path.split('.').last.toLowerCase();
+      final subtype = ext == 'png'
+          ? 'png'
+          : ext == 'webp'
+              ? 'webp'
+              : ext == 'gif'
+                  ? 'gif'
+                  : 'jpeg';
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'files',
+          file.path,
+          contentType: MediaType('image', subtype),
+        ),
+      );
+    }
+
+    final streamed = await request.send();
+    final res = await http.Response.fromStream(streamed);
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw TaskApiException(
+        'Failed to upload images',
+        statusCode: res.statusCode,
+      );
+    }
+    return TaskModel.fromJson(json.decode(res.body) as Map<String, dynamic>);
+  }
+
+  Future<void> deleteTaskImage(int imageId) async {
+    final url = Uri.parse('$_baseUrl/task/image/$imageId');
+    final res = await http.delete(url, headers: await _authHeaders());
+    if (res.statusCode != 200 && res.statusCode != 201) {
+      throw TaskApiException(
+        'Failed to delete image',
+        statusCode: res.statusCode,
+      );
+    }
   }
 
   Future<List<TaskSpaceRef>> fetchSpaces({int? departmentId}) async {

@@ -105,6 +105,10 @@ class AppLocalizations {
       'markAllRead': 'Mark all read',
       'noNotifications': 'No notifications yet',
       'noNotSubTitle': 'You\'re all caught up!',
+      'filterAll': 'All',
+      'filterUnread': 'Unread',
+      'filterAnnouncement': 'Announcement',
+      'unreadMessages': '{count} unread messages',
 
       //Update required
       'updateRequired': 'Update Required',
@@ -403,6 +407,11 @@ class AppLocalizations {
       'comments': 'Comments',
       'noComments': 'No comments yet',
       'addCommentHint': 'Add a comment...',
+      'attachments': 'Attachments',
+      'addPhoto': 'Add',
+      'noAttachments': 'No images attached',
+      'deleteImage': 'Delete image?',
+      'deleteImageConfirm': 'This image will be removed from the task.',
       'changeStatusTitle': 'Change status?',
       'changeStatusBody': 'Move this task from {from} to {to}?',
       'confirm': 'Confirm',
@@ -524,6 +533,10 @@ class AppLocalizations {
       'markAllRead': 'O\'qish',
       'noNotifications': 'Hozirgacha bildirishnoma yo‘q',
       'noNotSubTitle': 'Siz hamma narsani ko‘rib chiqdiz!',
+      'filterAll': 'Hammasi',
+      'filterUnread': 'O‘qilmagan',
+      'filterAnnouncement': 'E‘lonlar',
+      'unreadMessages': '{count} ta o‘qilmagan xabar',
 
       //Update required
       'updateRequired': 'Yangilash talab qilinadi',
@@ -826,6 +839,11 @@ class AppLocalizations {
       'comments': 'Izohlar',
       'noComments': 'Hali izohlar yo\'q',
       'addCommentHint': 'Izoh yozing...',
+      'attachments': 'Ilovalar',
+      'addPhoto': 'Qo\'shish',
+      'noAttachments': 'Rasm biriktirilmagan',
+      'deleteImage': 'Rasm o\'chirilsinmi?',
+      'deleteImageConfirm': 'Bu rasm vazifadan o\'chiriladi.',
       'changeStatusTitle': 'Holatni o\'zgartirasizmi?',
       'changeStatusBody': 'Vazifani {from} dan {to} ga o\'tkazasizmi?',
       'confirm': 'Tasdiqlash',
@@ -975,6 +993,10 @@ class AppLocalizations {
       'markAllRead': 'Отметить всё',
       'noNotifications': 'Пока нет уведомлений',
       'noNotSubTitle': 'Вы всё просмотрели!',
+      'filterAll': 'Все',
+      'filterUnread': 'Непрочитанные',
+      'filterAnnouncement': 'Объявления',
+      'unreadMessages': 'непрочитанных сообщений: {count}',
 
       //Update required
       'updateRequired': 'Требуется обновление',
@@ -1260,6 +1282,11 @@ class AppLocalizations {
       'comments': 'Комментарии',
       'noComments': 'Пока нет комментариев',
       'addCommentHint': 'Добавьте комментарий...',
+      'attachments': 'Вложения',
+      'addPhoto': 'Добавить',
+      'noAttachments': 'Нет прикреплённых изображений',
+      'deleteImage': 'Удалить изображение?',
+      'deleteImageConfirm': 'Это изображение будет удалено из задачи.',
       'changeStatusTitle': 'Изменить статус?',
       'changeStatusBody': 'Перевести задачу из «{from}» в «{to}»?',
       'confirm': 'Подтвердить',
@@ -1342,6 +1369,11 @@ class AppLocalizations {
   String get comments => translate('comments');
   String get noComments => translate('noComments');
   String get addCommentHint => translate('addCommentHint');
+  String get attachments => translate('attachments');
+  String get addPhoto => translate('addPhoto');
+  String get noAttachments => translate('noAttachments');
+  String get deleteImage => translate('deleteImage');
+  String get deleteImageConfirm => translate('deleteImageConfirm');
   String get changeStatusTitle => translate('changeStatusTitle');
   String changeStatusBody(String from, String to) => translate('changeStatusBody')
       .replaceAll('{from}', from)
@@ -1432,6 +1464,15 @@ class AppLocalizations {
   String get markAllRead => translate('markAllRead');
   String get noNotifications => translate('noNotifications');
   String get noNotSubTitle => translate('noNotSubTitle');
+  String get filterAll => translate('filterAll');
+  String get filterUnread => translate('filterUnread');
+  String get filterAnnouncement => translate('filterAnnouncement');
+  String unreadMessages(int count) {
+    if (locale.languageCode == 'en') {
+      return '$count unread message${count == 1 ? '' : 's'}';
+    }
+    return translate('unreadMessages').replaceAll('{count}', count.toString());
+  }
 
   //Update required
   String get updateRequired => translate('updateRequired');

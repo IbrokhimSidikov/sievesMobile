@@ -215,6 +215,20 @@ class TaskListRef {
   }
 }
 
+class TaskImageModel {
+  final int id;
+  final String url;
+
+  const TaskImageModel({required this.id, required this.url});
+
+  factory TaskImageModel.fromJson(Map<String, dynamic> json) {
+    return TaskImageModel(
+      id: json['id'] as int,
+      url: (json['url'] ?? '') as String,
+    );
+  }
+}
+
 class TaskModel {
   final int id;
   final int listId;
@@ -230,6 +244,7 @@ class TaskModel {
   final TaskListRef? list;
   final int subtaskCount;
   final int commentCount;
+  final List<TaskImageModel> images;
 
   const TaskModel({
     required this.id,
@@ -246,6 +261,7 @@ class TaskModel {
     this.list,
     this.subtaskCount = 0,
     this.commentCount = 0,
+    this.images = const [],
   });
 
   factory TaskModel.fromJson(Map<String, dynamic> json) {
@@ -273,10 +289,20 @@ class TaskModel {
       commentCount: json['comments'] is List
           ? (json['comments'] as List).length
           : 0,
+      images: json['images'] is List
+          ? (json['images'] as List)
+              .whereType<Map<String, dynamic>>()
+              .map(TaskImageModel.fromJson)
+              .toList()
+          : const [],
     );
   }
 
-  TaskModel copyWith({TaskStatus? status}) => TaskModel(
+  TaskModel copyWith({
+    TaskStatus? status,
+    List<TaskImageModel>? images,
+  }) =>
+      TaskModel(
         id: id,
         listId: listId,
         parentTaskId: parentTaskId,
@@ -291,5 +317,6 @@ class TaskModel {
         list: list,
         subtaskCount: subtaskCount,
         commentCount: commentCount,
+        images: images ?? this.images,
       );
 }
