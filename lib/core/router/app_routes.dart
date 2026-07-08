@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sieves_mob/features/exam/pages/exam_page.dart';
 import 'package:sieves_mob/features/home/pages/home.dart';
 
 import '../../features/attendance/pages/attendance.dart';
@@ -68,6 +69,7 @@ class AppRoutes {
   static const String taskManagement = '/taskManagement';
   static const String taskDetail = '/taskDetail';
   static const String taskCreate = '/taskCreate';
+  static const String examPage = '/examPage';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -280,6 +282,11 @@ class AppRoutes {
           path: '/taskCreate',
           name: taskCreate,
           builder: (context, state) => const CreateTaskPage(),
+        ),
+        GoRoute(
+          path: '/examPage',
+          name: examPage,
+          builder: (context, state) => const ExamPage(),
         ),
       ],
     );

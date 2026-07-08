@@ -1533,6 +1533,74 @@ class ApiService {
     }
   }
 
+  // ==================== EXAM ====================
+
+  static const String _examBase = 'https://api.v3.sievesapp.com/exam';
+
+  /// Exams assigned to the current employee, with derived state.
+  Future<List<Map<String, dynamic>>> fetchMyExams() async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_examBase/me/list');
+    final response = await _httpClient.get(uri, headers: headers);
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body) as List;
+      return data.cast<Map<String, dynamic>>();
+    }
+    throw Exception('Failed to load exams: HTTP ${response.statusCode}');
+  }
+
+  /// Start (or resume) an exam attempt. Throws with the server message when the
+  /// exam has already been taken or the employee is not assigned.
+  Future<Map<String, dynamic>> startExam(int examId) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_examBase/$examId/start');
+    final response = await _httpClient.post(uri, headers: headers);
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    String message = 'Failed to start exam: HTTP ${response.statusCode}';
+    try {
+      final body = jsonDecode(response.body);
+      if (body is Map && body['message'] != null) {
+        message = body['message'].toString();
+      }
+    } catch (_) {}
+    throw Exception(message);
+  }
+
+  /// Submit answers and finalize. Also used for termination auto-submit, in
+  /// which case [reason] is set (app_backgrounded, user_exit, time_expired).
+  Future<Map<String, dynamic>> submitExam({
+    required int attemptId,
+    required List<Map<String, dynamic>> answers,
+    String? reason,
+  }) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_examBase/attempt/$attemptId/submit');
+    final body = <String, dynamic>{'answers': answers};
+    if (reason != null) body['termination_reason'] = reason;
+    final response = await _httpClient.post(
+      uri,
+      headers: headers,
+      body: jsonEncode(body),
+    );
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to submit exam: HTTP ${response.statusCode}');
+  }
+
+  /// Result summary for an attempt (score + pass/fail only).
+  Future<Map<String, dynamic>> fetchExamResult(int attemptId) async {
+    final headers = await _getHeaders();
+    final uri = Uri.parse('$_examBase/attempt/$attemptId/result');
+    final response = await _httpClient.get(uri, headers: headers);
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    }
+    throw Exception('Failed to load exam result: HTTP ${response.statusCode}');
+  }
+
   Future<TestSessionResult> fetchSessionResult(int sessionId) async {
     try {
       final url =

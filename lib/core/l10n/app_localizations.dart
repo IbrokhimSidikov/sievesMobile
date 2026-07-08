@@ -436,7 +436,45 @@ class AppLocalizations {
       'noEmployees': 'No employees found',
       'taskCreated': 'Task created',
       'searchEmployees': 'Search employees…',
-      'pickDueDate': 'Pick due date'
+      'pickDueDate': 'Pick due date',
+      'examPageTitle':'Exam',
+      'examPageSubtitle':'Pass an exam',
+      'examListTitle': 'Exams',
+      'examListSubtitle': 'Your assigned exams',
+      'examNoAssigned': 'No exams assigned',
+      'examNoAssignedDesc': 'You have no exams to take right now',
+      'examStateAvailable': 'Available',
+      'examStateInProgress': 'In progress',
+      'examStateCompleted': 'Completed',
+      'examStart': 'Start Exam',
+      'examRulesTitle': 'Before you start',
+      'examRule1':
+          'You cannot leave this screen. Going back or switching apps will end the exam.',
+      'examRule2': 'You have only one attempt.',
+      'examRule3': 'The exam is submitted automatically when time runs out.',
+      'examDuration': 'Duration',
+      'examPassingScore': 'Passing score',
+      'examQuestionsCount': 'Questions',
+      'examMinutesShort': 'min',
+      'examNoTimeLimit': 'No time limit',
+      'examStartConfirmTitle': 'Start the exam?',
+      'examStartConfirmBody':
+          'Once started, the exam cannot be paused and counts as your only attempt.',
+      'examEndConfirmTitle': 'End exam?',
+      'examEndConfirmBody':
+          'Your attempt will be submitted as-is and cannot be retaken.',
+      'examTimeRemaining': 'Time left',
+      'examResultPassed': 'Passed',
+      'examResultFailed': 'Failed',
+      'examYourScore': 'Your score',
+      'examCorrect': 'Correct answers',
+      'examBackToExams': 'Back to exams',
+      'examAlreadyTaken': 'Already taken',
+      'examCouldNotStart': 'Could not start the exam',
+      'examSubmit': 'Submit Exam',
+      'examSelectAllThatApply': 'Select all that apply',
+      'examSelectOne': 'Select one answer',
+      'examViewResult': 'View result'
     },
     'uz': {
       'title': 'Sieves',
@@ -868,7 +906,45 @@ class AppLocalizations {
       'noEmployees': 'Xodimlar topilmadi',
       'taskCreated': 'Vazifa yaratildi',
       'searchEmployees': 'Xodimlarni qidirish…',
-      'pickDueDate': 'Muddatni tanlash'
+      'pickDueDate': 'Muddatni tanlash',
+      'examPageTitle': 'Imtihon',
+      'examPageSubtitle': 'Imtihondan o\'ting',
+      'examListTitle': 'Imtihonlar',
+      'examListSubtitle': 'Sizga tayinlangan imtihonlar',
+      'examNoAssigned': 'Imtihonlar tayinlanmagan',
+      'examNoAssignedDesc': 'Hozircha topshiradigan imtihonlaringiz yo\'q',
+      'examStateAvailable': 'Mavjud',
+      'examStateInProgress': 'Jarayonda',
+      'examStateCompleted': 'Tugatilgan',
+      'examStart': 'Imtihonni boshlash',
+      'examRulesTitle': 'Boshlashdan oldin',
+      'examRule1':
+          'Ushbu ekrandan chiqa olmaysiz. Orqaga qaytish yoki ilovani almashtirish imtihonni tugatadi.',
+      'examRule2': 'Sizda faqat bitta urinish bor.',
+      'examRule3': 'Vaqt tugagach imtihon avtomatik yuboriladi.',
+      'examDuration': 'Davomiyligi',
+      'examPassingScore': 'O\'tish balli',
+      'examQuestionsCount': 'Savollar',
+      'examMinutesShort': 'daq',
+      'examNoTimeLimit': 'Vaqt cheklovi yo\'q',
+      'examStartConfirmTitle': 'Imtihonni boshlaysizmi?',
+      'examStartConfirmBody':
+          'Boshlangandan so\'ng imtihonni to\'xtatib bo\'lmaydi va yagona urinish hisoblanadi.',
+      'examEndConfirmTitle': 'Imtihonni tugatasizmi?',
+      'examEndConfirmBody':
+          'Urinishingiz hozirgi holatda yuboriladi va qayta topshirib bo\'lmaydi.',
+      'examTimeRemaining': 'Qolgan vaqt',
+      'examResultPassed': 'O\'tdingiz',
+      'examResultFailed': 'O\'ta olmadingiz',
+      'examYourScore': 'Sizning natijangiz',
+      'examCorrect': 'To\'g\'ri javoblar',
+      'examBackToExams': 'Imtihonlarga qaytish',
+      'examAlreadyTaken': 'Allaqachon topshirilgan',
+      'examCouldNotStart': 'Imtihonni boshlab bo\'lmadi',
+      'examSubmit': 'Imtihonni yuborish',
+      'examSelectAllThatApply': 'Barcha to\'g\'ri javoblarni tanlang',
+      'examSelectOne': 'Bitta javobni tanlang',
+      'examViewResult': 'Natijani ko\'rish'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1311,7 +1387,45 @@ class AppLocalizations {
       'noEmployees': 'Сотрудники не найдены',
       'taskCreated': 'Задача создана',
       'searchEmployees': 'Поиск сотрудников…',
-      'pickDueDate': 'Выберите срок'
+      'pickDueDate': 'Выберите срок',
+      'examPageTitle': 'Экзамен',
+      'examPageSubtitle': 'Пройдите экзамен',
+      'examListTitle': 'Экзамены',
+      'examListSubtitle': 'Назначенные вам экзамены',
+      'examNoAssigned': 'Нет назначенных экзаменов',
+      'examNoAssignedDesc': 'Сейчас у вас нет экзаменов для прохождения',
+      'examStateAvailable': 'Доступен',
+      'examStateInProgress': 'В процессе',
+      'examStateCompleted': 'Завершён',
+      'examStart': 'Начать экзамен',
+      'examRulesTitle': 'Перед началом',
+      'examRule1':
+          'Вы не можете покинуть этот экран. Возврат назад или сворачивание приложения завершит экзамен.',
+      'examRule2': 'У вас только одна попытка.',
+      'examRule3': 'Экзамен отправляется автоматически по истечении времени.',
+      'examDuration': 'Длительность',
+      'examPassingScore': 'Проходной балл',
+      'examQuestionsCount': 'Вопросов',
+      'examMinutesShort': 'мин',
+      'examNoTimeLimit': 'Без ограничения времени',
+      'examStartConfirmTitle': 'Начать экзамен?',
+      'examStartConfirmBody':
+          'После начала экзамен нельзя приостановить, и он считается вашей единственной попыткой.',
+      'examEndConfirmTitle': 'Завершить экзамен?',
+      'examEndConfirmBody':
+          'Ваша попытка будет отправлена как есть, и её нельзя пересдать.',
+      'examTimeRemaining': 'Осталось',
+      'examResultPassed': 'Пройден',
+      'examResultFailed': 'Не пройден',
+      'examYourScore': 'Ваш результат',
+      'examCorrect': 'Правильных ответов',
+      'examBackToExams': 'К списку экзаменов',
+      'examAlreadyTaken': 'Уже пройден',
+      'examCouldNotStart': 'Не удалось начать экзамен',
+      'examSubmit': 'Отправить экзамен',
+      'examSelectAllThatApply': 'Выберите все подходящие варианты',
+      'examSelectOne': 'Выберите один ответ',
+      'examViewResult': 'Посмотреть результат'
     },
   };
 
@@ -1720,4 +1834,39 @@ class AppLocalizations {
   String get noLeaderboardDesc => translate('noLeaderboardDesc');
   // String get employee => translate('employee');
   String get registrationNumber => translate('registrationNumber');
+  String get examPageTitle => translate('examPageTitle');
+  String get examPageSubtitle => translate('examPageSubtitle');
+  String get examListTitle => translate('examListTitle');
+  String get examListSubtitle => translate('examListSubtitle');
+  String get examNoAssigned => translate('examNoAssigned');
+  String get examNoAssignedDesc => translate('examNoAssignedDesc');
+  String get examStateAvailable => translate('examStateAvailable');
+  String get examStateInProgress => translate('examStateInProgress');
+  String get examStateCompleted => translate('examStateCompleted');
+  String get examStart => translate('examStart');
+  String get examRulesTitle => translate('examRulesTitle');
+  String get examRule1 => translate('examRule1');
+  String get examRule2 => translate('examRule2');
+  String get examRule3 => translate('examRule3');
+  String get examDuration => translate('examDuration');
+  String get examPassingScore => translate('examPassingScore');
+  String get examQuestionsCount => translate('examQuestionsCount');
+  String get examMinutesShort => translate('examMinutesShort');
+  String get examNoTimeLimit => translate('examNoTimeLimit');
+  String get examStartConfirmTitle => translate('examStartConfirmTitle');
+  String get examStartConfirmBody => translate('examStartConfirmBody');
+  String get examEndConfirmTitle => translate('examEndConfirmTitle');
+  String get examEndConfirmBody => translate('examEndConfirmBody');
+  String get examTimeRemaining => translate('examTimeRemaining');
+  String get examResultPassed => translate('examResultPassed');
+  String get examResultFailed => translate('examResultFailed');
+  String get examYourScore => translate('examYourScore');
+  String get examCorrect => translate('examCorrect');
+  String get examBackToExams => translate('examBackToExams');
+  String get examAlreadyTaken => translate('examAlreadyTaken');
+  String get examCouldNotStart => translate('examCouldNotStart');
+  String get examSubmit => translate('examSubmit');
+  String get examSelectAllThatApply => translate('examSelectAllThatApply');
+  String get examSelectOne => translate('examSelectOne');
+  String get examViewResult => translate('examViewResult');
 }
