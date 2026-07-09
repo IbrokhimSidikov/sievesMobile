@@ -172,6 +172,8 @@ class ExamResult {
   final int correctAnswers;
   final int totalQuestions;
   final int passingScore;
+  final int totalPoints;
+  final int earnedPoints;
   final bool passed;
   final String? terminationReason;
 
@@ -183,6 +185,8 @@ class ExamResult {
     required this.correctAnswers,
     required this.totalQuestions,
     required this.passingScore,
+    required this.totalPoints,
+    required this.earnedPoints,
     required this.passed,
     this.terminationReason,
   });
@@ -195,6 +199,8 @@ class ExamResult {
         correctAnswers: _asInt(json['correct_answers']) ?? 0,
         totalQuestions: _asInt(json['total_questions']) ?? 0,
         passingScore: _asInt(json['passing_score']) ?? 0,
+        totalPoints: _asInt(json['total_points']) ?? 0,
+        earnedPoints: _asInt(json['earned_points']) ?? 0,
         passed: json['passed'] as bool? ?? false,
         terminationReason: json['termination_reason'] as String?,
       );

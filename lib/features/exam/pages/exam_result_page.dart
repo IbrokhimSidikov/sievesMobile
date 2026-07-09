@@ -154,13 +154,15 @@ class _ExamResultPageState extends State<ExamResultPage> {
                           '${result.correctAnswers}/${result.totalQuestions}',
                           _l10n.examCorrect,
                         ),
-                        Container(
-                          width: 1,
-                          height: 40.h,
-                          color: isDark
-                              ? const Color(0xFF374151)
-                              : AppColors.cxPlatinumGray,
-                        ),
+                        _divider(isDark),
+                        if (result.totalPoints > 0) ...[
+                          _stat(
+                            isDark,
+                            '${result.earnedPoints}/${result.totalPoints}',
+                            _l10n.examPoints,
+                          ),
+                          _divider(isDark),
+                        ],
                         _stat(
                           isDark,
                           '${result.passingScore}%',
@@ -197,6 +199,14 @@ class _ExamResultPageState extends State<ExamResultPage> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _divider(bool isDark) {
+    return Container(
+      width: 1,
+      height: 40.h,
+      color: isDark ? const Color(0xFF374151) : AppColors.cxPlatinumGray,
     );
   }
 

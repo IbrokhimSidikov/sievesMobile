@@ -468,6 +468,7 @@ class AppLocalizations {
       'examResultFailed': 'Failed',
       'examYourScore': 'Your score',
       'examCorrect': 'Correct answers',
+      'examPoints': 'Points',
       'examBackToExams': 'Back to exams',
       'examAlreadyTaken': 'Already taken',
       'examCouldNotStart': 'Could not start the exam',
@@ -938,6 +939,7 @@ class AppLocalizations {
       'examResultFailed': 'O\'ta olmadingiz',
       'examYourScore': 'Sizning natijangiz',
       'examCorrect': 'To\'g\'ri javoblar',
+      'examPoints': 'Ballar',
       'examBackToExams': 'Imtihonlarga qaytish',
       'examAlreadyTaken': 'Allaqachon topshirilgan',
       'examCouldNotStart': 'Imtihonni boshlab bo\'lmadi',
@@ -1419,6 +1421,7 @@ class AppLocalizations {
       'examResultFailed': 'Не пройден',
       'examYourScore': 'Ваш результат',
       'examCorrect': 'Правильных ответов',
+      'examPoints': 'Баллы',
       'examBackToExams': 'К списку экзаменов',
       'examAlreadyTaken': 'Уже пройден',
       'examCouldNotStart': 'Не удалось начать экзамен',
@@ -1862,6 +1865,7 @@ class AppLocalizations {
   String get examResultFailed => translate('examResultFailed');
   String get examYourScore => translate('examYourScore');
   String get examCorrect => translate('examCorrect');
+  String get examPoints => translate('examPoints');
   String get examBackToExams => translate('examBackToExams');
   String get examAlreadyTaken => translate('examAlreadyTaken');
   String get examCouldNotStart => translate('examCouldNotStart');
