@@ -103,6 +103,7 @@ class NotificationModel {
     if (t == 'task_comment') return Icons.mode_comment_rounded;
     if (t == 'task_status_changed') return Icons.published_with_changes_rounded;
     if (t.startsWith('task_')) return Icons.task_alt_rounded;
+    if (t.startsWith('exam')) return Icons.quiz_rounded;
     switch (t) {
       case 'announcement':
         return Icons.campaign_rounded;
@@ -127,6 +128,7 @@ class NotificationModel {
   Color get colorFrom {
     final t = type.toLowerCase();
     if (t.startsWith('task_')) return const Color(0xFF14B8A6); // Teal
+    if (t.startsWith('exam')) return const Color(0xFF7C3AED); // Violet
     switch (t) {
       case 'announcement':
         return const Color(0xFF43C19F); // Brand teal
@@ -150,6 +152,7 @@ class NotificationModel {
   Color get colorTo {
     final t = type.toLowerCase();
     if (t.startsWith('task_')) return const Color(0xFF0EA5A4);
+    if (t.startsWith('exam')) return const Color(0xFF6D28D9); // Violet (darker)
     switch (t) {
       case 'announcement':
         return const Color(0xFF2E9B7E); // Brand teal (darker)

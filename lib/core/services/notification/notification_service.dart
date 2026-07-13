@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:go_router/go_router.dart';
 import '../../model/notification_model.dart';
 import '../../utils/global_keys.dart';
 import '../../../features/notification/widgets/announcement_dialog.dart';
@@ -268,6 +269,13 @@ class NotificationService {
       return;
     }
 
+    // Exam-assignment notifications deep-link to the exam list screen.
+    if ((data['type'] as String?) == 'exam_assigned' ||
+        data.containsKey('exam_id')) {
+      _navigateWhenReady('/examPage');
+      return;
+    }
+
     // Navigate to notifications page by default
     // Use a delay to ensure app is fully loaded
     Future.delayed(const Duration(milliseconds: 500), () {
@@ -294,6 +302,23 @@ class NotificationService {
       //   AppRoutes.router.go('/history');
       // }
     }
+  }
+
+  /// Navigate to [route] once the navigator/UI is ready.
+  ///
+  /// Retries because a tapped notification may have launched the app from a
+  /// terminated state (via [getInitialMessage]) before the router is mounted.
+  Future<void> _navigateWhenReady(String route) async {
+    for (int attempt = 0; attempt < 40; attempt++) {
+      final context = rootNavigatorKey.currentContext;
+      if (context != null) {
+        print('📱 Navigating to $route from notification tap');
+        context.push(route);
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    print('⚠️ Could not navigate to $route: navigator context unavailable');
   }
 
   /// Show the announcement pop-up once the navigator/UI is ready.

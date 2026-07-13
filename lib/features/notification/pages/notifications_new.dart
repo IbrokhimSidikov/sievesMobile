@@ -58,6 +58,12 @@ class _NotificationsPageState extends State<NotificationsPage>
     return int.tryParse(raw.toString());
   }
 
+  bool _isExamNotification(NotificationModel n) {
+    if (n.type.toLowerCase().startsWith('exam')) return true;
+    final data = n.data;
+    return data != null && (data['exam_id'] ?? data['examId']) != null;
+  }
+
   Future<void> _markOneAsRead(NotificationModel n) async {
     if (n.isRead) return;
     // Optimistically flip to read…
@@ -90,6 +96,10 @@ class _NotificationsPageState extends State<NotificationsPage>
     unawaited(_markOneAsRead(n));
     if (taskId != null && taskId > 0) {
       context.push('/taskDetail/$taskId');
+      return;
+    }
+    if (_isExamNotification(n)) {
+      context.push('/examPage');
     }
   }
 
