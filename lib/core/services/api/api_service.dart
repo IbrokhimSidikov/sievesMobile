@@ -15,6 +15,18 @@ import '../../../features/training-test/data/test_result_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
+/// Thrown when the break-order API rejects a request, carrying the
+/// human-readable reason returned by the server so it can be shown to the user.
+class BreakOrderException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  BreakOrderException(this.message, {this.statusCode});
+
+  @override
+  String toString() => 'BreakOrderException($statusCode): $message';
+}
+
 class ApiService {
   final String baseUrl = 'https://app.sievesapp.com/v1';
   final String baseUrl2 = 'https://api.v3.sievesapp.com/v1';
@@ -1148,8 +1160,24 @@ class ApiService {
         print(
           '❌ [API] Error creating order: ${response.statusCode} - ${response.body}',
         );
-        return null;
+        // Surface the real reason returned by the API
+        // (e.g. {"message":"You are not allowed to perform this action."})
+        String? serverMessage;
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map && decoded['message'] is String) {
+            serverMessage = (decoded['message'] as String).trim();
+          }
+        } catch (_) {}
+        throw BreakOrderException(
+          serverMessage?.isNotEmpty == true
+              ? serverMessage!
+              : 'Failed to create break order',
+          statusCode: response.statusCode,
+        );
       }
+    } on BreakOrderException {
+      rethrow;
     } catch (e) {
       print('❌ [API] Exception creating order: $e');
       return null;

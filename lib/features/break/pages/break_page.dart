@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/model/inventory_model.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../../../core/services/api/api_service.dart';
 import '../../../core/services/cache/menu_cache_service.dart';
 import '../../../core/services/face_verification/face_verification_service.dart';
 import '../widgets/face_capture_dialog.dart';
@@ -119,6 +120,7 @@ class _BreakPageState extends State<BreakPage>
     if (departmentId == 16 ||
         departmentId == 28 ||
         departmentId == 20 ||
+        departmentId == 17 ||
         departmentId == 69) {
       return true;
     }
@@ -1043,12 +1045,12 @@ class _BreakPageState extends State<BreakPage>
       print('');
 
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        // Prefer the real reason returned by the API (e.g. a 403
+        // "You are not allowed to perform this action.") over the generic text.
+        final displayMessage = e is BreakOrderException
+            ? e.message
+            : AppLocalizations.of(context).snackbarUnexpectedError;
+        _showOrderErrorDialog(displayMessage);
       }
     } finally {
       if (mounted) {
@@ -1057,6 +1059,108 @@ class _BreakPageState extends State<BreakPage>
         });
       }
     }
+  }
+
+  /// Compact, straightforward error dialog that shows a clear message
+  /// (mirrors the face-verification error dialog design).
+  void _showOrderErrorDialog(String message) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        const warningColor = Color(0xFFE67E00);
+        return Dialog(
+          backgroundColor: AppColors.cxPureWhite,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16.r),
+          ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 16.h),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 52.sp,
+                  color: warningColor,
+                ),
+                SizedBox(height: 14.h),
+                Text(
+                  AppLocalizations.of(context).error,
+                  style: TextStyle(
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.cxBlack,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 10.h),
+                Text(
+                  message,
+                  style: TextStyle(
+                    fontSize: 17.sp,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cxBlack,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                SizedBox(height: 22.h),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.of(context).pop(),
+                        style: OutlinedButton.styleFrom(
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          side: BorderSide(color: AppColors.cxSilverTint),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context).cancel,
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cxBlack,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          _handleOrderSubmission();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: warningColor,
+                          padding: EdgeInsets.symmetric(vertical: 14.h),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: Text(
+                          AppLocalizations.of(context).tryAgain,
+                          style: TextStyle(
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w800,
+                            color: AppColors.cxPureWhite,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override

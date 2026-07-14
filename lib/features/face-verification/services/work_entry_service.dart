@@ -9,6 +9,18 @@ import '../../../core/services/api/api_service.dart';
 import '../../../core/services/location/location_service.dart';
 import '../../../core/services/face_verification/face_verification_service.dart';
 
+/// Thrown when the work-entry API rejects a request, carrying the
+/// human-readable reason returned by the server so it can be shown to the user.
+class WorkEntryException implements Exception {
+  final String message;
+  final int? statusCode;
+
+  WorkEntryException(this.message, {this.statusCode});
+
+  @override
+  String toString() => 'WorkEntryException($statusCode): $message';
+}
+
 class WorkEntryService {
   static const String _baseUrl = 'https://app.sievesapp.com/v1';
   final AuthManager _authManager = AuthManager();
@@ -227,8 +239,24 @@ class WorkEntryService {
         return data;
       } else {
         print('❌ [WORK ENTRY] Failed to create work entry: ${response.statusCode}');
-        return null;
+        // Try to surface the real reason returned by the API
+        // (e.g. {"message":"You are not allowed to perform this action."})
+        String? serverMessage;
+        try {
+          final decoded = json.decode(response.body);
+          if (decoded is Map && decoded['message'] is String) {
+            serverMessage = (decoded['message'] as String).trim();
+          }
+        } catch (_) {}
+        throw WorkEntryException(
+          serverMessage?.isNotEmpty == true
+              ? serverMessage!
+              : 'Failed to create work entry',
+          statusCode: response.statusCode,
+        );
       }
+    } on WorkEntryException {
+      rethrow;
     } catch (e) {
       print('❌ [WORK ENTRY] Exception creating work entry: $e');
       return null;
@@ -403,19 +431,31 @@ class WorkEntryService {
       
       final timeLog = DateFormat('yyyy-MM-dd HH:mm:ss').format(adjustedTime);
       
-      final result = await createWorkEntry(
-        branchId: branchId,
-        photoId: photoId,
-        daySessionId: daySessionId,
-        employeeDepartmentId: departmentId,
-        employeeId: employeeId,
-        entryType: isOnline ? 'stop' : 'start',
-        timeLog: timeLog,
-        isOnline: isOnline,
-        mood: mood,
-        latitude: latitude,
-        longitude: longitude,
-      );
+      final Map<String, dynamic>? result;
+      try {
+        result = await createWorkEntry(
+          branchId: branchId,
+          photoId: photoId,
+          daySessionId: daySessionId,
+          employeeDepartmentId: departmentId,
+          employeeId: employeeId,
+          entryType: isOnline ? 'stop' : 'start',
+          timeLog: timeLog,
+          isOnline: isOnline,
+          mood: mood,
+          latitude: latitude,
+          longitude: longitude,
+        );
+      } on WorkEntryException catch (e) {
+        print('❌ [WORK ENTRY] Rejected by API: ${e.statusCode} - ${e.message}');
+        return {
+          'success': false,
+          'message': e.message,
+          'server_message': e.message,
+          'status_code': e.statusCode,
+          'error_type': 'work_entry_creation_failed',
+        };
+      }
 
       if (result != null) {
         print('');

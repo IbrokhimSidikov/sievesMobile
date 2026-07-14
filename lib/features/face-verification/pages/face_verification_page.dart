@@ -174,19 +174,26 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           _showSuccessDialog(result['data'], _currentEmployeeStatus);
         }
       } else {
+        final errorType = result?['error_type'] as String?;
+        // Prefer the real reason returned by the API (e.g. a 403
+        // "You are not allowed to perform this action.") over the generic text.
+        final serverMessage = (result?['server_message'] as String?)?.trim();
+        final displayMessage = (serverMessage != null && serverMessage.isNotEmpty)
+            ? serverMessage
+            : _localizedErrorMessage(errorType);
+
         setState(() {
           _isVerified = false;
           _isVerifying = false;
           _verificationFailed = true;
-          _statusMessage = _localizedErrorMessage(result?['error_type']);
+          _statusMessage = displayMessage;
         });
-        
+
         if (mounted) {
-          // Show a clear localized snackbar first, then the action dialog
-          final errorType = result?['error_type'] as String?;
-          SnackbarHelper.showError(
+          // Show a clear snackbar first, then the action dialog
+          SnackbarHelper.showWarning(
             context,
-            _localizedErrorMessage(errorType),
+            displayMessage,
           );
 
           await Future.delayed(const Duration(milliseconds: 600));
@@ -197,7 +204,7 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           } else if (errorType == 'location_error') {
             _showLocationErrorDialog(AppLocalizations.of(context).locationError);
           } else {
-            _showGenericErrorDialog(_localizedErrorMessage(errorType));
+            _showGenericErrorDialog(displayMessage);
           }
         }
       }
@@ -828,58 +835,44 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
+        const warningColor = Color(0xFFE67E00);
         return Dialog(
+          backgroundColor: AppColors.cxPureWhite,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.r),
+            borderRadius: BorderRadius.circular(16.r),
           ),
-          child: Container(
-            padding: EdgeInsets.all(24.w),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20.r),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cxPureWhite,
-                  AppColors.cxSilverTint.withOpacity(0.1),
-                ],
-              ),
-            ),
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(20.w, 24.h, 20.w, 16.h),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Container(
-                  padding: EdgeInsets.all(16.r),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxSilverTint.withOpacity(0.2),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.error_outline,
-                    size: 48.sp,
-                    color: AppColors.cxBlack,
-                  ),
+                Icon(
+                  Icons.warning_amber_rounded,
+                  size: 52.sp,
+                  color: warningColor,
                 ),
-                SizedBox(height: 20.h),
+                SizedBox(height: 14.h),
                 Text(
                   AppLocalizations.of(context).error,
                   style: TextStyle(
-                    fontSize: 22.sp,
-                    fontWeight: FontWeight.bold,
+                    fontSize: 24.sp,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.cxBlack,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 12.h),
+                SizedBox(height: 10.h),
                 Text(
                   message,
                   style: TextStyle(
-                    fontSize: 14.sp,
-                    color: AppColors.cxBlack.withOpacity(0.7),
+                    fontSize: 17.sp,
+                    height: 1.35,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cxBlack,
                   ),
                   textAlign: TextAlign.center,
                 ),
-                SizedBox(height: 24.h),
+                SizedBox(height: 22.h),
                 Row(
                   children: [
                     Expanded(
@@ -892,20 +885,20 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           padding: EdgeInsets.symmetric(vertical: 14.h),
                           side: BorderSide(color: AppColors.cxSilverTint),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
+                            borderRadius: BorderRadius.circular(10.r),
                           ),
                         ),
                         child: Text(
                           AppLocalizations.of(context).cancel,
                           style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w700,
                             color: AppColors.cxBlack,
                           ),
                         ),
                       ),
                     ),
-                    SizedBox(width: 12.w),
+                    SizedBox(width: 10.w),
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () {
@@ -913,18 +906,18 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
                           _resetVerification();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.cxRoyalBlue,
+                          backgroundColor: warningColor,
                           padding: EdgeInsets.symmetric(vertical: 14.h),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12.r),
+                            borderRadius: BorderRadius.circular(10.r),
                           ),
-                          elevation: 2,
+                          elevation: 0,
                         ),
                         child: Text(
                           AppLocalizations.of(context).tryAgain,
                           style: TextStyle(
-                            fontSize: 15.sp,
-                            fontWeight: FontWeight.bold,
+                            fontSize: 16.sp,
+                            fontWeight: FontWeight.w800,
                             color: AppColors.cxPureWhite,
                           ),
                         ),
