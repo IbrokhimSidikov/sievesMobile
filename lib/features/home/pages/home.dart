@@ -104,6 +104,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           const Color(0xFF6E5E4E),
           '/taskManagement',
         ),
+      if (_authManager.hasCancelAccess)
+        _ModuleItem(
+            'Otmen chek',
+            Icons.cancel_outlined,
+            AppColors.cx3FBDA3,
+            AppRoutes.orderCancel
+        ),
       if (_authManager.hasBreakAccess)
         _ModuleItem(
           localizations.faceVerification,

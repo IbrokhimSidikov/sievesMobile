@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sieves_mob/features/exam/pages/exam_page.dart';
 import 'package:sieves_mob/features/home/pages/home.dart';
+import 'package:sieves_mob/features/orderCancel/pages/order_cancel.dart';
 
 import '../../features/attendance/pages/attendance.dart';
 import '../../features/break-records/pages/break_records.dart';
@@ -70,6 +71,7 @@ class AppRoutes {
   static const String taskDetail = '/taskDetail';
   static const String taskCreate = '/taskCreate';
   static const String examPage = '/examPage';
+  static const String orderCancel = '/orderCancel';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -287,6 +289,11 @@ class AppRoutes {
           path: '/examPage',
           name: examPage,
           builder: (context, state) => const ExamPage(),
+        ),
+        GoRoute(
+          path: '/orderCancel',
+          name: orderCancel,
+          builder: (context, state) => const OrderCancel(),
         ),
       ],
     );

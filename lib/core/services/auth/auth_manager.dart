@@ -59,6 +59,17 @@ class AuthManager {
            role == 'trainer' || 
            role == 'superadmin';
   }
+
+  bool get hasCancelAccess {
+    if (_currentIdentity == null) return false;
+    final role = _currentIdentity!.role.toLowerCase();
+    return role == 'admin' ||
+           role == 'manager' ||
+           role == 'teamleader' ||
+           role == 'trainer' ||
+           role == 'superadmin' ||
+           role == 'cashier';
+  }
   
   // Check if user has access to break order (branch == 2)
   bool get hasBreakAccess {

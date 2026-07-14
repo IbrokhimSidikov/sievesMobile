@@ -1770,6 +1770,264 @@ class ApiService {
     }
   }
 
+  // ==================== CANCEL CHEQUE (Otmen chek) ====================
+
+  static const String _cdnBase =
+      'https://sieveserp.ams3.cdn.digitaloceanspaces.com';
+
+  List<dynamic> _extractModels(dynamic jsonData) {
+    if (jsonData is List) return jsonData;
+    if (jsonData is Map) {
+      if (jsonData['models'] is List) return jsonData['models'] as List;
+      if (jsonData['data'] is List) return jsonData['data'] as List;
+    }
+    return const [];
+  }
+
+  /// Build a full CDN url from a photo model (path/name.format).
+  String? photoUrlFromModel(Map<String, dynamic>? photo) {
+    if (photo == null) return null;
+    final path = photo['path'];
+    final name = photo['name'];
+    final format = photo['format'];
+    if (path == null || name == null || format == null) return null;
+    return '$_cdnBase/$path/$name.$format';
+  }
+
+  /// Orders currently in the `cancel` status for the given day session.
+  Future<List<Map<String, dynamic>>> getCancelledOrders({
+    required int branchId,
+    required int daySessionId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/order').replace(
+        queryParameters: {
+          'branch_id': branchId.toString(),
+          'day_session_id': daySessionId.toString(),
+          'currentStatus': 'cancel',
+        },
+      );
+
+      print('🧾 [API] Fetching cancelled orders: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final models = _extractModels(jsonDecode(response.body));
+        return models.whereType<Map<String, dynamic>>().toList();
+      }
+      print('❌ [API] Error getting cancelled orders: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      print('❌ [API] Exception getting cancelled orders: $e');
+      return [];
+    }
+  }
+
+  /// Search orders (by receipt number) within the current day session, for
+  /// picking the order to cancel.
+  Future<List<Map<String, dynamic>>> searchOrders({
+    required String query,
+    required int branchId,
+    required int daySessionId,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/order').replace(
+        queryParameters: {
+          'q': query,
+          'branch_id': branchId.toString(),
+          'day_session_id': daySessionId.toString(),
+        },
+      );
+
+      print('🔎 [API] Searching orders: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final models = _extractModels(jsonDecode(response.body));
+        return models.whereType<Map<String, dynamic>>().toList();
+      }
+      print('❌ [API] Error searching orders: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      print('❌ [API] Exception searching orders: $e');
+      return [];
+    }
+  }
+
+  /// Full order detail (items, cashier, order type, branch) for cancellation.
+  Future<Map<String, dynamic>?> getOrderDetail(int orderId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/order/$orderId').replace(
+        queryParameters: {
+          'expand': [
+            'orderItems.product',
+            'employee.individual',
+            'orderType.orderTypeStatuses',
+            'branch',
+          ].join(','),
+        },
+      );
+
+      print('🧾 [API] Fetching order detail: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      }
+      print('❌ [API] Error getting order detail: ${response.statusCode}');
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception getting order detail: $e');
+      return null;
+    }
+  }
+
+  /// Employees of a branch, used to build the witness ("Кто в курсе") list.
+  Future<List<Map<String, dynamic>>> getBranchEmployees(int branchId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/employee').replace(
+        queryParameters: {
+          'branch_id': branchId.toString(),
+          'expand': 'jobPosition,individual',
+        },
+      );
+
+      print('👥 [API] Fetching branch employees: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final models = _extractModels(jsonDecode(response.body));
+        return models.whereType<Map<String, dynamic>>().toList();
+      }
+      print('❌ [API] Error getting branch employees: ${response.statusCode}');
+      return [];
+    } catch (e) {
+      print('❌ [API] Exception getting branch employees: $e');
+      return [];
+    }
+  }
+
+  /// Upload a cheque / witness photo. Returns the photo model (id, path,
+  /// name, format) so a CDN url can be built.
+  Future<Map<String, dynamic>?> uploadCancelPhoto(
+    File photoFile,
+    String objectId,
+  ) async {
+    try {
+      final token = await authService.getAccessToken();
+      if (token == null) {
+        print('❌ No access token available for cancel photo upload');
+        return null;
+      }
+
+      final uri = Uri.parse(
+        '$baseUrl/photo?belongs_to=test&object_id=$objectId',
+      );
+      final photoBytes = await photoFile.readAsBytes();
+
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'photos',
+          photoBytes,
+          filename: 'cancel_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+
+      print('📸 [API] Uploading cancel photo to: $uri');
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      print('📸 [API] Cancel photo response: ${response.statusCode}');
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final jsonData = jsonDecode(response.body);
+        if (jsonData is List && jsonData.isNotEmpty) {
+          return jsonData.first as Map<String, dynamic>;
+        } else if (jsonData is Map<String, dynamic>) {
+          return jsonData;
+        }
+        print('❌ [API] Unexpected cancel photo response: $jsonData');
+        return null;
+      }
+      print('❌ [API] Error uploading cancel photo: ${response.body}');
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception uploading cancel photo: $e');
+      return null;
+    }
+  }
+
+  /// Cancel an order: PUT /order/{id}?cancel=1 with the (expanded) order body,
+  /// matching the web flow.
+  Future<bool> cancelOrder(int orderId, Map<String, dynamic> orderBody) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/order/$orderId?cancel=1');
+
+      print('🚫 [API] Cancelling order: $uri');
+      final response = await _httpClient.put(
+        uri,
+        headers: headers,
+        body: jsonEncode(orderBody),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ [API] Order cancelled successfully');
+        return true;
+      }
+      print('❌ [API] Error cancelling order: ${response.statusCode} - ${response.body}');
+      return false;
+    } catch (e) {
+      print('❌ [API] Exception cancelling order: $e');
+      return false;
+    }
+  }
+
+  /// Send the cancellation notice (with proof photo) to the Telegram channel.
+  Future<bool> sendCancelTelegramPost({
+    required String message,
+    required Map<String, dynamic> photo,
+  }) async {
+    try {
+      final uri = Uri.parse('https://testbot.sievesapp.com/send-post').replace(
+        queryParameters: {'token': '3b997992-980a-4753-93c9-58fd8d98441f'},
+      );
+
+      final body = {
+        'chat_id': -1001506736194,
+        'action_type': 'telegram_post',
+        'to': 'one',
+        'text': jsonEncode({'en': message}),
+        'photo': photo,
+        'photo_id': photo['id'],
+      };
+
+      print('✈️ [API] Sending cancel telegram post');
+      final response = await http.post(
+        uri,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(body),
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        print('✅ [API] Cancel telegram post sent');
+        return true;
+      }
+      print('❌ [API] Error sending telegram post: ${response.statusCode} - ${response.body}');
+      return false;
+    } catch (e) {
+      print('❌ [API] Exception sending telegram post: $e');
+      return false;
+    }
+  }
+
   // Get current day session
   Future<Map<String, dynamic>?> getCurrentDaySession() async {
     try {
