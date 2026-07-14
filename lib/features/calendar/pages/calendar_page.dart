@@ -472,6 +472,7 @@ class _CalendarPageState extends State<CalendarPage> {
             color: theme.colorScheme.onSurface,
           ),
         ),
+        centerTitle: true,
         actions: [
           if (_canCreateEvent())
             GestureDetector(

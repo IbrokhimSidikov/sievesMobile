@@ -116,6 +116,7 @@ class _OrderCancelState extends State<OrderCancel> {
             color: theme.colorScheme.onSurface,
           ),
         ),
+        centerTitle: true,
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _openCreate,
@@ -316,16 +317,27 @@ class _OrderCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  '#${order.receiptNumber}',
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface,
-                  ),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        '#${order.receiptNumber}',
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                      ),
+                    ),
+                    if (order.orderTypeName != null) ...[
+                      SizedBox(width: 8.w),
+                      _OrderTypeBadge(type: order.orderTypeName!),
+                    ],
+                  ],
                 ),
                 if (order.startTime != null) ...[
-                  SizedBox(height: 2.h),
+                  SizedBox(height: 3.h),
                   Text(
                     order.startTime!,
                     style: TextStyle(
@@ -353,6 +365,56 @@ class _OrderCard extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// A small color-coded pill showing the order type so cancelled orders of
+/// different types (delivery, pickup, dine-in, …) are easy to tell apart.
+class _OrderTypeBadge extends StatelessWidget {
+  final String type;
+
+  const _OrderTypeBadge({required this.type});
+
+  Color get _color {
+    final t = type.toLowerCase();
+    if (t.contains('deliver') || t.contains('достав')) {
+      return const Color(0xFF3B82F6); // blue
+    }
+    if (t.contains('pickup') ||
+        t.contains('самовы') ||
+        t.contains('self') ||
+        t.contains('olib')) {
+      return const Color(0xFFF59E0B); // amber
+    }
+    if (t.contains('dine') ||
+        t.contains('зал') ||
+        t.contains('hall') ||
+        t.contains('table')) {
+      return const Color(0xFF10B981); // green
+    }
+    return const Color(0xFF8B5CF6); // violet fallback
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _color;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(6.r),
+        border: Border.all(color: color.withOpacity(0.4), width: 0.8),
+      ),
+      child: Text(
+        type,
+        style: TextStyle(
+          fontSize: 10.5.sp,
+          fontWeight: FontWeight.w700,
+          color: color,
+          letterSpacing: 0.2,
+        ),
       ),
     );
   }

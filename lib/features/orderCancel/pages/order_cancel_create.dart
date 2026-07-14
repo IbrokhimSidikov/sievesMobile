@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:shimmer/shimmer.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/services/auth/auth_manager.dart';
@@ -63,8 +64,19 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
   final Set<String> _selectedReasons = {};
   final TextEditingController _moreAboutReasonCtrl = TextEditingController();
   final TextEditingController _measuresCtrl = TextEditingController();
+  final FocusNode _moreAboutReasonFocus = FocusNode();
+  final FocusNode _measuresFocus = FocusNode();
+  // Each photo is uploaded eagerly as soon as it's picked so that submit only
+  // has to wait for whatever is still in flight (instead of both uploads).
   File? _chequePhoto;
+  Map<String, dynamic>? _chequeModel;
+  Future<Map<String, dynamic>?>? _chequeUpload;
+  bool _chequeUploading = false;
+
   File? _witnessPhoto;
+  Map<String, dynamic>? _witnessModel;
+  Future<Map<String, dynamic>?>? _witnessUpload;
+  bool _witnessUploading = false;
 
   bool _submitting = false;
 
@@ -94,6 +106,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     _searchCtrl.dispose();
     _moreAboutReasonCtrl.dispose();
     _measuresCtrl.dispose();
+    _moreAboutReasonFocus.dispose();
+    _measuresFocus.dispose();
     super.dispose();
   }
 
@@ -180,6 +194,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     final file = await _pickCompressed(source: source);
     if (file != null && mounted) {
       setState(() => _chequePhoto = file);
+      _uploadCheque(file);
     }
   }
 
@@ -190,7 +205,50 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     );
     if (file != null && mounted) {
       setState(() => _witnessPhoto = file);
+      _uploadWitness(file);
     }
+  }
+
+  String get _objectId => _order?.receiptNumber ?? '0';
+
+  /// Start uploading the cheque photo in the background. A newer pick
+  /// supersedes an in-flight upload (tracked by identity of the Future).
+  void _uploadCheque(File file) {
+    final future = _authManager.apiService.uploadCancelPhoto(file, _objectId);
+    setState(() {
+      _chequeUpload = future;
+      _chequeModel = null;
+      _chequeUploading = true;
+    });
+    future.then((model) {
+      if (!mounted || _chequeUpload != future) return;
+      setState(() {
+        _chequeModel = model;
+        _chequeUploading = false;
+      });
+      if (model == null) {
+        _showSnack('Chek rasmini yuklashda xatolik', isError: true);
+      }
+    });
+  }
+
+  void _uploadWitness(File file) {
+    final future = _authManager.apiService.uploadCancelPhoto(file, _objectId);
+    setState(() {
+      _witnessUpload = future;
+      _witnessModel = null;
+      _witnessUploading = true;
+    });
+    future.then((model) {
+      if (!mounted || _witnessUpload != future) return;
+      setState(() {
+        _witnessModel = model;
+        _witnessUploading = false;
+      });
+      if (model == null) {
+        _showSnack('Guvohlar rasmini yuklashda xatolik', isError: true);
+      }
+    });
   }
 
   /// Picks an image with the resolution/quality capped so the upload stays
@@ -279,12 +337,11 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
 
     try {
       final api = _authManager.apiService;
-      final objectId = order.receiptNumber;
 
-      // Upload proof photos (cheque + witnesses selfie).
-      final chequeModel = await api.uploadCancelPhoto(_chequePhoto!, objectId);
-      final witnessModel =
-          await api.uploadCancelPhoto(_witnessPhoto!, objectId);
+      // Photos were uploaded eagerly on pick; reuse their results, only
+      // awaiting whatever upload is still in flight.
+      final chequeModel = _chequeModel ?? await _chequeUpload;
+      final witnessModel = _witnessModel ?? await _witnessUpload;
 
       if (chequeModel == null || witnessModel == null) {
         _fail('Rasm yuklashda xatolik');
@@ -369,12 +426,76 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
           ),
         ),
       ),
-      body: SafeArea(
-        child: _loadingDetail
-            ? const Center(child: CircularProgressIndicator(color: _accent))
-            : _order == null
-                ? _buildSearchView(theme)
-                : _buildForm(theme),
+      // Tapping anywhere outside a focused field dismisses the keyboard.
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        behavior: HitTestBehavior.opaque,
+        child: SafeArea(
+          child: _loadingDetail
+              ? _buildFormSkeleton(theme)
+              : _order == null
+                  ? _buildSearchView(theme)
+                  : _buildForm(theme),
+        ),
+      ),
+    );
+  }
+
+  // ── Shimmer skeleton shown while the selected order's detail loads ──
+
+  Widget _buildFormSkeleton(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
+    Widget block({double? width, required double height, double radius = 12}) {
+      return Container(
+        width: width,
+        height: height,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(radius),
+        ),
+      );
+    }
+
+    return Shimmer.fromColors(
+      baseColor: isDark ? Colors.grey.shade800 : Colors.grey.shade300,
+      highlightColor: isDark ? Colors.grey.shade700 : Colors.grey.shade100,
+      child: ListView(
+        padding: EdgeInsets.fromLTRB(16.w, 16.h, 16.w, 16.h),
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          block(height: 150.h, radius: 16), // order summary card
+          SizedBox(height: 20.h),
+          block(width: 180.w, height: 16.h, radius: 6), // section title
+          SizedBox(height: 12.h),
+          Row(
+            children: [
+              Expanded(child: block(height: 150.h, radius: 14)),
+              SizedBox(width: 12.w),
+              Expanded(child: block(height: 150.h, radius: 14)),
+            ],
+          ),
+          SizedBox(height: 16.h),
+          block(width: 220.w, height: 14.h, radius: 6),
+          SizedBox(height: 12.h),
+          block(width: 200.w, height: 14.h, radius: 6),
+          SizedBox(height: 24.h),
+          block(width: 160.w, height: 16.h, radius: 6),
+          SizedBox(height: 12.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: List.generate(
+              4,
+              (_) => block(width: 90.w, height: 34.h, radius: 20),
+            ),
+          ),
+          SizedBox(height: 24.h),
+          block(width: 140.w, height: 16.h, radius: 6),
+          SizedBox(height: 12.h),
+          block(height: 90.h, radius: 12),
+          SizedBox(height: 16.h),
+          block(height: 90.h, radius: 12),
+        ],
       ),
     );
   }
@@ -390,6 +511,11 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
             controller: _searchCtrl,
             onChanged: _onSearchChanged,
             autofocus: true,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (v) {
+              final q = v.trim();
+              if (q.isNotEmpty) _runSearch(q);
+            },
             style: TextStyle(
               fontSize: 15.sp,
               color: theme.colorScheme.onSurface,
@@ -523,6 +649,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
                     file: _chequePhoto,
                     onTap: _pickChequePhoto,
                     icon: Icons.receipt_long_outlined,
+                    uploading: _chequeUploading,
+                    uploaded: _chequeModel != null,
                   ),
                 ),
                 SizedBox(width: 12.w),
@@ -533,6 +661,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
                     file: _witnessPhoto,
                     onTap: _captureWitnessPhoto,
                     icon: Icons.camera_front_outlined,
+                    uploading: _witnessUploading,
+                    uploaded: _witnessModel != null,
                   ),
                 ),
               ],
@@ -562,15 +692,21 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
             _buildTextArea(
               theme,
               controller: _moreAboutReasonCtrl,
+              focusNode: _moreAboutReasonFocus,
               label: 'Sabab haqida batafsil',
               hint: 'Qanday sodir bo\'ldi',
+              textInputAction: TextInputAction.next,
+              onSubmitted: () => _measuresFocus.requestFocus(),
             ),
             SizedBox(height: 16.h),
             _buildTextArea(
               theme,
               controller: _measuresCtrl,
+              focusNode: _measuresFocus,
               label: 'Qanday chora ko\'rildi',
               hint: 'Qanday choralar',
+              textInputAction: TextInputAction.done,
+              onSubmitted: () => FocusScope.of(context).unfocus(),
             ),
           ],
         ),
@@ -746,6 +882,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     required File? file,
     required VoidCallback onTap,
     required IconData icon,
+    bool uploading = false,
+    bool uploaded = false,
   }) {
     final isDark = theme.brightness == Brightness.dark;
     return GestureDetector(
@@ -770,17 +908,34 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
                 fit: StackFit.expand,
                 children: [
                   Image.file(file, fit: BoxFit.cover),
+                  // Dim + spinner while the upload is in flight.
+                  if (uploading)
+                    Container(
+                      color: Colors.black.withOpacity(0.35),
+                      alignment: Alignment.center,
+                      child: const SizedBox(
+                        width: 26,
+                        height: 26,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.4,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ),
+                  // Status badge: check when uploaded, edit otherwise.
                   Positioned(
                     top: 6,
                     right: 6,
                     child: Container(
                       padding: const EdgeInsets.all(4),
-                      decoration: const BoxDecoration(
-                        color: Colors.black54,
+                      decoration: BoxDecoration(
+                        color: uploaded ? _accent : Colors.black54,
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(
-                        Icons.edit,
+                      child: Icon(
+                        uploaded
+                            ? Icons.check
+                            : (uploading ? Icons.cloud_upload : Icons.edit),
                         size: 14,
                         color: Colors.white,
                       ),
@@ -959,6 +1114,9 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     required TextEditingController controller,
     required String label,
     required String hint,
+    FocusNode? focusNode,
+    TextInputAction textInputAction = TextInputAction.newline,
+    VoidCallback? onSubmitted,
   }) {
     final isDark = theme.brightness == Brightness.dark;
     return Column(
@@ -975,11 +1133,21 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
         SizedBox(height: 8.h),
         TextField(
           controller: controller,
+          focusNode: focusNode,
           minLines: 3,
           maxLines: 5,
-          style: TextStyle(fontSize: 14.sp),
+          textInputAction: textInputAction,
+          onSubmitted: (_) => onSubmitted?.call(),
+          cursorColor: _accent,
+          style: TextStyle(
+            fontSize: 14.sp,
+            color: theme.colorScheme.onSurface,
+          ),
           decoration: InputDecoration(
             hintText: hint,
+            hintStyle: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.4),
+            ),
             filled: true,
             fillColor:
                 isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,

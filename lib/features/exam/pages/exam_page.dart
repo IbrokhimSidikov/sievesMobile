@@ -86,7 +86,7 @@ class _ExamPageState extends State<ExamPage> {
       backgroundColor: isDark ? const Color(0xFF0F0F14) : AppColors.cxF5F7F9,
       appBar: AppBar(
         title: Text(_l10n.examListTitle),
-        centerTitle: false,
+        centerTitle: true,
       ),
       body: RefreshIndicator(
         onRefresh: _loadExams,

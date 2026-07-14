@@ -1806,6 +1806,7 @@ class ApiService {
           'branch_id': branchId.toString(),
           'day_session_id': daySessionId.toString(),
           'currentStatus': 'cancel',
+          'expand': 'orderType',
         },
       );
 

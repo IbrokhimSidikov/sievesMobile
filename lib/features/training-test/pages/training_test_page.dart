@@ -78,7 +78,9 @@ class _TrainingTestPageState extends State<TrainingTestPage> {
             fontWeight: FontWeight.w600,
             color: theme.colorScheme.onSurface,
           ),
-        ),),
+        ),
+        centerTitle: true,
+      ),
       body: _isLoading
           ? _buildLoadingState(l10n)
           : _hasError

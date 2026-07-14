@@ -90,6 +90,13 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         const Color(0xFF7C6C5C),
         '/feedbackForm',
       ),
+      if (_authManager.hasCancelAccess)
+        _ModuleItem(
+            'Otmen chek',
+            Icons.cancel_outlined,
+            const Color(0xFF6E5E4E),
+            AppRoutes.orderCancel
+        ),
       if (_authManager.hasBreakAccess)
         _ModuleItem(
           localizations.breakOrder,
@@ -97,26 +104,19 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           const Color(0xFF9E8272),
           '/breakOrder',
         ),
-      if (_authManager.hasStopwatchAccess)
-        _ModuleItem(
-          localizations.tasks,
-          Icons.task_alt,
-          const Color(0xFF6E5E4E),
-          '/taskManagement',
-        ),
-      if (_authManager.hasCancelAccess)
-        _ModuleItem(
-            'Otmen chek',
-            Icons.cancel_outlined,
-            AppColors.cx3FBDA3,
-            AppRoutes.orderCancel
-        ),
       if (_authManager.hasBreakAccess)
         _ModuleItem(
           localizations.faceVerification,
           Icons.face_2_outlined,
           const Color(0xFF856E5E),
           '/faceVerification',
+        ),
+      if (_authManager.hasStopwatchAccess)
+        _ModuleItem(
+          localizations.tasks,
+          Icons.task_alt,
+          const Color(0xFF6E5E4E),
+          '/taskManagement',
         ),
       if (_authManager.hasStopwatchAccess)
         _ModuleItem(
