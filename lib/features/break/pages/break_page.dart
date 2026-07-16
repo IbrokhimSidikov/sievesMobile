@@ -27,6 +27,19 @@ class ItemChange {
   ItemChange(this.changedItem, this.tabIndex);
 }
 
+// A single cell in the menu grid: either a standalone item, a collapsed
+// variant group (with its member items), or a reserved slot for a group whose
+// members are still being collected during layout.
+class _GridCell {
+  final InventoryItem? item; // non-null for a standalone item cell
+  final List<InventoryItem>? group; // non-null for a collapsed group card
+  final int? groupId; // set for group cells and reserved placeholders
+
+  _GridCell.item(this.item) : group = null, groupId = null;
+  _GridCell.groupPlaceholder(this.groupId) : item = null, group = null;
+  _GridCell.group(this.groupId, this.group) : item = null;
+}
+
 class BreakPage extends StatefulWidget {
   const BreakPage({super.key});
 
@@ -1394,8 +1407,54 @@ class _BreakPageState extends State<BreakPage>
       );
     }
 
+    // Bucket items that belong to the same variant group (e.g. all
+    // "DINNER MEAL *" variants share group_id 9) so the menu stays compact.
+    // Buckets keep first-appearance order; single-member buckets render as a
+    // normal item card (no point collapsing a group of one).
+    final Map<int, List<InventoryItem>> buckets = {};
+    final List<_GridCell> orderedEntries =
+        []; // preserves overall menu ordering
+
+    for (final item in categoryItems.cast<InventoryItem>()) {
+      final groupId = item.variantGroupId;
+      if (groupId == null) {
+        orderedEntries.add(_GridCell.item(item));
+      } else {
+        if (!buckets.containsKey(groupId)) {
+          buckets[groupId] = [];
+          // Reserve this group's slot at its first appearance.
+          orderedEntries.add(_GridCell.groupPlaceholder(groupId));
+        }
+        buckets[groupId]!.add(item);
+      }
+    }
+
+    // Resolve each entry into a final grid cell. A group of one collapses to a
+    // plain item; groups with 2+ members become a single group card that opens
+    // a variant picker bottom sheet on tap.
+    final List<_GridCell> cells = [];
+    for (final entry in orderedEntries) {
+      if (entry.groupId == null) {
+        cells.add(entry); // standalone item
+        continue;
+      }
+      final members = buckets[entry.groupId]!;
+      if (members.length == 1) {
+        cells.add(_GridCell.item(members.first));
+        continue;
+      }
+      // Sort variants by their sort_order for a stable display.
+      members.sort(
+        (a, b) => (a.variantItems.first.sortOrder).compareTo(
+          b.variantItems.first.sortOrder,
+        ),
+      );
+      cells.add(_GridCell.group(entry.groupId!, members));
+    }
+
     print(
-      '📋 [BREAK PAGE] Building GridView with ${categoryItems.length} items',
+      '📋 [BREAK PAGE] Building GridView with ${cells.length} cells '
+      '(${categoryItems.length} items, ${buckets.length} groups)',
     );
     return GridView.builder(
       padding: EdgeInsets.all(20.w),
@@ -1405,10 +1464,458 @@ class _BreakPageState extends State<BreakPage>
         crossAxisSpacing: 16.w,
         mainAxisSpacing: 21.h,
       ),
-      itemCount: categoryItems.length,
+      itemCount: cells.length,
       itemBuilder: (context, index) {
-        return _buildMenuItem(categoryItems[index], theme, isDark);
+        final cell = cells[index];
+        if (cell.group != null) {
+          return _buildGroupCard(cell.group!, theme, isDark);
+        }
+        return _buildMenuItem(cell.item!, theme, isDark);
       },
+    );
+  }
+
+  /// A collapsed variant-group card. Tapping opens a bottom sheet that lists
+  /// the group's variants to pick from.
+  Widget _buildGroupCard(
+    List<InventoryItem> members,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    final groupName = members.first.variantGroupName ?? members.first.name;
+
+    // Use the default variant's image if flagged, otherwise the first member's.
+    final defaultMember = members.firstWhere(
+      (m) => m.variantItems.any((v) => v.isDefault),
+      orElse: () => members.first,
+    );
+    final imageUrl = defaultMember.photo?.url;
+
+    // Show the number already in the cart across all variants in this group.
+    final int inCart = members.fold<int>(
+      0,
+      (sum, m) => sum + (_cart[m.id] ?? 0),
+    );
+
+    return GestureDetector(
+      onTap: () => _showVariantSheet(members, theme, isDark),
+      child: Container(
+        decoration: BoxDecoration(
+          color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+          borderRadius: BorderRadius.circular(16.r),
+          border: Border.all(color: AppColors.cxWarning, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(isDark ? 0.2 : 0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Stack(
+              children: [
+                Container(
+                  height: 120.h,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(16.r),
+                      topRight: Radius.circular(16.r),
+                    ),
+                    color: isDark
+                        ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+                        : AppColors.cxF5F7F9,
+                  ),
+                  child: imageUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(16.r),
+                            topRight: Radius.circular(16.r),
+                          ),
+                          child: Image.network(
+                            imageUrl,
+                            width: double.infinity,
+                            height: 120.h,
+                            fit: BoxFit.cover,
+                            cacheWidth: 300,
+                            errorBuilder: (context, error, stackTrace) {
+                              return Center(
+                                child: Icon(
+                                  Icons.restaurant_outlined,
+                                  size: 40.sp,
+                                  color: theme.colorScheme.onSurfaceVariant
+                                      .withOpacity(0.3),
+                                ),
+                              );
+                            },
+                          ),
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.restaurant_outlined,
+                            size: 40.sp,
+                            color: theme.colorScheme.onSurfaceVariant
+                                .withOpacity(0.3),
+                          ),
+                        ),
+                ),
+                // Badge with number of options in the group.
+                Positioned(
+                  top: 8.h,
+                  right: 8.w,
+                  child: Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8.w,
+                      vertical: 4.h,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.cxBlack.withOpacity(0.7),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.layers_rounded,
+                          size: 12.sp,
+                          color: AppColors.cxWhite,
+                        ),
+                        SizedBox(width: 4.w),
+                        Text(
+                          '${members.length}',
+                          style: TextStyle(
+                            fontSize: 10.sp,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.cxWhite,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                if (inCart > 0)
+                  Positioned(
+                    top: 8.h,
+                    left: 8.w,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.w,
+                        vertical: 4.h,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.cxWarning,
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Text(
+                        '$inCart',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.cxWhite,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.all(12.w),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      groupName,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: theme.colorScheme.onSurface,
+                        height: 1.3,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const Spacer(),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Choose option',
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              fontWeight: FontWeight.w600,
+                              color: theme.colorScheme.onSurfaceVariant,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        SizedBox(width: 8.w),
+                        Container(
+                          padding: EdgeInsets.all(8.w),
+                          decoration: BoxDecoration(
+                            color: AppColors.cxWarning,
+                            borderRadius: BorderRadius.circular(10.r),
+                          ),
+                          child: Icon(
+                            Icons.chevron_right_rounded,
+                            color: AppColors.cxWhite,
+                            size: 18.sp,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Bottom sheet listing every variant in a group so the user can pick one.
+  /// Reuses the page's cart handlers; a [StatefulBuilder] keeps the sheet's
+  /// quantity controls in sync while it stays open.
+  void _showVariantSheet(
+    List<InventoryItem> members,
+    ThemeData theme,
+    bool isDark,
+  ) {
+    final groupName = members.first.variantGroupName ?? members.first.name;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24.r)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            return SafeArea(
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Drag handle
+                    Center(
+                      child: Container(
+                        width: 40.w,
+                        height: 4.h,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                            0.3,
+                          ),
+                          borderRadius: BorderRadius.circular(2.r),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Text(
+                      groupName,
+                      style: TextStyle(
+                        fontSize: 18.sp,
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      '${members.length} options',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w500,
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                    SizedBox(height: 16.h),
+                    Flexible(
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: members.length,
+                        separatorBuilder: (_, __) => SizedBox(height: 10.h),
+                        itemBuilder: (context, index) {
+                          return _buildVariantRow(
+                            members[index],
+                            theme,
+                            isDark,
+                            setSheetState,
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  /// A single variant row inside [_showVariantSheet].
+  Widget _buildVariantRow(
+    InventoryItem item,
+    ThemeData theme,
+    bool isDark,
+    void Function(void Function()) setSheetState,
+  ) {
+    final quantity = _cart[item.id] ?? 0;
+    final price = item.inventoryPriceList?.price ?? 0;
+    final imageUrl = item.photo?.url;
+
+    return Container(
+      padding: EdgeInsets.all(10.w),
+      decoration: BoxDecoration(
+        color: isDark
+            ? theme.colorScheme.surfaceVariant.withOpacity(0.3)
+            : AppColors.cxF5F7F9,
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: quantity > 0 ? AppColors.cxWarning : Colors.transparent,
+          width: 1.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10.r),
+            child: SizedBox(
+              width: 52.w,
+              height: 52.w,
+              child: imageUrl != null
+                  ? Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      cacheWidth: 150,
+                      errorBuilder: (context, error, stackTrace) => Icon(
+                        Icons.restaurant_outlined,
+                        size: 24.sp,
+                        color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                          0.3,
+                        ),
+                      ),
+                    )
+                  : Icon(
+                      Icons.restaurant_outlined,
+                      size: 24.sp,
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                    ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.name,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                SizedBox(height: 4.h),
+                Text(
+                  '$price UZS',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(width: 10.w),
+          if (quantity == 0)
+            GestureDetector(
+              onTap: () {
+                _handleProductClick(item);
+                setSheetState(() {});
+              },
+              child: Container(
+                padding: EdgeInsets.all(8.w),
+                decoration: BoxDecoration(
+                  color: AppColors.cxWarning,
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  color: AppColors.cxWhite,
+                  size: 18.sp,
+                ),
+              ),
+            )
+          else
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    _removeFromCart(item);
+                    setSheetState(() {});
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(6.w),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? theme.colorScheme.surface
+                          : AppColors.cxWhite,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.remove_rounded,
+                      color: theme.colorScheme.onSurface,
+                      size: 16.sp,
+                    ),
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                Text(
+                  '$quantity',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                ),
+                SizedBox(width: 10.w),
+                GestureDetector(
+                  onTap: () {
+                    _addToCart(item);
+                    setSheetState(() {});
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(6.w),
+                    decoration: BoxDecoration(
+                      color: AppColors.cxWarning,
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Icon(
+                      Icons.add_rounded,
+                      color: AppColors.cxWhite,
+                      size: 16.sp,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
     );
   }
 

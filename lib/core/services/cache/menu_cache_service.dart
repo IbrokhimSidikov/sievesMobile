@@ -29,10 +29,12 @@ class MenuCacheService {
   // Cache duration: 3 days (menu doesn't change frequently)
   static const Duration _cacheDuration = Duration(days: 3);
 
-  // Storage keys
-  static const String _menuItemsKey = 'cached_menu_items';
-  static const String _categoriesKey = 'cached_categories';
-  static const String _lastFetchTimeKey = 'cached_last_fetch_time';
+  // Storage keys. The `_v2` suffix invalidates caches written before the menu
+  // started fetching `variantItems` (variant grouping) — old cached JSON has no
+  // variantItems, so bumping the key forces a fresh fetch on the next launch.
+  static const String _menuItemsKey = 'cached_menu_items_v2';
+  static const String _categoriesKey = 'cached_categories_v2';
+  static const String _lastFetchTimeKey = 'cached_last_fetch_time_v2';
 
   bool get isCacheValid {
     if (_lastFetchTime == null) return false;

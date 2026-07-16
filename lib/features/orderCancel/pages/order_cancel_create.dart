@@ -1,10 +1,13 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:image/image.dart' as img;
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shimmer/shimmer.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -66,17 +69,15 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
   final TextEditingController _measuresCtrl = TextEditingController();
   final FocusNode _moreAboutReasonFocus = FocusNode();
   final FocusNode _measuresFocus = FocusNode();
-  // Each photo is uploaded eagerly as soon as it's picked so that submit only
-  // has to wait for whatever is still in flight (instead of both uploads).
   File? _chequePhoto;
-  Map<String, dynamic>? _chequeModel;
-  Future<Map<String, dynamic>?>? _chequeUpload;
-  bool _chequeUploading = false;
-
   File? _witnessPhoto;
-  Map<String, dynamic>? _witnessModel;
-  Future<Map<String, dynamic>?>? _witnessUpload;
-  bool _witnessUploading = false;
+
+  // Telegram accepts only one image, so both photos are composited into a
+  // single side-by-side collage (like the web flow) and uploaded eagerly as
+  // soon as both are present, so submit only waits for what's still in flight.
+  Map<String, dynamic>? _collageModel;
+  Future<Map<String, dynamic>?>? _collageUpload;
+  bool _collageUploading = false;
 
   bool _submitting = false;
 
@@ -112,13 +113,15 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
   }
 
   Future<void> _loadWitnesses() async {
-    final employees =
-        await _authManager.apiService.getBranchEmployees(widget.branchId);
+    final employees = await _authManager.apiService.getBranchEmployees(
+      widget.branchId,
+    );
     final witnesses = <Witness>[];
     for (final e in employees) {
       final individual = e['individual'];
       if (individual is Map) {
-        final id = (individual['id'] as num?)?.toInt() ??
+        final id =
+            (individual['id'] as num?)?.toInt() ??
             (e['individual_id'] as num?)?.toInt();
         final name = individual['full_name']?.toString();
         if (id != null && name != null && name.trim().isNotEmpty) {
@@ -194,7 +197,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     final file = await _pickCompressed(source: source);
     if (file != null && mounted) {
       setState(() => _chequePhoto = file);
-      _uploadCheque(file);
+      _prepareCollage();
     }
   }
 
@@ -205,50 +208,100 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     );
     if (file != null && mounted) {
       setState(() => _witnessPhoto = file);
-      _uploadWitness(file);
+      _prepareCollage();
     }
   }
 
   String get _objectId => _order?.receiptNumber ?? '0';
 
-  /// Start uploading the cheque photo in the background. A newer pick
-  /// supersedes an in-flight upload (tracked by identity of the Future).
-  void _uploadCheque(File file) {
-    final future = _authManager.apiService.uploadCancelPhoto(file, _objectId);
+  /// Once both photos are present, composite them into one collage and upload
+  /// it eagerly. Re-picking either photo rebuilds the collage; a newer build
+  /// supersedes an in-flight one (tracked by identity of the Future).
+  void _prepareCollage() {
+    final cheque = _chequePhoto;
+    final witness = _witnessPhoto;
+    if (cheque == null || witness == null) return;
+
+    final future = _composeAndUploadCollage(cheque: cheque, witness: witness);
     setState(() {
-      _chequeUpload = future;
-      _chequeModel = null;
-      _chequeUploading = true;
+      _collageUpload = future;
+      _collageModel = null;
+      _collageUploading = true;
     });
     future.then((model) {
-      if (!mounted || _chequeUpload != future) return;
+      if (!mounted || _collageUpload != future) return;
       setState(() {
-        _chequeModel = model;
-        _chequeUploading = false;
+        _collageModel = model;
+        _collageUploading = false;
       });
       if (model == null) {
-        _showSnack('Chek rasmini yuklashda xatolik', isError: true);
+        _showSnack('Isbot rasmini tayyorlashda xatolik', isError: true);
       }
     });
   }
 
-  void _uploadWitness(File file) {
-    final future = _authManager.apiService.uploadCancelPhoto(file, _objectId);
-    setState(() {
-      _witnessUpload = future;
-      _witnessModel = null;
-      _witnessUploading = true;
-    });
-    future.then((model) {
-      if (!mounted || _witnessUpload != future) return;
-      setState(() {
-        _witnessModel = model;
-        _witnessUploading = false;
-      });
-      if (model == null) {
-        _showSnack('Guvohlar rasmini yuklashda xatolik', isError: true);
-      }
-    });
+  Future<Map<String, dynamic>?> _composeAndUploadCollage({
+    required File cheque,
+    required File witness,
+  }) async {
+    // Witness selfie on the left, cheque on the right (mirrors the web collage).
+    final bytes = await _makeCollage(left: witness, right: cheque);
+    if (bytes == null) return null;
+
+    final dir = await getTemporaryDirectory();
+    final path =
+        '${dir.path}/cancel_collage_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final file = await File(path).writeAsBytes(bytes);
+
+    return _authManager.apiService.uploadCancelPhoto(file, _objectId);
+  }
+
+  /// Composite the two images side-by-side on a black background and return
+  /// JPEG bytes. JPEG (not PNG) keeps the payload well under the server's
+  /// request-size limit — a PNG of photographic content triggers HTTP 413.
+  Future<Uint8List?> _makeCollage({
+    required File left,
+    required File right,
+  }) async {
+    final leftBytes = await left.readAsBytes();
+    final rightBytes = await right.readAsBytes();
+    final leftImg = img.decodeImage(leftBytes);
+    final rightImg = img.decodeImage(rightBytes);
+    if (leftImg == null || rightImg == null) return null;
+
+    const int w = 1280;
+    const int h = 720;
+    final canvas = img.Image(width: w, height: h);
+    img.fill(canvas, color: img.ColorRgb8(0, 0, 0));
+
+    _composeFit(canvas, leftImg, 0, 0, w ~/ 2, h);
+    _composeFit(canvas, rightImg, w ~/ 2, 0, w ~/ 2, h);
+
+    return img.encodeJpg(canvas, quality: 78);
+  }
+
+  /// Aspect-fit [src] into the [boxW]x[boxH] region at ([x],[y]) and paint it
+  /// centered onto [canvas].
+  void _composeFit(
+    img.Image canvas,
+    img.Image src,
+    int x,
+    int y,
+    int boxW,
+    int boxH,
+  ) {
+    final scale = (boxW / src.width < boxH / src.height)
+        ? boxW / src.width
+        : boxH / src.height;
+    final dw = (src.width * scale).round();
+    final dh = (src.height * scale).round();
+    final resized = img.copyResize(src, width: dw, height: dh);
+    img.compositeImage(
+      canvas,
+      resized,
+      dstX: x + ((boxW - dw) / 2).round(),
+      dstY: y + ((boxH - dh) / 2).round(),
+    );
   }
 
   /// Picks an image with the resolution/quality capped so the upload stays
@@ -338,13 +391,12 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
     try {
       final api = _authManager.apiService;
 
-      // Photos were uploaded eagerly on pick; reuse their results, only
-      // awaiting whatever upload is still in flight.
-      final chequeModel = _chequeModel ?? await _chequeUpload;
-      final witnessModel = _witnessModel ?? await _witnessUpload;
+      // The collage (both photos) was composited & uploaded eagerly on pick;
+      // reuse its result, only awaiting if it's still in flight.
+      final collageModel = _collageModel ?? await _collageUpload;
 
-      if (chequeModel == null || witnessModel == null) {
-        _fail('Rasm yuklashda xatolik');
+      if (collageModel == null) {
+        _fail('Isbot rasmini tayyorlashda xatolik');
         return;
       }
 
@@ -355,10 +407,10 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
         return;
       }
 
-      // Notify Telegram with the composed message + witnesses selfie proof.
+      // Notify Telegram with the composed message + collage proof (both photos).
       await api.sendCancelTelegramPost(
         message: _buildMessage(order),
-        photo: witnessModel,
+        photo: collageModel,
       );
 
       _cancelledIds.add(order.id);
@@ -396,11 +448,51 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
   }
 
   void _showSnack(String message, {required bool isError}) {
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? const Color(0xFFEF4444) : _accent,
+        content: Row(
+          children: [
+            Container(
+              padding: EdgeInsets.all(6.w),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.22),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                isError
+                    ? Icons.error_outline_rounded
+                    : Icons.check_circle_outline_rounded,
+                color: Colors.white,
+                size: 18.sp,
+              ),
+            ),
+            SizedBox(width: 12.w),
+            Expanded(
+              child: Text(
+                message,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 13.5.sp,
+                  fontWeight: FontWeight.w500,
+                  height: 1.3,
+                ),
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: isError ? const Color(0xFFE23D3D) : _accent,
         behavior: SnackBarBehavior.floating,
+        elevation: 8,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16.r),
+        ),
+        // Lift it above the submit button so it floats over the actions.
+        margin: EdgeInsets.only(left: 16.w, right: 16.w, bottom: 92.h),
+        padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+        duration: const Duration(seconds: 3),
+        dismissDirection: DismissDirection.horizontal,
       ),
     );
   }
@@ -434,8 +526,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
           child: _loadingDetail
               ? _buildFormSkeleton(theme)
               : _order == null
-                  ? _buildSearchView(theme)
-                  : _buildForm(theme),
+              ? _buildSearchView(theme)
+              : _buildForm(theme),
         ),
       ),
     );
@@ -509,6 +601,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
           padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 8.h),
           child: TextField(
             controller: _searchCtrl,
+            keyboardType: TextInputType.number,
             onChanged: _onSearchChanged,
             autofocus: true,
             textInputAction: TextInputAction.search,
@@ -649,8 +742,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
                     file: _chequePhoto,
                     onTap: _pickChequePhoto,
                     icon: Icons.receipt_long_outlined,
-                    uploading: _chequeUploading,
-                    uploaded: _chequeModel != null,
+                    uploading: _collageUploading,
+                    uploaded: _collageModel != null,
                   ),
                 ),
                 SizedBox(width: 12.w),
@@ -661,8 +754,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
                     file: _witnessPhoto,
                     onTap: _captureWitnessPhoto,
                     icon: Icons.camera_front_outlined,
-                    uploading: _witnessUploading,
-                    uploaded: _witnessModel != null,
+                    uploading: _collageUploading,
+                    uploaded: _collageModel != null,
                   ),
                 ),
               ],
@@ -710,12 +803,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
             ),
           ],
         ),
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: 0,
-          child: _buildSubmitBar(theme),
-        ),
+        Positioned(left: 0, right: 0, bottom: 0, child: _buildSubmitBar(theme)),
       ],
     );
   }
@@ -782,8 +870,10 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
                       ),
                     ),
                     Container(
-                      padding:
-                          EdgeInsets.symmetric(horizontal: 8.w, vertical: 2.h),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8.w,
+                        vertical: 2.h,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.blue.withOpacity(0.12),
                         borderRadius: BorderRadius.circular(8.r),
@@ -897,8 +987,8 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
             color: file != null
                 ? _accent
                 : (isDark
-                    ? Colors.white.withOpacity(0.08)
-                    : Colors.black.withOpacity(0.08)),
+                      ? Colors.white.withOpacity(0.08)
+                      : Colors.black.withOpacity(0.08)),
             width: file != null ? 1.6 : 1,
           ),
         ),
@@ -1008,6 +1098,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
   }
 
   Widget _buildWitnessSelector(ThemeData theme) {
+    final isDark = theme.brightness == Brightness.dark;
     if (_allWitnesses.isEmpty) {
       return Text(
         'Xodimlar yuklanmoqda...',
@@ -1017,52 +1108,293 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
         ),
       );
     }
-    return Wrap(
-      spacing: 8.w,
-      runSpacing: 8.h,
-      children: _allWitnesses.map((w) {
-        final selected = _selectedWitnesses.contains(w);
-        return GestureDetector(
-          onTap: () => setState(() {
-            if (selected) {
-              _selectedWitnesses.remove(w);
-            } else {
-              _selectedWitnesses.add(w);
-            }
-          }),
+
+    final hasSelection = _selectedWitnesses.isNotEmpty;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Tappable field → opens the searchable multi-select sheet.
+        GestureDetector(
+          onTap: _openWitnessPicker,
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 9.h),
+            padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
             decoration: BoxDecoration(
-              color: selected ? _accent : Colors.transparent,
-              borderRadius: BorderRadius.circular(20.r),
+              color: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+              borderRadius: BorderRadius.circular(12.r),
               border: Border.all(
-                color: selected
-                    ? _accent
-                    : theme.colorScheme.onSurface.withOpacity(0.2),
+                color: hasSelection
+                    ? _accent.withOpacity(0.5)
+                    : theme.colorScheme.onSurface.withOpacity(0.12),
               ),
             ),
             child: Row(
-              mainAxisSize: MainAxisSize.min,
               children: [
-                if (selected) ...[
-                  const Icon(Icons.check, size: 15, color: Colors.white),
-                  SizedBox(width: 5.w),
-                ],
-                Text(
-                  w.fullName,
-                  style: TextStyle(
-                    fontSize: 13.sp,
-                    fontWeight: FontWeight.w500,
-                    color: selected
-                        ? Colors.white
-                        : theme.colorScheme.onSurface.withOpacity(0.8),
+                Icon(
+                  Icons.groups_outlined,
+                  size: 20.sp,
+                  color: hasSelection
+                      ? _accent
+                      : theme.colorScheme.onSurface.withOpacity(0.5),
+                ),
+                SizedBox(width: 12.w),
+                Expanded(
+                  child: Text(
+                    hasSelection
+                        ? '${_selectedWitnesses.length} ta guvoh tanlandi'
+                        : 'Guvohlarni tanlang',
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      fontWeight: hasSelection
+                          ? FontWeight.w600
+                          : FontWeight.w400,
+                      color: hasSelection
+                          ? theme.colorScheme.onSurface
+                          : theme.colorScheme.onSurface.withOpacity(0.5),
+                    ),
                   ),
+                ),
+                Icon(
+                  Icons.keyboard_arrow_down,
+                  color: theme.colorScheme.onSurface.withOpacity(0.5),
                 ),
               ],
             ),
           ),
+        ),
+        // Selected witnesses shown as removable chips.
+        if (hasSelection) ...[
+          SizedBox(height: 10.h),
+          Wrap(
+            spacing: 8.w,
+            runSpacing: 8.h,
+            children: _selectedWitnesses.map((w) {
+              return Container(
+                padding: EdgeInsets.only(
+                  left: 12.w,
+                  right: 6.w,
+                  top: 6.h,
+                  bottom: 6.h,
+                ),
+                decoration: BoxDecoration(
+                  color: _accent.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(20.r),
+                  border: Border.all(color: _accent.withOpacity(0.35)),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      w.fullName,
+                      style: TextStyle(
+                        fontSize: 12.5.sp,
+                        fontWeight: FontWeight.w600,
+                        color: _accent,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    GestureDetector(
+                      onTap: () => setState(() => _selectedWitnesses.remove(w)),
+                      child: Icon(Icons.close, size: 16.sp, color: _accent),
+                    ),
+                  ],
+                ),
+              );
+            }).toList(),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Future<void> _openWitnessPicker() async {
+    FocusScope.of(context).unfocus();
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    String query = '';
+
+    await showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: theme.scaffoldBackgroundColor,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20.r)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setSheet) {
+            final q = query.trim().toLowerCase();
+            final filtered = q.isEmpty
+                ? _allWitnesses
+                : _allWitnesses
+                      .where((w) => w.fullName.toLowerCase().contains(q))
+                      .toList();
+
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(ctx).viewInsets.bottom,
+              ),
+              child: SizedBox(
+                height: MediaQuery.of(ctx).size.height * 0.75,
+                child: Column(
+                  children: [
+                    SizedBox(height: 10.h),
+                    Container(
+                      width: 40.w,
+                      height: 4.h,
+                      decoration: BoxDecoration(
+                        color: theme.colorScheme.onSurface.withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(2.r),
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(16.w, 12.h, 8.w, 8.h),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              'Guvohlar (${_selectedWitnesses.length})',
+                              style: TextStyle(
+                                fontSize: 16.sp,
+                                fontWeight: FontWeight.w700,
+                                color: theme.colorScheme.onSurface,
+                              ),
+                            ),
+                          ),
+                          if (_selectedWitnesses.isNotEmpty)
+                            TextButton(
+                              onPressed: () {
+                                setState(() => _selectedWitnesses.clear());
+                                setSheet(() {});
+                              },
+                              child: Text(
+                                'Tozalash',
+                                style: TextStyle(
+                                  color: const Color(0xFFEF4444),
+                                  fontSize: 13.sp,
+                                ),
+                              ),
+                            ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            child: Text(
+                              'Tayyor',
+                              style: TextStyle(
+                                color: _accent,
+                                fontSize: 14.sp,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Padding(
+                      padding: EdgeInsets.symmetric(horizontal: 16.w),
+                      child: TextField(
+                        autofocus: false,
+                        onChanged: (v) => setSheet(() => query = v),
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          color: theme.colorScheme.onSurface,
+                        ),
+                        cursorColor: _accent,
+                        decoration: InputDecoration(
+                          hintText: 'Xodim ismini qidiring...',
+                          hintStyle: TextStyle(
+                            color: theme.colorScheme.onSurface.withOpacity(0.4),
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search,
+                            color: theme.colorScheme.onSurface.withOpacity(0.5),
+                          ),
+                          isDense: true,
+                          filled: true,
+                          fillColor: isDark
+                              ? const Color(0xFF1E1E1E)
+                              : Colors.grey.shade100,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12.r),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 8.h),
+                    Expanded(
+                      child: filtered.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Xodim topilmadi',
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.4),
+                                ),
+                              ),
+                            )
+                          : ListView.builder(
+                              padding: EdgeInsets.only(bottom: 16.h),
+                              itemCount: filtered.length,
+                              itemBuilder: (context, index) {
+                                final w = filtered[index];
+                                final selected = _selectedWitnesses.contains(w);
+                                return InkWell(
+                                  onTap: () {
+                                    setState(() {
+                                      if (selected) {
+                                        _selectedWitnesses.remove(w);
+                                      } else {
+                                        _selectedWitnesses.add(w);
+                                      }
+                                    });
+                                    setSheet(() {});
+                                  },
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 16.w,
+                                      vertical: 12.h,
+                                    ),
+                                    child: Row(
+                                      children: [
+                                        Icon(
+                                          selected
+                                              ? Icons.check_box
+                                              : Icons.check_box_outline_blank,
+                                          color: selected
+                                              ? _accent
+                                              : theme.colorScheme.onSurface
+                                                    .withOpacity(0.4),
+                                          size: 22.sp,
+                                        ),
+                                        SizedBox(width: 14.w),
+                                        Expanded(
+                                          child: Text(
+                                            w.fullName,
+                                            style: TextStyle(
+                                              fontSize: 14.5.sp,
+                                              fontWeight: selected
+                                                  ? FontWeight.w600
+                                                  : FontWeight.w400,
+                                              color:
+                                                  theme.colorScheme.onSurface,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                );
+                              },
+                            ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
-      }).toList(),
+      },
     );
   }
 
@@ -1083,9 +1415,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
           child: Container(
             padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 10.h),
             decoration: BoxDecoration(
-              color: selected
-                  ? _accent.withOpacity(0.14)
-                  : Colors.transparent,
+              color: selected ? _accent.withOpacity(0.14) : Colors.transparent,
               borderRadius: BorderRadius.circular(12.r),
               border: Border.all(
                 color: selected
@@ -1139,18 +1469,14 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
           textInputAction: textInputAction,
           onSubmitted: (_) => onSubmitted?.call(),
           cursorColor: _accent,
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: theme.colorScheme.onSurface,
-          ),
+          style: TextStyle(fontSize: 14.sp, color: theme.colorScheme.onSurface),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
               color: theme.colorScheme.onSurface.withOpacity(0.4),
             ),
             filled: true,
-            fillColor:
-                isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
+            fillColor: isDark ? const Color(0xFF1E1E1E) : Colors.grey.shade100,
             contentPadding: EdgeInsets.all(14.w),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.r),
@@ -1181,7 +1507,7 @@ class _OrderCancelCreateState extends State<OrderCancelCreate> {
         child: ElevatedButton(
           onPressed: _submitting ? null : _confirmSubmit,
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFFEF4444),
+            backgroundColor: AppColors.cxBlue,
             disabledBackgroundColor: const Color(0xFFEF4444).withOpacity(0.5),
             elevation: 0,
             shape: RoundedRectangleBorder(

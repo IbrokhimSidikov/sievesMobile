@@ -1,3 +1,18 @@
+/// Parses a value that may be an int or a numeric String into an int.
+/// The inventory API returns numeric fields as strings (e.g. "group_id": "9").
+int _asInt(dynamic value, [int fallback = 0]) {
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value) ?? fallback;
+  return fallback;
+}
+
+int? _asIntOrNull(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
 class InventoryItem {
   final int id;
   final String name;
@@ -9,6 +24,7 @@ class InventoryItem {
   final InventoryPriceItem? inventoryPriceList;
   final ChangeableContains? changeableContains;
   final List<ChangeableCategory> changeableCategories;
+  final List<VariantItem> variantItems;
 
   InventoryItem({
     required this.id,
@@ -21,19 +37,30 @@ class InventoryItem {
     this.inventoryPriceList,
     this.changeableContains,
     this.changeableCategories = const [],
+    this.variantItems = const [],
   });
 
   bool get hasChangeableItems =>
       changeableContains != null && changeableContains!.defaultItems.isNotEmpty;
 
+  /// The variant group this item belongs to (via its variantItems), or null.
+  /// Items sharing the same [variantGroupId] are collapsed into one menu card.
+  int? get variantGroupId =>
+      variantItems.isNotEmpty ? variantItems.first.groupId : null;
+
+  /// Display name of the variant group (e.g. "DINNER MEAL"), or null.
+  String? get variantGroupName =>
+      variantItems.isNotEmpty ? variantItems.first.group?.name : null;
+
   factory InventoryItem.fromJson(Map<String, dynamic> json) {
     final categoriesList = json['changeableCategories'] as List<dynamic>? ?? [];
+    final variantsList = json['variantItems'] as List<dynamic>? ?? [];
     return InventoryItem(
-      id: json['id'] ?? 0,
+      id: _asInt(json['id']),
       name: json['name'] ?? '',
-      inventoryGroupId: json['inventory_group_id'],
-      posCategoryId: json['pos_category_id'],
-      photoId: json['photo_id'],
+      inventoryGroupId: _asIntOrNull(json['inventory_group_id']),
+      posCategoryId: _asIntOrNull(json['pos_category_id']),
+      photoId: _asIntOrNull(json['photo_id']),
       inventoryGroup: json['inventoryGroup'] != null
           ? InventoryGroup.fromJson(json['inventoryGroup'])
           : null,
@@ -48,6 +75,9 @@ class InventoryItem {
           : null,
       changeableCategories: categoriesList
           .map((item) => ChangeableCategory.fromJson(item))
+          .toList(),
+      variantItems: variantsList
+          .map((item) => VariantItem.fromJson(item))
           .toList(),
     );
   }
@@ -66,7 +96,70 @@ class InventoryItem {
       'changeableCategories': changeableCategories
           .map((item) => item.toJson())
           .toList(),
+      'variantItems': variantItems.map((item) => item.toJson()).toList(),
     };
+  }
+}
+
+/// A variant entry attached to an inventory item. Each entry references a
+/// [VariantGroup]; items whose variantItems share a group_id are grouped
+/// together in the menu (e.g. "DINNER MEAL NORMAL" / "DINNER MEAL LARGE").
+class VariantItem {
+  final int id;
+  final int? inventoryId;
+  final int groupId;
+  final String label;
+  final int sortOrder;
+  final bool isDefault;
+  final VariantGroup? group;
+
+  VariantItem({
+    required this.id,
+    this.inventoryId,
+    required this.groupId,
+    required this.label,
+    this.sortOrder = 0,
+    this.isDefault = false,
+    this.group,
+  });
+
+  factory VariantItem.fromJson(Map<String, dynamic> json) {
+    return VariantItem(
+      id: _asInt(json['id']),
+      inventoryId: _asIntOrNull(json['inventory_id']),
+      groupId: _asInt(json['group_id']),
+      label: json['label'] ?? '',
+      sortOrder: _asInt(json['sort_order']),
+      isDefault: _asInt(json['is_default']) == 1,
+      group: json['group'] != null ? VariantGroup.fromJson(json['group']) : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'inventory_id': inventoryId,
+      'group_id': groupId,
+      'label': label,
+      'sort_order': sortOrder,
+      'is_default': isDefault ? 1 : 0,
+      'group': group?.toJson(),
+    };
+  }
+}
+
+class VariantGroup {
+  final int id;
+  final String name;
+
+  VariantGroup({required this.id, required this.name});
+
+  factory VariantGroup.fromJson(Map<String, dynamic> json) {
+    return VariantGroup(id: _asInt(json['id']), name: json['name'] ?? '');
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name};
   }
 }
 

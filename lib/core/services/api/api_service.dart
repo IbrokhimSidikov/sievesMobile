@@ -963,7 +963,7 @@ class ApiService {
         'is_active': '1',
         'is_pos': '1',
         'expand':
-            'inventoryPriceList,photo,changeableContains.default.photo,changeableContains.default.inventoryPriceList,changeableCategories.posCategory',
+            'inventoryPriceList,photo,changeableContains.default.photo,changeableContains.default.inventoryPriceList,changeableCategories.posCategory,variantItems.group',
         // Remove limit to fetch all items in one request
         // 'per-page': '500', // Increase to get all items at once
       };
