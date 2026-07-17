@@ -588,9 +588,9 @@ class _BreakPageState extends State<BreakPage>
     // Check if it's a combo product
     if (_comboProductIds.contains(item.id)) {
       _showComboSelectionDialog(item);
-    } else if (_pizzaIds.contains(item.id)) {
-      // Check if it's a pizza product
-      _showPizzaSelectionDialog(item);
+      // } else if (_pizzaIds.contains(item.id)) {
+      //   // Check if it's a pizza product
+      //   _showPizzaSelectionDialog(item);
     } else if (item.hasChangeableItems) {
       _showChangeItemDialog(item);
     } else {
@@ -1809,7 +1809,9 @@ class _BreakPageState extends State<BreakPage>
                   : Icon(
                       Icons.restaurant_outlined,
                       size: 24.sp,
-                      color: theme.colorScheme.onSurfaceVariant.withOpacity(0.3),
+                      color: theme.colorScheme.onSurfaceVariant.withOpacity(
+                        0.3,
+                      ),
                     ),
             ),
           ),
