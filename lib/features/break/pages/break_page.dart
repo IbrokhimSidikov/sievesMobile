@@ -15,7 +15,6 @@ import '../widgets/face_capture_dialog.dart';
 import '../widgets/change_item_dialog.dart';
 import '../widgets/cart_dialog.dart';
 import '../widgets/success_dialog.dart';
-import '../widgets/pizza_selection_dialog.dart';
 import '../widgets/combo_selection_dialog.dart';
 import '../widgets/notice_dialog.dart';
 
@@ -70,27 +69,13 @@ class _BreakPageState extends State<BreakPage>
   bool _hasOrderedToday = false;
   bool _isCheckingDailyOrder = true;
 
-  // Pizza product IDs (matching website logic)
+  // Pizza product IDs — used only to detect which pos_category is the pizza
+  // category when filtering combo options. Pizza type (Italiano/Americano) is
+  // now handled by variant groups from the inventory response.
   final List<int> _pizzaIds = [227, 228, 229, 230, 231, 234, 235, 724];
-
-  // Mapping for Americano product IDs
-  final Map<int, int> _pizzaAmericanoMap = {
-    227: 1011,
-    228: 1012,
-    229: 1013,
-    230: 1014,
-    231: 1015,
-    234: 1016,
-    235: 1017,
-    724: 1018,
-  };
 
   // Combo product IDs (matching website logic)
   final List<int> _comboProductIds = [985, 986, 990, 992, 993, 994, 995];
-
-  // Track selected combo for multi-step selection
-  InventoryItem? _selectedComboProduct;
-  bool _pizzaOptionOpened = false;
 
   @override
   void initState() {
@@ -480,51 +465,32 @@ class _BreakPageState extends State<BreakPage>
     );
   }
 
-  void _showPizzaSelectionDialog(InventoryItem pizzaItem) {
-    showDialog(
-      context: context,
-      builder: (context) => PizzaSelectionDialog(
-        selectedPizza: pizzaItem,
-        onPizzaTypeSelected: (pizzaType) {
-          _handlePizzaSelection(pizzaItem, pizzaType);
-        },
-      ),
-    );
-  }
+  List<InventoryItem> _filterComboProducts(int? posCategoryId) {
+    // The italiano pizzas and the pizza combos share the same pos_category.
+    // Detect that category from the actual pizza items rather than hardcoding
+    // it, so a pizza combo offers the pizzas (not other combos) to choose from.
+    final pizzaCategoryIds = _menuItems
+        .where((item) => _pizzaIds.contains(item.id))
+        .map((item) => item.posCategoryId)
+        .whereType<int>()
+        .toSet();
 
-  void _handlePizzaSelection(InventoryItem pizzaItem, String pizzaType) {
-    InventoryItem productToAdd = pizzaItem;
-
-    // If Americano is selected and there's a mapping, use the Americano version
-    if (pizzaType == 'americano' &&
-        _pizzaAmericanoMap.containsKey(pizzaItem.id)) {
-      final americanoId = _pizzaAmericanoMap[pizzaItem.id];
-      final americanoProduct = _menuItems.firstWhere(
-        (item) => item.id == americanoId,
-        orElse: () => pizzaItem,
-      );
-      productToAdd = americanoProduct;
-    }
-    // If Italiano is selected, use the original pizza product
-
-    // If this pizza is part of a combo selection, add combo first
-    if (_pizzaOptionOpened && _selectedComboProduct != null) {
-      _addToCart(_selectedComboProduct!);
-      setState(() {
-        _selectedComboProduct = null;
-        _pizzaOptionOpened = false;
-      });
+    if (posCategoryId != null && pizzaCategoryIds.contains(posCategoryId)) {
+      // Pizza combo: show the whole pizza category (base + Americano pizzas),
+      // just like the pizza menu, but never the combo products themselves.
+      return _menuItems
+          .where(
+            (item) =>
+                item.posCategoryId == posCategoryId &&
+                !_comboProductIds.contains(item.id),
+          )
+          .toList();
     }
 
-    // Add the selected pizza to cart
-    _addToCart(productToAdd);
-  }
-
-  List<InventoryItem> _filterComboProducts(int posCategoryId) {
-    List<int> categories = [];
-    bool isBurger = true;
-
-    // Match website logic for category filtering
+    // Non-pizza combos keep the original category-based logic, but never offer
+    // a combo product as a fill-in for another combo.
+    List<int> categories;
+    bool isBurger;
     if (posCategoryId == 9) {
       categories = [9];
       isBurger = false;
@@ -533,24 +499,17 @@ class _BreakPageState extends State<BreakPage>
       isBurger = true;
     }
 
-    if (isBurger) {
-      return _menuItems
-          .where((item) => categories.contains(item.posCategoryId))
-          .toList();
-    } else {
+    return _menuItems.where((item) {
+      if (_comboProductIds.contains(item.id)) return false;
+      final inCategory = categories.contains(item.posCategoryId);
+      if (isBurger) return inCategory;
       // For non-burger combos, exclude inventoryGroup.id == 1
-      return _menuItems
-          .where(
-            (item) =>
-                categories.contains(item.posCategoryId) &&
-                item.inventoryGroup?.id != 1,
-          )
-          .toList();
-    }
+      return inCategory && item.inventoryGroup?.id != 1;
+    }).toList();
   }
 
   void _showComboSelectionDialog(InventoryItem comboItem) {
-    final filteredProducts = _filterComboProducts(comboItem.posCategoryId ?? 0);
+    final filteredProducts = _filterComboProducts(comboItem.posCategoryId);
 
     showDialog(
       context: context,
@@ -568,29 +527,16 @@ class _BreakPageState extends State<BreakPage>
     InventoryItem comboItem,
     InventoryItem selectedProduct,
   ) {
-    // If the selected product is a pizza (part of a combo)
-    if (_pizzaIds.contains(selectedProduct.id)) {
-      // Store the combo as the selected combo product
-      setState(() {
-        _selectedComboProduct = comboItem;
-        _pizzaOptionOpened = true;
-      });
-      // Show pizza selection dialog
-      _showPizzaSelectionDialog(selectedProduct);
-    } else {
-      // Add combo first, then the selected product
-      _addToCart(comboItem);
-      _addToCart(selectedProduct);
-    }
+    // Add the combo, then the chosen product. Pizza type (Italiano/Americano)
+    // is now a variant of the selected product, so no extra dialog is needed.
+    _addToCart(comboItem);
+    _addToCart(selectedProduct);
   }
 
   void _handleProductClick(InventoryItem item) {
     // Check if it's a combo product
     if (_comboProductIds.contains(item.id)) {
       _showComboSelectionDialog(item);
-      // } else if (_pizzaIds.contains(item.id)) {
-      //   // Check if it's a pizza product
-      //   _showPizzaSelectionDialog(item);
     } else if (item.hasChangeableItems) {
       _showChangeItemDialog(item);
     } else {
