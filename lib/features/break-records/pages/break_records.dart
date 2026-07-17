@@ -27,6 +27,7 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
   bool _isLoadingBalance = true;
   bool _isOrdersFromCache = false;
   bool _isBalanceFromCache = false;
+  bool _isBalanceExpanded = false; // Balance card starts compact/collapsed
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
   late DateTime _selectedMonth;
@@ -241,179 +242,258 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     return DateFormat('MMMM yyyy').format(_selectedMonth);
   }
 
+  /// True when [createdAt] (stored as GMT+0) falls on the same local (GMT+5)
+  /// day as [nowLocal] — matching the +5 offset used across this page.
+  bool _isSameLocalDay(String createdAt, DateTime nowLocal) {
+    try {
+      final d = DateTime.parse(createdAt).add(const Duration(hours: 5));
+      return d.year == nowLocal.year &&
+          d.month == nowLocal.month &&
+          d.day == nowLocal.day;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  /// Total value of the employee's break orders for today (current day session).
+  int get _todaySpentTotal {
+    final nowLocal = DateTime.now().toUtc().add(const Duration(hours: 5));
+    return _breakOrders
+        .where((o) => _isSameLocalDay(o.createdAt, nowLocal))
+        .fold<int>(0, (sum, o) => sum + o.value);
+  }
+
+  /// Number of break orders placed today.
+  int get _todayOrdersCount {
+    final nowLocal = DateTime.now().toUtc().add(const Duration(hours: 5));
+    return _breakOrders
+        .where((o) => _isSameLocalDay(o.createdAt, nowLocal))
+        .length;
+  }
+
   Widget _buildBreakBalanceCard() {
     return Container(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.all(14.w),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            AppColors.cxWarning,
-            AppColors.cxFEDA84,
-          ],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(20.r),
+        color: AppColors.cxWarning,
+        borderRadius: BorderRadius.circular(18.r),
         boxShadow: [
           BoxShadow(
             color: AppColors.cxWarning.withOpacity(0.3),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
-          BoxShadow(
-            color: AppColors.cxWarning.withOpacity(0.2),
-            blurRadius: 30,
-            offset: const Offset(0, 12),
-          ),
         ],
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Compact header (always visible): balance + refresh + toggle
           Row(
             children: [
-              // Wallet Icon Container
+              // Wallet Icon
               Container(
-            padding: EdgeInsets.all(16.w),
-            decoration: BoxDecoration(
-              color: AppColors.cxWhite.withOpacity(0.25),
-              borderRadius: BorderRadius.circular(16.r),
-              border: Border.all(
-                color: AppColors.cxWhite.withOpacity(0.3),
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cxBlack.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 4),
-                ),
-              ],
-            ),
-            child: Icon(
-              Icons.account_balance_wallet_rounded,
-              color: AppColors.cxWhite,
-              size: 32.sp,
-            ),
-          ),
-          SizedBox(width: 20.w),
-          
-          // Balance Information
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Label
-                Container(
-                  padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxWhite.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(8.r),
-                    border: Border.all(
-                      color: AppColors.cxWhite.withOpacity(0.3),
-                      width: 1,
-                    ),
-                  ),
-                  child: Text(
-                    AppLocalizations.of(context).availableBreakBalance,
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.cxWhite,
-                      letterSpacing: 0.5,
-                    ),
+                padding: EdgeInsets.all(11.w),
+                decoration: BoxDecoration(
+                  color: AppColors.cxWhite.withOpacity(0.25),
+                  borderRadius: BorderRadius.circular(12.r),
+                  border: Border.all(
+                    color: AppColors.cxWhite.withOpacity(0.3),
+                    width: 1.5,
                   ),
                 ),
-                SizedBox(height: 12.h),
-                
-                // Amount
-                _isLoadingBalance
-                    ? _buildBalanceShimmer()
-                    : Row(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          Text(
-                            _formatBalanceAmount(_breakBalance ?? 0),
-                            style: TextStyle(
-                              fontSize: 32.sp,
-                              fontWeight: FontWeight.w800,
-                              color: AppColors.cxWhite,
-                              height: 1.0,
-                              fontFeatures: const [
-                                FontFeature.tabularFigures(),
-                              ],
-                              shadows: [
-                                Shadow(
-                                  color: AppColors.cxBlack.withOpacity(0.15),
-                                  offset: const Offset(0, 2),
-                                  blurRadius: 4,
-                                ),
-                              ],
-                            ),
-                          ),
-                          SizedBox(width: 8.w),
-                          Padding(
-                            padding: EdgeInsets.only(bottom: 4.h),
-                            child: Text(
-                              'UZS',
-                              style: TextStyle(
-                                fontSize: 16.sp,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.cxWhite.withOpacity(0.9),
-                                height: 1.0,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-              ],
-            ),
-          ),
-          
-          // Info Icon
-          Container(
-            padding: EdgeInsets.all(2.w),
-            decoration: BoxDecoration(
-              color: AppColors.cxWhite.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(12.r),
-              border: Border.all(
-                color: AppColors.cxWhite.withOpacity(0.3),
-                width: 1,
+                child: Icon(
+                  Icons.account_balance_wallet_rounded,
+                  color: AppColors.cxWhite,
+                  size: 24.sp,
+                ),
               ),
-            ),
-            child: IconButton(
-              icon: Icon(
-                Icons.refresh,
-                color: AppColors.cxWhite,
-                size: 20.sp,
-              ),
-              onPressed: () async {
-                _fetchBreakOrders(forceRefresh: true);
-              },
-            ),
-          )
+              SizedBox(width: 14.w),
 
+              // Balance label + amount
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      AppLocalizations.of(context).availableBreakBalance,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.cxWhite.withOpacity(0.9),
+                        letterSpacing: 0.3,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    _isLoadingBalance
+                        ? _buildBalanceShimmer()
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.end,
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  _formatBalanceAmount(_breakBalance ?? 0),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    fontSize: 26.sp,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.cxWhite,
+                                    height: 1.0,
+                                    fontFeatures: const [
+                                      FontFeature.tabularFigures(),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                              SizedBox(width: 6.w),
+                              Padding(
+                                padding: EdgeInsets.only(bottom: 2.h),
+                                child: Text(
+                                  'UZS',
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.cxWhite.withOpacity(0.9),
+                                    height: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ],
+                ),
+              ),
+              SizedBox(width: 8.w),
+
+              // Refresh
+              _buildCardIconButton(
+                icon: Icons.refresh_rounded,
+                onTap: () => _fetchBreakOrders(forceRefresh: true),
+              ),
+              SizedBox(width: 8.w),
+
+              // Expand / collapse toggle
+              _buildCardIconButton(
+                icon: Icons.keyboard_arrow_down_rounded,
+                rotated: _isBalanceExpanded,
+                onTap: () => setState(
+                  () => _isBalanceExpanded = !_isBalanceExpanded,
+                ),
+              ),
+            ],
+          ),
+
+          // Collapsible detail: today's spending + month selector
+          AnimatedSize(
+            duration: const Duration(milliseconds: 250),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: _isBalanceExpanded
+                ? Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      SizedBox(height: 14.h),
+                      _buildTodaySpentRow(),
+                      SizedBox(height: 12.h),
+                      _buildMonthSelector(),
+                    ],
+                  )
+                : const SizedBox(width: double.infinity),
+          ),
         ],
       ),
+    );
+  }
 
-      // Month Selector
-      SizedBox(height: 14.h),
-      Container(
-        padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+  /// Small frosted icon button used in the balance card header.
+  Widget _buildCardIconButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    bool rotated = false,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.all(8.w),
         decoration: BoxDecoration(
           color: AppColors.cxWhite.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12.r),
+          borderRadius: BorderRadius.circular(10.r),
           border: Border.all(
             color: AppColors.cxWhite.withOpacity(0.3),
             width: 1,
           ),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            // Previous month
-            GestureDetector(
-              onTap: () => _changeMonth(-1),
+        child: AnimatedRotation(
+          turns: rotated ? 0.5 : 0.0,
+          duration: const Duration(milliseconds: 250),
+          child: Icon(icon, color: AppColors.cxWhite, size: 20.sp),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthSelector() {
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite.withOpacity(0.2),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(
+          color: AppColors.cxWhite.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          // Previous month
+          GestureDetector(
+            onTap: () => _changeMonth(-1),
+            child: Container(
+              padding: EdgeInsets.all(6.w),
+              decoration: BoxDecoration(
+                color: AppColors.cxWhite.withOpacity(0.25),
+                borderRadius: BorderRadius.circular(8.r),
+              ),
+              child: Icon(
+                Icons.chevron_left_rounded,
+                color: AppColors.cxWhite,
+                size: 20.sp,
+              ),
+            ),
+          ),
+
+          // Month label
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.calendar_month_rounded,
+                color: AppColors.cxWhite,
+                size: 16.sp,
+              ),
+              SizedBox(width: 6.w),
+              Text(
+                _formatSelectedMonth(),
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.cxWhite,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+
+          // Next month (disabled if current month)
+          GestureDetector(
+            onTap: () => _changeMonth(1),
+            child: Opacity(
+              opacity: (_selectedMonth.year == DateTime.now().year &&
+                      _selectedMonth.month == DateTime.now().month)
+                  ? 0.35
+                  : 1.0,
               child: Container(
                 padding: EdgeInsets.all(6.w),
                 decoration: BoxDecoration(
@@ -421,60 +501,115 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
                   borderRadius: BorderRadius.circular(8.r),
                 ),
                 child: Icon(
-                  Icons.chevron_left_rounded,
+                  Icons.chevron_right_rounded,
                   color: AppColors.cxWhite,
                   size: 20.sp,
                 ),
               ),
             ),
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Month label
-            Row(
-              mainAxisSize: MainAxisSize.min,
+  /// Frosted panel inside the balance card showing how much the employee has
+  /// spent on break orders today (current day session).
+  Widget _buildTodaySpentRow() {
+    final total = _todaySpentTotal;
+    final count = _todayOrdersCount;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+      decoration: BoxDecoration(
+        color: AppColors.cxWhite.withOpacity(0.18),
+        borderRadius: BorderRadius.circular(14.r),
+        border: Border.all(
+          color: AppColors.cxWhite.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Icon
+          Container(
+            padding: EdgeInsets.all(9.w),
+            decoration: BoxDecoration(
+              color: AppColors.cxWhite.withOpacity(0.25),
+              borderRadius: BorderRadius.circular(10.r),
+              border: Border.all(
+                color: AppColors.cxWhite.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Icon(
+              Icons.today_rounded,
+              color: AppColors.cxWhite,
+              size: 18.sp,
+            ),
+          ),
+          SizedBox(width: 12.w),
+
+          // Label + order count
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.calendar_month_rounded,
-                  color: AppColors.cxWhite,
-                  size: 16.sp,
-                ),
-                SizedBox(width: 6.w),
                 Text(
-                  _formatSelectedMonth(),
+                  AppLocalizations.of(context).spentToday,
                   style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.cxWhite,
-                    letterSpacing: 0.5,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  '$count ${count == 1 ? AppLocalizations.of(context).order : AppLocalizations.of(context).orders}',
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w500,
+                    color: AppColors.cxWhite.withOpacity(0.8),
                   ),
                 ),
               ],
             ),
+          ),
+          SizedBox(width: 12.w),
 
-            // Next month (disabled if current month)
-            GestureDetector(
-              onTap: () => _changeMonth(1),
-              child: Opacity(
-                opacity: (_selectedMonth.year == DateTime.now().year &&
-                        _selectedMonth.month == DateTime.now().month)
-                    ? 0.35
-                    : 1.0,
-                child: Container(
-                  padding: EdgeInsets.all(6.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxWhite.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Icon(
-                    Icons.chevron_right_rounded,
-                    color: AppColors.cxWhite,
-                    size: 20.sp,
-                  ),
+          // Amount
+          _isLoading
+              ? _buildBalanceShimmer()
+              : Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text(
+                      _formatBalanceAmount(total.toDouble()),
+                      style: TextStyle(
+                        fontSize: 20.sp,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.cxWhite,
+                        height: 1.0,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    Padding(
+                      padding: EdgeInsets.only(bottom: 2.h),
+                      child: Text(
+                        'UZS',
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.cxWhite.withOpacity(0.9),
+                          height: 1.0,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
         ],
       ),
     );

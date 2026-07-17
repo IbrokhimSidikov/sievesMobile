@@ -113,6 +113,10 @@ class _BreakPageState extends State<BreakPage>
   // Check if current time is within allowed order windows
 
   bool _isWithinOrderTime() {
+    // Own-branch users can order any time (no lunch window).
+    if (_authManager.isBreakOwnBranchUser) {
+      return true;
+    }
     // Bypass time restriction for department IDs 16 and 28
     final departmentId = _authManager.currentIdentity?.employee?.departmentId;
     if (departmentId == 16 ||
@@ -231,6 +235,9 @@ class _BreakPageState extends State<BreakPage>
   }
 
   void _showNoticeDialog() {
+    // Only branch 2 orders route to City Boulevard, so only they see this
+    // notice. Other branches order for their own branch.
+    if (_authManager.currentIdentity?.employee?.branchId != 2) return;
     showDialog(
       context: context,
       barrierDismissible: true,
@@ -635,8 +642,8 @@ class _BreakPageState extends State<BreakPage>
       return;
     }
 
-    // Check if already ordered today
-    if (_hasOrderedToday) {
+    // Check if already ordered today (own-branch users may order unlimited).
+    if (_hasOrderedToday && !_authManager.isBreakOwnBranchUser) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -915,12 +922,16 @@ class _BreakPageState extends State<BreakPage>
       }
 
       final employeeId = _authManager.currentEmployeeId;
-      final branchId = _authManager.currentIdentity?.employee?.branchId;
+      final employeeBranchId = _authManager.currentIdentity?.employee?.branchId;
+      // Destination branch: own-branch users route to their own branch,
+      // branch 2/6/office route to Boulevard (14).
+      final branchId = _authManager.breakOrderBranchId;
       final totalValue = _getCartTotal();
 
       print('');
       print('   Employee ID: $employeeId');
-      print('   Branch ID: $branchId');
+      print('   Employee Branch ID: $employeeBranchId');
+      print('   Order Branch ID: $branchId');
       print('   Break Photo ID: $photoId');
       print('   Total Value: $totalValue UZS');
 
@@ -1208,10 +1219,11 @@ class _BreakPageState extends State<BreakPage>
               SizedBox(width: 16.w),
               Expanded(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
                     Text(
                       AppLocalizations.of(context).breakOrder,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 22.sp,
                         fontWeight: FontWeight.w700,
@@ -1222,6 +1234,7 @@ class _BreakPageState extends State<BreakPage>
                     SizedBox(height: 2.h),
                     Text(
                       AppLocalizations.of(context).breakOrderSubtitle,
+                      textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 13.sp,
                         fontWeight: FontWeight.w500,
@@ -2249,14 +2262,18 @@ class _BreakPageState extends State<BreakPage>
   Widget _buildCartFooter(ThemeData theme, bool isDark) {
     final total = _getCartTotal();
     final itemCount = _getCartItemCount();
+    // Own-branch users may order unlimited, so the daily-order block doesn't
+    // apply to them.
+    final isOwnBranchUser = _authManager.isBreakOwnBranchUser;
+    final blockedByDailyLimit = _hasOrderedToday && !isOwnBranchUser;
     final canOrder =
-        _isWithinOrderTime() && !_hasOrderedToday && !_isCheckingDailyOrder;
+        _isWithinOrderTime() && !blockedByDailyLimit && !_isCheckingDailyOrder;
 
     // Determine restriction message
     String? restrictionMessage;
     if (_isCheckingDailyOrder) {
       restrictionMessage = null; // Still checking
-    } else if (_hasOrderedToday) {
+    } else if (blockedByDailyLimit) {
       restrictionMessage = 'Already ordered today';
     } else if (!_isWithinOrderTime()) {
       restrictionMessage = 'Outside order hours';

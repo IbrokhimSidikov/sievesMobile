@@ -1136,7 +1136,9 @@ class ApiService {
         'break_photo_id': breakPhotoId,
         'note': null,
         'customer_quantity': 1,
-        'branch_id': 14, //boulevard, office employees
+        // Destination branch: own-branch users route to their own branch,
+        // branch 2/6/office route to Boulevard (14). Computed by the caller.
+        'branch_id': branchId,
         'paid': totalValue,
       };
 

@@ -92,6 +92,9 @@ class AppLocalizations {
 
       //Break Records
       'availableBreakBalance': 'Available Balance',
+      'spentToday': 'Spent today',
+      'order': 'order',
+      'orders': 'orders',
       'amount': 'Amount',
       'details': 'Details',
       'breakRecord': 'Break Record',
@@ -559,6 +562,9 @@ class AppLocalizations {
 
       //Break Records
       'availableBreakBalance': 'Mavjud balans',
+      'spentToday': 'Bugun sarflandi',
+      'order': 'buyurtma',
+      'orders': 'buyurtma',
       'amount': 'Miqdor',
       'details': 'Tafsilotlar',
       'breakRecord': 'Break qaydlari',
@@ -1058,6 +1064,9 @@ class AppLocalizations {
 
       //Break Records
       'availableBreakBalance': 'Доступный баланс',
+      'spentToday': 'Потрачено сегодня',
+      'order': 'заказ',
+      'orders': 'заказов',
       'amount': 'Сумма',
       'details': 'Детали',
       'breakRecord': 'Запись перерыва',
@@ -1568,6 +1577,9 @@ class AppLocalizations {
 
   //Break Records
   String get availableBreakBalance => translate('availableBreakBalance');
+  String get spentToday => translate('spentToday');
+  String get order => translate('order');
+  String get orders => translate('orders');
   String get amount => translate('amount');
   String get details => translate('details');
   String get breakRecord => translate('breakRecord');

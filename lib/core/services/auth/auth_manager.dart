@@ -71,10 +71,35 @@ class AuthManager {
            role == 'cashier';
   }
   
-  // Check if user has access to break order (branch == 2)
+  // Branches whose managers order break for their OWN branch: unlimited orders,
+  // no lunch-time window, and the order is routed to their own branch_id.
+  static const List<int> breakOwnBranchIds = [3, 4, 5, 11, 14, 25];
+
+  // Check if user has access to break order.
+  // Branch 2 or 6 keep their existing access (any role); managers of the
+  // own-branch list can also order.
   bool get hasBreakAccess {
     if (_currentIdentity == null) return false;
-    return _currentIdentity!.employee?.branchId == 2 || _currentIdentity!.employee?.branchId == 6;
+    final branchId = _currentIdentity!.employee?.branchId;
+    if (branchId == 2 || branchId == 6) return true;
+    final role = _currentIdentity!.role.toLowerCase();
+    return role == 'manager' && breakOwnBranchIds.contains(branchId);
+  }
+
+  // True when the current employee belongs to an own-branch break branch
+  // (unlimited orders, no time window, order routed to their own branch).
+  bool get isBreakOwnBranchUser {
+    final branchId = _currentIdentity?.employee?.branchId;
+    return branchId != null && breakOwnBranchIds.contains(branchId);
+  }
+
+  // Destination branch for a break order. Own-branch users route to their own
+  // branch; everyone else (branch 2, 6, office) routes to Boulevard (14).
+  int? get breakOrderBranchId {
+    final branchId = _currentIdentity?.employee?.branchId;
+    if (branchId == null) return null;
+    if (breakOwnBranchIds.contains(branchId)) return branchId;
+    return 14;
   }
   
   // Check if user has access to checklists (admin, manager, teamleader, trainer, superadmin)
