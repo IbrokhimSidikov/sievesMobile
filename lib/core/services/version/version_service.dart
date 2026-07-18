@@ -22,6 +22,9 @@ class VersionService {
       'update_message': 'A new version is available. Please update to continue.',
       'android_store_url': 'https://play.google.com/store/apps/details?id=com.sieves.v1.sieves_mob',
       'ios_store_url': 'https://apps.apple.com/app/sieves/id6753124737',
+      // Work-entry branch geofence for own-branch managers. Defaults to ON
+      // (fail-secure); set false in Firebase Console to disable enforcement.
+      'work_entry_geofence_enabled': true,
     });
 
     // Fetch and activate from Firebase Console

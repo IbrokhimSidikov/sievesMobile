@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:firebase_remote_config/firebase_remote_config.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/auth/auth_service.dart';
 import '../../../core/services/api/api_service.dart';
@@ -27,6 +28,23 @@ class WorkEntryService {
   // Own-branch managers must be within this radius of their branch to register
   // a work entry (client-side geofence).
   static const double _branchGeofenceRadiusMeters = 150;
+
+  /// Whether the own-branch geofence is enforced, controlled by the Firebase
+  /// Remote Config flag `work_entry_geofence_enabled`. Defaults to enabled
+  /// (fail-secure) if the value can't be read.
+  bool _isWorkEntryGeofenceEnabled() {
+    try {
+      return FirebaseRemoteConfig.instance.getBool(
+        'work_entry_geofence_enabled',
+      );
+    } catch (e) {
+      print(
+        '⚠️ [WORK ENTRY] Could not read geofence flag; defaulting to enabled: $e',
+      );
+      return true;
+    }
+  }
+
   final AuthManager _authManager = AuthManager();
   late final ApiService _apiService;
   final LocationService _locationService = LocationService();
@@ -319,9 +337,14 @@ class WorkEntryService {
       // ─────────────────────────────────────────────────────────────────
       final skipLocationValidation = departmentId == 28;
       final requiresBranchGeofence = _authManager.requiresBranchGeofence;
+      // Remote Config switch: when off, the branch geofence is not enforced.
+      final geofenceEnabled = _isWorkEntryGeofenceEnabled();
+      final enforceGeofence = requiresBranchGeofence && geofenceEnabled;
 
       double? latitude;
       double? longitude;
+      // Own-branch managers never send coordinates to the server (avoids the
+      // backend's fixed-location geofence), regardless of the switch.
       bool sendLocationToServer = !requiresBranchGeofence;
 
       print('┌─────────────────────────────────────────────────────────────┐');
@@ -331,6 +354,10 @@ class WorkEntryService {
       if (skipLocationValidation) {
         print(
           '⏭️ [WORK ENTRY] Department $departmentId - Skipping location validation',
+        );
+      } else if (requiresBranchGeofence && !geofenceEnabled) {
+        print(
+          '⏭️ [WORK ENTRY] Branch geofence disabled via Remote Config - skipping',
         );
       } else {
         final locationData = await _locationService.getCurrentLocation();
@@ -342,7 +369,7 @@ class WorkEntryService {
           print('⚠️ [WORK ENTRY] Could not get location');
         }
 
-        if (requiresBranchGeofence) {
+        if (enforceGeofence) {
           if (latitude == null || longitude == null) {
             print('❌ [WORK ENTRY] Geofence: location unavailable');
             return {
