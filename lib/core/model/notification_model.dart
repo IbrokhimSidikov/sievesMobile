@@ -107,6 +107,8 @@ class NotificationModel {
     switch (t) {
       case 'contract_activated':
         return Icons.workspace_premium_rounded;
+      case 'training_reminder':
+        return Icons.school_rounded;
       case 'announcement':
         return Icons.campaign_rounded;
       case 'attendance':
@@ -134,6 +136,8 @@ class NotificationModel {
     switch (t) {
       case 'contract_activated':
         return const Color(0xFFF59E0B); // Amber (celebratory)
+      case 'training_reminder':
+        return const Color(0xFF0071E3); // Blue
       case 'announcement':
         return const Color(0xFF43C19F); // Brand teal
       case 'attendance':
@@ -160,6 +164,8 @@ class NotificationModel {
     switch (t) {
       case 'contract_activated':
         return const Color(0xFFD97706); // Amber (darker)
+      case 'training_reminder':
+        return const Color(0xFF007AFF); // Blue
       case 'announcement':
         return const Color(0xFF2E9B7E); // Brand teal (darker)
       case 'attendance':
