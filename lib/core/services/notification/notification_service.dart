@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 import '../../model/notification_model.dart';
 import '../../utils/global_keys.dart';
 import '../../../features/notification/widgets/announcement_dialog.dart';
+import '../../../features/notification/widgets/contract_congrats_dialog.dart';
 import 'notification_storage_service.dart';
 import '../api/api_service.dart';
 import '../auth/auth_manager.dart';
@@ -240,12 +241,20 @@ class NotificationService {
   Future<void> _handleForegroundNotification(RemoteMessage message) async {
     // Save notification to storage
     await _saveNotificationToStorage(message);
-    
-    // You can show a custom dialog, snackbar, or banner here
-    // Example: Show a snackbar with notification content
-    
-    // This is where you'd integrate with your UI layer
-    // For example, using a GlobalKey<ScaffoldMessengerState>
+
+    final data = message.data;
+
+    // Contract-activation notifications pop the congratulatory dialog straight
+    // away so the employee is celebrated while the app is open.
+    if ((data['type'] as String?) == 'contract_activated') {
+      final title = message.notification?.title ??
+          (data['title'] as String?) ??
+          'New Contract';
+      final body =
+          message.notification?.body ?? (data['body'] as String?) ?? '';
+      final duration = data['durationText'] as String?;
+      _showContractCongratsWhenReady(title, body, duration);
+    }
   }
 
   /// Handle notification tap - navigate to appropriate screen
@@ -257,6 +266,18 @@ class NotificationService {
     // Save notification to storage (important for iOS where background handler may not run)
     await _saveNotificationToStorage(message);
     print('✅ Notification saved on tap');
+
+    // Contract-activation notifications open a congratulatory pop-up
+    if ((data['type'] as String?) == 'contract_activated') {
+      final title = message.notification?.title ??
+          (data['title'] as String?) ??
+          'New Contract';
+      final body =
+          message.notification?.body ?? (data['body'] as String?) ?? '';
+      final duration = data['durationText'] as String?;
+      _showContractCongratsWhenReady(title, body, duration);
+      return;
+    }
 
     // Announcement notifications open as a clean in-app pop-up
     if ((data['type'] as String?) == 'announcement') {
@@ -341,6 +362,36 @@ class NotificationService {
       await Future.delayed(const Duration(milliseconds: 300));
     }
     print('⚠️ Could not show announcement: navigator context unavailable');
+  }
+
+  /// Show the contract-congratulation pop-up once the navigator/UI is ready.
+  ///
+  /// Retries because the app may have been launched from a terminated state
+  /// (via [getInitialMessage]) where the widget tree isn't mounted yet.
+  Future<void> _showContractCongratsWhenReady(
+    String title,
+    String body,
+    String? duration,
+  ) async {
+    for (int attempt = 0; attempt < 40; attempt++) {
+      final context = rootNavigatorKey.currentContext;
+      if (context != null) {
+        print('🎉 Showing contract congratulation pop-up');
+        await showDialog(
+          context: context,
+          barrierDismissible: true,
+          barrierColor: Colors.black.withOpacity(0.55),
+          builder: (_) => ContractCongratsDialog(
+            title: title,
+            body: body,
+            duration: duration,
+          ),
+        );
+        return;
+      }
+      await Future.delayed(const Duration(milliseconds: 300));
+    }
+    print('⚠️ Could not show contract congrats: navigator context unavailable');
   }
 
   /// Subscribe to a topic

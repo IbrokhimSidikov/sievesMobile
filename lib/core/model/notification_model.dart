@@ -105,6 +105,8 @@ class NotificationModel {
     if (t.startsWith('task_')) return Icons.task_alt_rounded;
     if (t.startsWith('exam')) return Icons.quiz_rounded;
     switch (t) {
+      case 'contract_activated':
+        return Icons.workspace_premium_rounded;
       case 'announcement':
         return Icons.campaign_rounded;
       case 'attendance':
@@ -130,6 +132,8 @@ class NotificationModel {
     if (t.startsWith('task_')) return const Color(0xFF14B8A6); // Teal
     if (t.startsWith('exam')) return const Color(0xFF7C3AED); // Violet
     switch (t) {
+      case 'contract_activated':
+        return const Color(0xFFF59E0B); // Amber (celebratory)
       case 'announcement':
         return const Color(0xFF43C19F); // Brand teal
       case 'attendance':
@@ -154,6 +158,8 @@ class NotificationModel {
     if (t.startsWith('task_')) return const Color(0xFF0EA5A4);
     if (t.startsWith('exam')) return const Color(0xFF6D28D9); // Violet (darker)
     switch (t) {
+      case 'contract_activated':
+        return const Color(0xFFD97706); // Amber (darker)
       case 'announcement':
         return const Color(0xFF2E9B7E); // Brand teal (darker)
       case 'attendance':

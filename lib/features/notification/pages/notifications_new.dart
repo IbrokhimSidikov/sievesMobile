@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/model/notification_model.dart';
 import '../../../core/services/auth/auth_manager.dart';
+import '../widgets/contract_congrats_dialog.dart';
 
 class NotificationsPage extends StatefulWidget {
   const NotificationsPage({super.key});
@@ -100,6 +101,20 @@ class _NotificationsPageState extends State<NotificationsPage>
     }
     if (_isExamNotification(n)) {
       context.push('/examPage');
+      return;
+    }
+    // Re-open the congratulatory pop-up for a contract-activation notification.
+    if (n.type.toLowerCase() == 'contract_activated') {
+      showDialog(
+        context: context,
+        barrierDismissible: true,
+        barrierColor: Colors.black.withOpacity(0.55),
+        builder: (_) => ContractCongratsDialog(
+          title: n.title,
+          body: n.body,
+          duration: n.data?['durationText'] as String?,
+        ),
+      );
     }
   }
 
