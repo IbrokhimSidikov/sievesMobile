@@ -93,6 +93,10 @@ class AuthManager {
     return branchId != null && breakOwnBranchIds.contains(branchId);
   }
 
+  // Work-entry (face verification) for own-branch managers is geofenced to
+  // their branch location. Break orders are NOT geofenced.
+  bool get requiresBranchGeofence => isBreakOwnBranchUser;
+
   // Destination branch for a break order. Own-branch users route to their own
   // branch; everyone else (branch 2, 6, office) routes to Boulevard (14).
   int? get breakOrderBranchId {

@@ -1186,6 +1186,44 @@ class ApiService {
     }
   }
 
+  /// Fetches a branch's geo coordinates via GET /v1/branch/{id}.
+  /// Returns a map with 'lat'/'lng', or null if the branch or its
+  /// coordinates are unavailable. Read-only — no server-side changes.
+  Future<Map<String, double>?> getBranchLocation(int branchId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$baseUrl/branch/$branchId');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode != 200) {
+        print(
+          '❌ [BRANCH] Failed to fetch branch $branchId: ${response.statusCode}',
+        );
+        return null;
+      }
+
+      final decoded = jsonDecode(response.body);
+      if (decoded is! Map) return null;
+
+      double? toDouble(dynamic v) {
+        if (v is num) return v.toDouble();
+        if (v is String) return double.tryParse(v);
+        return null;
+      }
+
+      final lat = toDouble(decoded['lat']);
+      final lng = toDouble(decoded['lng']);
+      if (lat == null || lng == null) {
+        print('⚠️ [BRANCH] Branch $branchId has no coordinates configured');
+        return null;
+      }
+      return {'lat': lat, 'lng': lng};
+    } catch (e) {
+      print('❌ [BRANCH] Exception fetching branch $branchId location: $e');
+      return null;
+    }
+  }
+
   // Get POS categories
   Future<List<PosActiveCategory>> getPosCategories() async {
     final startTime = DateTime.now();

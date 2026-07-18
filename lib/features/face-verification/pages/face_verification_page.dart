@@ -202,7 +202,9 @@ class _FaceVerificationPageState extends State<FaceVerificationPage>
           if (errorType == 'face_verification_failed') {
             _showFaceVerificationErrorDialog(AppLocalizations.of(context).snackbarFaceVerifFailed);
           } else if (errorType == 'location_error') {
-            _showLocationErrorDialog(AppLocalizations.of(context).locationError);
+            // Show the actual reason (e.g. distance from branch, GPS off) rather
+            // than a generic message.
+            _showLocationErrorDialog(displayMessage);
           } else {
             _showGenericErrorDialog(displayMessage);
           }
