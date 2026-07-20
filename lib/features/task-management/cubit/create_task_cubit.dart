@@ -12,9 +12,12 @@ class CreateTaskCubit extends Cubit<CreateTaskState> {
         super(const CreateTaskState());
 
   Future<void> loadForm() async {
+    print('📋 [CREATE TASK] loadForm() started');
     emit(state.copyWith(loadingForm: true, clearFormError: true));
     try {
+      print('📋 [CREATE TASK] Fetching departments...');
       final departments = await _api.fetchDepartments(branchId: 2);
+      print('📋 [CREATE TASK] Fetching spaces...');
       final allSpaces = await _api.fetchSpaces();
       // Keep only spaces that belong to the branch's departments.
       final departmentIds = departments.map((d) => d.id).toSet();
@@ -22,14 +25,25 @@ class CreateTaskCubit extends Cubit<CreateTaskState> {
           .where((s) =>
               s.departmentId == null || departmentIds.contains(s.departmentId))
           .toList();
+      print(
+        '✅ [CREATE TASK] loadForm done: '
+        '${departments.length} departments, ${spaces.length} spaces',
+      );
       emit(state.copyWith(
         loadingForm: false,
         departments: departments,
         spaces: spaces,
       ));
-    } on TaskApiException catch (e) {
+    } on TaskApiException catch (e, st) {
+      print(
+        '❌ [CREATE TASK] loadForm TaskApiException: '
+        '${e.message} (status ${e.statusCode})',
+      );
+      print('❌ [CREATE TASK] Stack: $st');
       emit(state.copyWith(loadingForm: false, formError: e.message));
-    } catch (e) {
+    } catch (e, st) {
+      print('❌ [CREATE TASK] loadForm unexpected error: $e');
+      print('❌ [CREATE TASK] Stack: $st');
       emit(state.copyWith(loadingForm: false, formError: 'Error: $e'));
     }
   }

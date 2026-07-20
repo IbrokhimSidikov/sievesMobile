@@ -242,8 +242,26 @@ class TaskApi {
     if (branchId != null) qp['branch_id'] = '$branchId';
     final url =
         Uri.parse('$_v1BaseUrl/department').replace(queryParameters: qp);
-    final res = await http.get(url, headers: await _authHeaders());
+    print('🏢 [TASK API] GET departments: $url (branchId=$branchId)');
+
+    final http.Response res;
+    try {
+      res = await http.get(url, headers: await _authHeaders());
+    } catch (e, st) {
+      // Network/DNS/timeout/auth-header failure never reaches the server.
+      print('❌ [TASK API] Departments request threw: $e');
+      print('❌ [TASK API] Stack: $st');
+      rethrow;
+    }
+
+    print(
+      '🏢 [TASK API] Departments response: ${res.statusCode} '
+      '(${res.body.length} bytes)',
+    );
     if (res.statusCode != 200) {
+      // Log the real reason (e.g. 401 token expired, 403 forbidden, 500 body).
+      print('❌ [TASK API] Failed to load departments: HTTP ${res.statusCode}');
+      print('❌ [TASK API] Response body: ${res.body}');
       throw TaskApiException(
         'Failed to load departments',
         statusCode: res.statusCode,
@@ -259,8 +277,16 @@ class TaskApi {
         .map((e) => DepartmentBrief.fromJson(e as Map<String, dynamic>))
         .toList();
     // Guard: server may ignore unknown query params, so also filter client-side.
-    if (branchId == null) return all;
-    return all.where((d) => d.branchId == branchId).toList();
+    if (branchId == null) {
+      print('✅ [TASK API] Loaded ${all.length} departments (no branch filter)');
+      return all;
+    }
+    final filtered = all.where((d) => d.branchId == branchId).toList();
+    print(
+      '✅ [TASK API] Loaded ${all.length} departments, '
+      '${filtered.length} match branch $branchId',
+    );
+    return filtered;
   }
 
   // Job positions that can be assigned tasks regardless of branch
