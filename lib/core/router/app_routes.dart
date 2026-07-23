@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:sieves_mob/features/exam/pages/exam_page.dart';
 import 'package:sieves_mob/features/home/pages/home.dart';
+import 'package:sieves_mob/features/introduction-trainings/pages/intro_employee_list.dart';
+import 'package:sieves_mob/features/introduction-trainings/pages/training_list_detail.dart';
+import 'package:sieves_mob/features/task-management/models/task_model.dart' show EmployeeBrief;
 import 'package:sieves_mob/features/orderCancel/pages/order_cancel.dart';
 
 import '../../features/attendance/pages/attendance.dart';
@@ -72,6 +75,8 @@ class AppRoutes {
   static const String taskCreate = '/taskCreate';
   static const String examPage = '/examPage';
   static const String orderCancel = '/orderCancel';
+  static const String introEmployeeList = '/introEmployeeList';
+  static const String introTrainingList = '/introTrainingList';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -294,6 +299,19 @@ class AppRoutes {
           path: '/orderCancel',
           name: orderCancel,
           builder: (context, state) => const OrderCancel(),
+        ),
+        GoRoute(
+          path: '/introEmployeeList',
+          name: introEmployeeList,
+          builder: (context, state) => const IntroEmployeeList(),
+        ),
+        GoRoute(
+          path: '/introTrainingList',
+          name: introTrainingList,
+          builder: (context, state) {
+            final employee = state.extra as EmployeeBrief;
+            return TrainingListDetail(employee: employee);
+          },
         ),
       ],
     );

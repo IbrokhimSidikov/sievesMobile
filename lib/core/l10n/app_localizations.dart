@@ -478,7 +478,23 @@ class AppLocalizations {
       'examSubmit': 'Submit Exam',
       'examSelectAllThatApply': 'Select all that apply',
       'examSelectOne': 'Select one answer',
-      'examViewResult': 'View result'
+      'examViewResult': 'View result',
+      'introEmployeeListTitle':'Employee Productivity',
+      'introEmployeeListSubtitle':'Track employee productivity',
+      'introEmployeesHeader': 'Introduction Trainings',
+      'introEmployeesSubtitle': 'Select an employee to view their onboarding checklist',
+      'introSearchHint': 'Search employees',
+      'introNoEmployees': 'No employees found',
+      'introChecklistTitle': 'Training Checklist',
+      'introNoTrainings': 'No trainings assigned yet',
+      'introCompleted': 'Completed',
+      'introPending': 'Pending',
+      'introRequired': 'Required',
+      'introExtra': 'Extra',
+      'introCompletedOfTotal': '{completed} of {total} completed',
+      'introChecked': 'Checked',
+      'introNotChecked': 'Not checked',
+      'introTapToCheck': 'Tap to check items'
     },
     'uz': {
       'title': 'Sieves',
@@ -952,7 +968,23 @@ class AppLocalizations {
       'examSubmit': 'Imtihonni yuborish',
       'examSelectAllThatApply': 'Barcha to\'g\'ri javoblarni tanlang',
       'examSelectOne': 'Bitta javobni tanlang',
-      'examViewResult': 'Natijani ko\'rish'
+      'examViewResult': 'Natijani ko\'rish',
+      'introEmployeeListTitle':'Hodim tanishtiruvi',
+      'introEmployeeListSubtitle':'Tanishtiruv cheklisti',
+      'introEmployeesHeader': 'Tanishtiruv treninglari',
+      'introEmployeesSubtitle': 'Cheklistni ko\'rish uchun hodimni tanlang',
+      'introSearchHint': 'Hodimlarni qidirish',
+      'introNoEmployees': 'Hodimlar topilmadi',
+      'introChecklistTitle': 'Trening cheklisti',
+      'introNoTrainings': 'Hozircha trening biriktirilmagan',
+      'introCompleted': 'Bajarilgan',
+      'introPending': 'Kutilmoqda',
+      'introRequired': 'Majburiy',
+      'introExtra': 'Qo\'shimcha',
+      'introCompletedOfTotal': '{total} tadan {completed} tasi bajarilgan',
+      'introChecked': 'Belgilangan',
+      'introNotChecked': 'Belgilanmagan',
+      'introTapToCheck': 'Belgilash uchun bosing'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1437,7 +1469,23 @@ class AppLocalizations {
       'examSubmit': 'Отправить экзамен',
       'examSelectAllThatApply': 'Выберите все подходящие варианты',
       'examSelectOne': 'Выберите один ответ',
-      'examViewResult': 'Посмотреть результат'
+      'examViewResult': 'Посмотреть результат',
+      'introEmployeeListTitle': 'Производительность сотрудников',
+      'introEmployeeListSubtitle': 'Отслеживайте производительность сотрудников',
+      'introEmployeesHeader': 'Вводные тренинги',
+      'introEmployeesSubtitle': 'Выберите сотрудника, чтобы открыть чек-лист',
+      'introSearchHint': 'Поиск сотрудников',
+      'introNoEmployees': 'Сотрудники не найдены',
+      'introChecklistTitle': 'Учебный чек-лист',
+      'introNoTrainings': 'Тренинги пока не назначены',
+      'introCompleted': 'Завершено',
+      'introPending': 'Ожидается',
+      'introRequired': 'Обязательно',
+      'introExtra': 'Дополнительно',
+      'introCompletedOfTotal': 'Завершено {completed} из {total}',
+      'introChecked': 'Отмечено',
+      'introNotChecked': 'Не отмечено',
+      'introTapToCheck': 'Нажмите, чтобы отметить'
     },
   };
 
@@ -1885,4 +1933,24 @@ class AppLocalizations {
   String get examSelectAllThatApply => translate('examSelectAllThatApply');
   String get examSelectOne => translate('examSelectOne');
   String get examViewResult => translate('examViewResult');
+  String get introEmployeeListTitle => translate('introEmployeeListTitle');
+  String get introEmployeeListSubtitle => translate('introEmployeeListSubtitle');
+  String get introEmployeesHeader => translate('introEmployeesHeader');
+  String get introEmployeesSubtitle => translate('introEmployeesSubtitle');
+  String get introSearchHint => translate('introSearchHint');
+  String get introNoEmployees => translate('introNoEmployees');
+  String get introChecklistTitle => translate('introChecklistTitle');
+  String get introNoTrainings => translate('introNoTrainings');
+  String get introCompleted => translate('introCompleted');
+  String get introPending => translate('introPending');
+  String get introRequired => translate('introRequired');
+  String get introExtra => translate('introExtra');
+  String introCompletedOfTotal(int completed, int total) =>
+      translate('introCompletedOfTotal')
+          .replaceAll('{completed}', '$completed')
+          .replaceAll('{total}', '$total');
+  String get introChecked => translate('introChecked');
+  String get introNotChecked => translate('introNotChecked');
+  String get introTapToCheck => translate('introTapToCheck');
+
 }

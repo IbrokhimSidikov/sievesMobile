@@ -60,6 +60,17 @@ class AuthManager {
            role == 'superadmin';
   }
 
+  // Roles allowed to mark intro-training checklist items done for an employee.
+  bool get canManageIntroTrainings {
+    if (_currentIdentity == null) return false;
+    final role = _currentIdentity!.role.toLowerCase();
+    return role == 'admin' ||
+        role == 'manager' ||
+        role == 'teamleader' ||
+        role == 'trainer' ||
+        role == 'superadmin';
+  }
+
   bool get hasCancelAccess {
     if (_currentIdentity == null) return false;
     final role = _currentIdentity!.role.toLowerCase();
