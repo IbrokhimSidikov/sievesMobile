@@ -1805,8 +1805,11 @@ class _BreakPageState extends State<BreakPage>
           if (quantity == 0)
             GestureDetector(
               onTap: () {
+                // Collapse the variant sheet first, then handle the pick so any
+                // follow-up dialog (combo / changeable meal) opens on the page
+                // navigator instead of being popped along with the sheet.
+                Navigator.of(context).pop();
                 _handleProductClick(item);
-                setSheetState(() {});
               },
               child: Container(
                 padding: EdgeInsets.all(8.w),

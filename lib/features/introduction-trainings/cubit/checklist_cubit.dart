@@ -31,13 +31,14 @@ class ChecklistCubit extends Cubit<ChecklistState> {
     required int trainingId,
     required int checklistId,
     required bool completed,
+    String? note,
   }) async {
     final current = state;
     if (current is! ChecklistLoaded || _employeeId == null) return;
     if (current.updating.contains(checklistId)) return;
 
     final optimistic =
-        _apply(current.data, trainingId, checklistId, completed);
+        _apply(current.data, trainingId, checklistId, completed, note);
     emit(current.copyWith(
       data: optimistic,
       updating: {...current.updating, checklistId},
@@ -48,6 +49,7 @@ class ChecklistCubit extends Cubit<ChecklistState> {
         employeeId: _employeeId!,
         checklistId: checklistId,
         completed: completed,
+        note: note,
       );
       final done = state;
       if (done is ChecklistLoaded) {
@@ -73,14 +75,19 @@ class ChecklistCubit extends Cubit<ChecklistState> {
     IntroEmployeeTrainings data,
     int trainingId,
     int checklistId,
-    bool completed,
-  ) {
+    bool completed, [
+    String? note,
+  ]) {
     final trainings = data.trainings.map((t) {
       if (t.id != trainingId) return t;
       final items = t.items.map((i) {
         if (i.id != checklistId) return i;
         return completed
-            ? i.copyWith(completed: true, completedAt: DateTime.now())
+            ? i.copyWith(
+                completed: true,
+                completedAt: DateTime.now(),
+                note: note,
+              )
             : i.copyWith(completed: false, clearCompletion: true);
       }).toList();
       return t.copyWithItems(items);

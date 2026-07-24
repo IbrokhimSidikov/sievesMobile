@@ -20,13 +20,15 @@ class IntroEmployeeCubit extends Cubit<IntroEmployeeState> {
     emit(const IntroEmployeeLoading());
     try {
       final employees = await _api.fetchBranchEmployees();
-      if (gen != _generation) return;
+      if (isClosed || gen != _generation) return;
       emit(IntroEmployeeLoaded(employees));
       // Fire-and-forget: fill in each employee's completion progressively.
       _loadProgress(employees, gen);
     } on IntroApiException catch (e) {
+      if (isClosed || gen != _generation) return;
       emit(IntroEmployeeError(e.message));
     } catch (e) {
+      if (isClosed || gen != _generation) return;
       emit(IntroEmployeeError('Error loading employees: $e'));
     }
   }
@@ -38,7 +40,7 @@ class IntroEmployeeCubit extends Cubit<IntroEmployeeState> {
     final progress = <int, EmployeeProgress>{};
 
     for (var i = 0; i < employees.length; i += chunkSize) {
-      if (gen != _generation) return;
+      if (isClosed || gen != _generation) return;
       final chunk = employees.skip(i).take(chunkSize);
 
       await Future.wait(
@@ -56,7 +58,7 @@ class IntroEmployeeCubit extends Cubit<IntroEmployeeState> {
         }),
       );
 
-      if (gen != _generation) return;
+      if (isClosed || gen != _generation) return;
       final current = state;
       if (current is IntroEmployeeLoaded) {
         emit(

@@ -36,12 +36,24 @@ class _NotificationsPageState extends State<NotificationsPage>
     setState(() => _isLoading = true);
     try {
       final raw = await _api.getMyNotifications();
-      final notifications = raw
-          .map((json) => NotificationModel.fromApiJson(json))
-          .toList();
+      // Keep only the last 7 days so the retained list (and the widgets built
+      // from it) stays small on the device, then show newest first.
+      final cutoff = DateTime.now().subtract(const Duration(days: 7));
+      final notifications =
+          raw
+              .map((json) => NotificationModel.fromApiJson(json))
+              .where((n) => n.timestamp.isAfter(cutoff))
+              .toList()
+            ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
       if (mounted) {
         setState(() {
           _notifications = notifications;
+          // A previously selected type filter may no longer be present.
+          if (_filter != 'All' &&
+              _filter != 'Unread' &&
+              !_notifications.any((n) => n.type == _filter)) {
+            _filter = 'All';
+          }
           _isLoading = false;
         });
       }
@@ -163,20 +175,27 @@ class _NotificationsPageState extends State<NotificationsPage>
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final unreadCount = _notifications.where((n) => !n.isRead).length;
-    final announcementCount =
-        _notifications.where((n) => n.type == 'announcement').length;
+
+    // Build the filter row: All / Unread first, then one chip per distinct
+    // notification type present in the last 7 days (general, break_order,
+    // training_reminder, task_assigned, exam_assigned, …).
+    final distinctTypes = <String>[];
+    for (final n in _notifications) {
+      if (!distinctTypes.contains(n.type)) distinctTypes.add(n.type);
+    }
+    distinctTypes.sort();
+    final filters = <String>['All', 'Unread', ...distinctTypes];
 
     List<NotificationModel> filtered;
     switch (_filter) {
+      case 'All':
+        filtered = _notifications;
+        break;
       case 'Unread':
         filtered = _notifications.where((n) => !n.isRead).toList();
         break;
-      case 'Announcement':
-        filtered =
-            _notifications.where((n) => n.type == 'announcement').toList();
-        break;
       default:
-        filtered = _notifications;
+        filtered = _notifications.where((n) => n.type == _filter).toList();
     }
 
     return Scaffold(
@@ -186,7 +205,7 @@ class _NotificationsPageState extends State<NotificationsPage>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildHeader(isDark, unreadCount),
-            _buildFilters(isDark, unreadCount, announcementCount),
+            _buildFilters(isDark, filters, unreadCount),
             Expanded(
               child: _isLoading
                   ? _buildShimmer(isDark)
@@ -384,18 +403,24 @@ class _NotificationsPageState extends State<NotificationsPage>
   String _filterLabel(String key) {
     final l10n = AppLocalizations.of(context);
     switch (key) {
+      case 'All':
+        return l10n.filterAll;
       case 'Unread':
         return l10n.filterUnread;
-      case 'Announcement':
+      case 'announcement':
         return l10n.filterAnnouncement;
       default:
-        return l10n.filterAll;
+        // Turn a snake_case type into a readable label, e.g.
+        // 'break_order' -> 'Break Order', 'task_assigned' -> 'Task Assigned'.
+        return key
+            .split(RegExp(r'[_\s]+'))
+            .where((w) => w.isNotEmpty)
+            .map((w) => '${w[0].toUpperCase()}${w.substring(1)}')
+            .join(' ');
     }
   }
 
-  Widget _buildFilters(bool isDark, int unreadCount, int announcementCount) {
-    final filters = ['All', 'Unread', 'Announcement'];
-
+  Widget _buildFilters(bool isDark, List<String> filters, int unreadCount) {
     return Container(
       padding: EdgeInsets.fromLTRB(16.w, 12.h, 16.w, 12.h),
       decoration: BoxDecoration(
@@ -406,11 +431,12 @@ class _NotificationsPageState extends State<NotificationsPage>
         child: Row(
           children: filters.map((f) {
             final bool selected = _filter == f;
-            final int badgeCount =
-                f == 'Announcement' ? announcementCount : unreadCount;
+            final int badgeCount = f == 'Unread'
+                ? unreadCount
+                : _notifications.where((n) => n.type == f).length;
             final bool showBadge =
                 (f == 'Unread' && unreadCount > 0) ||
-                (f == 'Announcement' && announcementCount > 0);
+                (f != 'All' && f != 'Unread' && badgeCount > 0);
             return Padding(
               padding: EdgeInsets.only(right: 10.w),
               child: GestureDetector(

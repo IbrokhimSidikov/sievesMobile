@@ -36,6 +36,9 @@ class IntroChecklistItem {
   final int? completedBy;
   final String? completedByName;
 
+  /// Free-text note/comment captured when the item was marked complete.
+  final String? note;
+
   const IntroChecklistItem({
     required this.id,
     required this.title,
@@ -44,6 +47,7 @@ class IntroChecklistItem {
     this.completedAt,
     this.completedBy,
     this.completedByName,
+    this.note,
   });
 
   factory IntroChecklistItem.fromJson(Map<String, dynamic> json) {
@@ -58,6 +62,7 @@ class IntroChecklistItem {
           : null,
       completedBy: json['completedBy'] as int?,
       completedByName: json['completedByName'] as String?,
+      note: (json['note'] ?? json['comment']) as String?,
     );
   }
 
@@ -66,6 +71,7 @@ class IntroChecklistItem {
     DateTime? completedAt,
     int? completedBy,
     String? completedByName,
+    String? note,
     bool clearCompletion = false,
   }) {
     return IntroChecklistItem(
@@ -77,6 +83,7 @@ class IntroChecklistItem {
       completedBy: clearCompletion ? null : (completedBy ?? this.completedBy),
       completedByName:
           clearCompletion ? null : (completedByName ?? this.completedByName),
+      note: clearCompletion ? null : (note ?? this.note),
     );
   }
 }

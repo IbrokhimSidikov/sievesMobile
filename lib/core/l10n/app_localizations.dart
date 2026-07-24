@@ -494,7 +494,14 @@ class AppLocalizations {
       'introCompletedOfTotal': '{completed} of {total} completed',
       'introChecked': 'Checked',
       'introNotChecked': 'Not checked',
-      'introTapToCheck': 'Tap to check items'
+      'introTapToCheck': 'Tap to check items',
+      'introItemDetails': 'Checklist item',
+      'introAddNote': 'Note / Comment',
+      'introNoteHint': 'Add a note or comment (optional)',
+      'introSubmitDone': 'Submit & mark as done',
+      'introUpdateNote': 'Update note',
+      'introMarkNotDone': 'Mark as not done',
+      'introTapForDetails': 'Tap for details'
     },
     'uz': {
       'title': 'Sieves',
@@ -984,7 +991,14 @@ class AppLocalizations {
       'introCompletedOfTotal': '{total} tadan {completed} tasi bajarilgan',
       'introChecked': 'Belgilangan',
       'introNotChecked': 'Belgilanmagan',
-      'introTapToCheck': 'Belgilash uchun bosing'
+      'introTapToCheck': 'Belgilash uchun bosing',
+      'introItemDetails': 'Ro\'yxat bandi',
+      'introAddNote': 'Izoh / Sharh',
+      'introNoteHint': 'Izoh yoki sharh qo\'shing (ixtiyoriy)',
+      'introSubmitDone': 'Yuborish va bajarildi deb belgilash',
+      'introUpdateNote': 'Izohni yangilash',
+      'introMarkNotDone': 'Bajarilmagan deb belgilash',
+      'introTapForDetails': 'Batafsil uchun bosing'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1485,7 +1499,14 @@ class AppLocalizations {
       'introCompletedOfTotal': 'Завершено {completed} из {total}',
       'introChecked': 'Отмечено',
       'introNotChecked': 'Не отмечено',
-      'introTapToCheck': 'Нажмите, чтобы отметить'
+      'introTapToCheck': 'Нажмите, чтобы отметить',
+      'introItemDetails': 'Пункт чек-листа',
+      'introAddNote': 'Заметка / Комментарий',
+      'introNoteHint': 'Добавьте заметку или комментарий (необязательно)',
+      'introSubmitDone': 'Отправить и отметить выполненным',
+      'introUpdateNote': 'Обновить заметку',
+      'introMarkNotDone': 'Отметить невыполненным',
+      'introTapForDetails': 'Нажмите для подробностей'
     },
   };
 
@@ -1952,5 +1973,12 @@ class AppLocalizations {
   String get introChecked => translate('introChecked');
   String get introNotChecked => translate('introNotChecked');
   String get introTapToCheck => translate('introTapToCheck');
+  String get introItemDetails => translate('introItemDetails');
+  String get introAddNote => translate('introAddNote');
+  String get introNoteHint => translate('introNoteHint');
+  String get introSubmitDone => translate('introSubmitDone');
+  String get introUpdateNote => translate('introUpdateNote');
+  String get introMarkNotDone => translate('introMarkNotDone');
+  String get introTapForDetails => translate('introTapForDetails');
 
 }

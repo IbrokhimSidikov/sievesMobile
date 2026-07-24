@@ -502,6 +502,30 @@ class _ChecklistSheet extends StatelessWidget {
     return null;
   }
 
+  /// Opens the detailed item dialog where the user can add a note and submit
+  /// the completion for this exact checklist item.
+  void _openItemDialog(
+    BuildContext context, {
+    required int trainingId,
+    required IntroChecklistItem item,
+    required bool canManage,
+  }) {
+    final cubit = context.read<ChecklistCubit>();
+    showDialog(
+      context: context,
+      builder: (_) => _ChecklistItemDialog(
+        item: item,
+        canManage: canManage,
+        onSubmit: (completed, note) => cubit.toggleItem(
+          trainingId: trainingId,
+          checklistId: item.id,
+          completed: completed,
+          note: note,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -626,13 +650,12 @@ class _ChecklistSheet extends StatelessWidget {
                       item: item,
                       canManage: canManage,
                       isUpdating: updating.contains(item.id),
-                      onToggle: (value) => context
-                          .read<ChecklistCubit>()
-                          .toggleItem(
-                            trainingId: trainingId,
-                            checklistId: item.id,
-                            completed: value,
-                          ),
+                      onTap: () => _openItemDialog(
+                        context,
+                        trainingId: trainingId,
+                        item: item,
+                        canManage: canManage,
+                      ),
                     );
                   },
                 ),
@@ -649,13 +672,13 @@ class _SheetItemRow extends StatelessWidget {
   final IntroChecklistItem item;
   final bool canManage;
   final bool isUpdating;
-  final ValueChanged<bool> onToggle;
+  final VoidCallback onTap;
 
   const _SheetItemRow({
     required this.item,
     required this.canManage,
     required this.isUpdating,
-    required this.onToggle,
+    required this.onTap,
   });
 
   static const List<String> _months = [
@@ -679,12 +702,11 @@ class _SheetItemRow extends StatelessWidget {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
     final byline = _byline();
-    final enabled = canManage && !isUpdating;
 
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: enabled ? () => onToggle(!item.completed) : null,
+        onTap: isUpdating ? null : onTap,
         borderRadius: BorderRadius.circular(14.r),
         child: Container(
           padding: EdgeInsets.all(14.r),
@@ -759,6 +781,42 @@ class _SheetItemRow extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if ((item.note ?? '').trim().isNotEmpty) ...[
+                      SizedBox(height: 8.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 10.w,
+                          vertical: 8.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.onSurface.withOpacity(0.04),
+                          borderRadius: BorderRadius.circular(10.r),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              Icons.sticky_note_2_outlined,
+                              size: 13.sp,
+                              color: theme.colorScheme.onSurface
+                                  .withOpacity(0.45),
+                            ),
+                            SizedBox(width: 6.w),
+                            Expanded(
+                              child: Text(
+                                item.note!.trim(),
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: theme.colorScheme.onSurface
+                                      .withOpacity(0.7),
+                                  height: 1.3,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (byline != null) ...[
                       SizedBox(height: 6.h),
                       Row(
@@ -787,6 +845,312 @@ class _SheetItemRow extends StatelessWidget {
                   ],
                 ),
               ),
+              SizedBox(width: 8.w),
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20.sp,
+                color: theme.colorScheme.onSurface.withOpacity(0.25),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// ============================================================================
+// Item detail dialog: read the item, add a note, submit the completion
+// ============================================================================
+
+class _ChecklistItemDialog extends StatefulWidget {
+  final IntroChecklistItem item;
+  final bool canManage;
+
+  /// Called with the desired completion state and the (optional) note.
+  final void Function(bool completed, String? note) onSubmit;
+
+  const _ChecklistItemDialog({
+    required this.item,
+    required this.canManage,
+    required this.onSubmit,
+  });
+
+  @override
+  State<_ChecklistItemDialog> createState() => _ChecklistItemDialogState();
+}
+
+class _ChecklistItemDialogState extends State<_ChecklistItemDialog> {
+  late final TextEditingController _noteController;
+
+  static const List<String> _months = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _noteController = TextEditingController(text: widget.item.note ?? '');
+  }
+
+  @override
+  void dispose() {
+    _noteController.dispose();
+    super.dispose();
+  }
+
+  void _submit(bool completed) {
+    final raw = _noteController.text.trim();
+    widget.onSubmit(completed, raw.isEmpty ? null : raw);
+    Navigator.of(context).pop();
+  }
+
+  String? _byline() {
+    if (!widget.item.completed) return null;
+    final d = widget.item.completedAt;
+    final date =
+        d != null ? '${d.day} ${_months[d.month - 1]} ${d.year}' : null;
+    final name = (widget.item.completedByName ?? '').trim();
+    if (name.isNotEmpty && date != null) return '$name · $date';
+    if (name.isNotEmpty) return name;
+    return date;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final l = AppLocalizations.of(context);
+    final item = widget.item;
+    final completed = item.completed;
+    final byline = _byline();
+    final description = (item.description ?? '').trim();
+
+    return Dialog(
+      backgroundColor: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+      insetPadding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 24.h),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(22.r),
+      ),
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.8,
+        ),
+        child: SingleChildScrollView(
+          padding: EdgeInsets.fromLTRB(20.w, 18.h, 20.w, 20.h),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Header: status icon + label + close
+              Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(9.r),
+                    decoration: BoxDecoration(
+                      color: (completed ? _doneColor : _accent)
+                          .withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(12.r),
+                    ),
+                    child: Icon(
+                      completed
+                          ? Icons.verified_rounded
+                          : Icons.checklist_rounded,
+                      size: 20.sp,
+                      color: completed ? _doneColor : _accent,
+                    ),
+                  ),
+                  SizedBox(width: 10.w),
+                  Expanded(
+                    child: Text(
+                      completed ? l.introChecked : l.introItemDetails,
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                        color: (completed ? _doneColor : _accent),
+                      ),
+                    ),
+                  ),
+                  InkWell(
+                    onTap: () => Navigator.of(context).pop(),
+                    borderRadius: BorderRadius.circular(20.r),
+                    child: Padding(
+                      padding: EdgeInsets.all(4.r),
+                      child: Icon(
+                        Icons.close_rounded,
+                        size: 22.sp,
+                        color: theme.colorScheme.onSurface.withOpacity(0.6),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 14.h),
+              // Title
+              Text(
+                item.title,
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                  height: 1.3,
+                  color: theme.colorScheme.onSurface,
+                ),
+              ),
+              if (description.isNotEmpty) ...[
+                SizedBox(height: 10.h),
+                Text(
+                  description,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    height: 1.4,
+                    color: theme.colorScheme.onSurface.withOpacity(0.65),
+                  ),
+                ),
+              ],
+              if (byline != null) ...[
+                SizedBox(height: 12.h),
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      size: 14.sp,
+                      color: _doneColor.withOpacity(0.85),
+                    ),
+                    SizedBox(width: 5.w),
+                    Flexible(
+                      child: Text(
+                        byline,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                          color: _doneColor.withOpacity(0.9),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+              SizedBox(height: 18.h),
+              // Note / comment field (or read-only view)
+              if (widget.canManage) ...[
+                Text(
+                  l.introAddNote,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                TextField(
+                  controller: _noteController,
+                  minLines: 3,
+                  maxLines: 6,
+                  textCapitalization: TextCapitalization.sentences,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    color: theme.colorScheme.onSurface,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: l.introNoteHint,
+                    hintStyle: TextStyle(
+                      fontSize: 13.sp,
+                      color: theme.colorScheme.onSurface.withOpacity(0.35),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? theme.colorScheme.surfaceContainerHighest
+                            .withOpacity(0.3)
+                        : AppColors.cxF5F7F9,
+                    contentPadding: EdgeInsets.all(12.r),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: BorderSide.none,
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12.r),
+                      borderSide: BorderSide(color: _accent, width: 1.4),
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16.h),
+                // Submit button
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton.icon(
+                    onPressed: () => _submit(true),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: completed ? _accent : _doneColor,
+                      padding: EdgeInsets.symmetric(vertical: 14.h),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14.r),
+                      ),
+                    ),
+                    icon: Icon(
+                      completed ? Icons.save_rounded : Icons.check_rounded,
+                      size: 20.sp,
+                    ),
+                    label: Text(
+                      completed ? l.introUpdateNote : l.introSubmitDone,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ),
+                if (completed) ...[
+                  SizedBox(height: 8.h),
+                  SizedBox(
+                    width: double.infinity,
+                    child: TextButton.icon(
+                      onPressed: () => _submit(false),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.cxCrimsonRed,
+                        padding: EdgeInsets.symmetric(vertical: 12.h),
+                      ),
+                      icon: Icon(Icons.undo_rounded, size: 18.sp),
+                      label: Text(
+                        l.introMarkNotDone,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ] else if ((item.note ?? '').trim().isNotEmpty) ...[
+                Text(
+                  l.introAddNote,
+                  style: TextStyle(
+                    fontSize: 13.sp,
+                    fontWeight: FontWeight.w600,
+                    color: theme.colorScheme.onSurface.withOpacity(0.75),
+                  ),
+                ),
+                SizedBox(height: 8.h),
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(12.r),
+                  decoration: BoxDecoration(
+                    color: isDark
+                        ? theme.colorScheme.surfaceContainerHighest
+                            .withOpacity(0.3)
+                        : AppColors.cxF5F7F9,
+                    borderRadius: BorderRadius.circular(12.r),
+                  ),
+                  child: Text(
+                    item.note!.trim(),
+                    style: TextStyle(
+                      fontSize: 14.sp,
+                      height: 1.4,
+                      color: theme.colorScheme.onSurface.withOpacity(0.8),
+                    ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),

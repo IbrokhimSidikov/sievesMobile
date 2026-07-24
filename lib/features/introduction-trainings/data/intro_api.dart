@@ -89,16 +89,22 @@ class IntroApi {
     required int employeeId,
     required int checklistId,
     required bool completed,
+    String? note,
   }) async {
     final url = Uri.parse('$_v3BaseUrl/intro-training/completion');
+    final body = <String, dynamic>{
+      'employee_id': employeeId,
+      'checklist_id': checklistId,
+      'completed': completed,
+    };
+    final trimmedNote = note?.trim();
+    if (trimmedNote != null && trimmedNote.isNotEmpty) {
+      body['note'] = trimmedNote;
+    }
     final res = await http.post(
       url,
       headers: await _authHeaders(),
-      body: json.encode({
-        'employee_id': employeeId,
-        'checklist_id': checklistId,
-        'completed': completed,
-      }),
+      body: json.encode(body),
     );
     if (res.statusCode != 200 && res.statusCode != 201) {
       throw IntroApiException(
