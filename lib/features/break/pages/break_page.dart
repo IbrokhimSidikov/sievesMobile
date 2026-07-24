@@ -68,7 +68,9 @@ class _BreakPageState extends State<BreakPage>
   bool _isSubmittingOrder = false;
   // Daily-order limit disabled: field kept commented out along with its usages.
   // bool _hasOrderedToday = false;
-  bool _isCheckingDailyOrder = true;
+  // Daily-order check disabled: start false so it never gates ordering
+  // (the check that would flip this to false is no longer called).
+  bool _isCheckingDailyOrder = false;
 
   // Pizza product IDs — used only to detect which pos_category is the pizza
   // category when filtering combo options. Pizza type (Italiano/Americano) is
