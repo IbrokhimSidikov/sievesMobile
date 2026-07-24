@@ -66,7 +66,8 @@ class _BreakPageState extends State<BreakPage>
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
   bool _isSubmittingOrder = false;
-  bool _hasOrderedToday = false;
+  // Daily-order limit disabled: field kept commented out along with its usages.
+  // bool _hasOrderedToday = false;
   bool _isCheckingDailyOrder = true;
 
   // Pizza product IDs — used only to detect which pos_category is the pizza
@@ -90,7 +91,7 @@ class _BreakPageState extends State<BreakPage>
     );
 
     _fetchMenuItems();
-    _checkDailyOrderStatus();
+    // _checkDailyOrderStatus();
 
     // Show notice dialog after frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -209,12 +210,13 @@ class _BreakPageState extends State<BreakPage>
     }
 
     try {
-      final hasOrdered = await _authManager.apiService.hasOrderedToday(
-        employeeId,
-      );
+      // Daily-order limit disabled: no longer query today's order status.
+      // final hasOrdered = await _authManager.apiService.hasOrderedToday(
+      //   employeeId,
+      // );
       if (mounted) {
         setState(() {
-          _hasOrderedToday = hasOrdered;
+          // _hasOrderedToday = hasOrdered; // Daily-order limit disabled.
           _isCheckingDailyOrder = false;
         });
       }
@@ -642,21 +644,22 @@ class _BreakPageState extends State<BreakPage>
       return;
     }
 
+    // Daily-order limit disabled: allow ordering regardless of today's history.
     // Check if already ordered today (own-branch users may order unlimited).
-    if (_hasOrderedToday && !_authManager.isBreakOwnBranchUser) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text(
-              'You have already placed an order today. One order per day allowed.',
-            ),
-            backgroundColor: Colors.orange,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-      return;
-    }
+    // if (_hasOrderedToday && !_authManager.isBreakOwnBranchUser) {
+    //   if (mounted) {
+    //     ScaffoldMessenger.of(context).showSnackBar(
+    //       const SnackBar(
+    //         content: Text(
+    //           'You have already placed an order today. One order per day allowed.',
+    //         ),
+    //         backgroundColor: Colors.orange,
+    //         duration: Duration(seconds: 3),
+    //       ),
+    //     );
+    //   }
+    //   return;
+    // }
 
     final startTime = DateTime.now();
     print('');
@@ -985,8 +988,9 @@ class _BreakPageState extends State<BreakPage>
         _itemChanges.clear();
         _itemPrices.clear();
         _itemComments.clear();
-        _hasOrderedToday =
-            true; // Mark as ordered today to prevent duplicate orders
+        // Daily-order limit disabled.
+        // _hasOrderedToday =
+        //     true; // Mark as ordered today to prevent duplicate orders
       });
 
       if (mounted) {
@@ -2265,19 +2269,17 @@ class _BreakPageState extends State<BreakPage>
   Widget _buildCartFooter(ThemeData theme, bool isDark) {
     final total = _getCartTotal();
     final itemCount = _getCartItemCount();
-    // Own-branch users may order unlimited, so the daily-order block doesn't
-    // apply to them.
-    final isOwnBranchUser = _authManager.isBreakOwnBranchUser;
-    final blockedByDailyLimit = _hasOrderedToday && !isOwnBranchUser;
-    final canOrder =
-        _isWithinOrderTime() && !blockedByDailyLimit && !_isCheckingDailyOrder;
+    // Daily-order limit disabled: never block on today's order history.
+    // final isOwnBranchUser = _authManager.isBreakOwnBranchUser;
+    // final blockedByDailyLimit = _hasOrderedToday && !isOwnBranchUser;
+    final canOrder = _isWithinOrderTime() && !_isCheckingDailyOrder;
 
     // Determine restriction message
     String? restrictionMessage;
     if (_isCheckingDailyOrder) {
       restrictionMessage = null; // Still checking
-    } else if (blockedByDailyLimit) {
-      restrictionMessage = 'Already ordered today';
+      // } else if (blockedByDailyLimit) {
+      //   restrictionMessage = 'Already ordered today';
     } else if (!_isWithinOrderTime()) {
       restrictionMessage = 'Outside order hours';
     }
