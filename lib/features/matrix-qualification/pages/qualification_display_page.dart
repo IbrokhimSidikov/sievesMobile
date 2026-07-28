@@ -17,6 +17,9 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
   bool _isLoading = true;
   List<Map<String, dynamic>> _qualificationResults = [];
 
+  /// UUIDs of parent fields that are currently expanded to reveal sub-fields.
+  final Set<String> _expandedParents = {};
+
   @override
   void initState() {
     super.initState();
@@ -61,28 +64,35 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
     }
   }
 
-  double get _averageRating {
-    if (_qualificationResults.isEmpty) return 0;
+  /// Only real (leaf) ratings feed the stats; computed parent entries are
+  /// derived aggregates and would otherwise double-count.
+  List<Map<String, dynamic>> get _leafResults => _qualificationResults
+      .where((item) => item['is_computed'] != true)
+      .toList();
 
-    final total = _qualificationResults.fold<double>(0, (sum, item) {
+  double get _averageRating {
+    final leaves = _leafResults;
+    if (leaves.isEmpty) return 0;
+
+    final total = leaves.fold<double>(0, (sum, item) {
       final rating = (item['rating'] ?? 0) as num;
       return sum + rating.toDouble();
     });
-    
-    return total / _qualificationResults.length;
+
+    return total / leaves.length;
   }
 
   Map<int, int> get _ratingDistribution {
     final distribution = <int, int>{1: 0, 2: 0, 3: 0, 4: 0, 5: 0};
 
-    for (var item in _qualificationResults) {
+    for (var item in _leafResults) {
       final rating = (item['rating'] ?? 0) as num;
       final ratingInt = rating.toInt();
       if (ratingInt >= 1 && ratingInt <= 5) {
         distribution[ratingInt] = (distribution[ratingInt] ?? 0) + 1;
       }
     }
-    
+
     return distribution;
   }
 
@@ -467,6 +477,8 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
   }
 
   Widget _buildRatingCards(bool isDark, ThemeData theme) {
+    final groups = _buildGroups();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -479,140 +491,357 @@ class _QualificationDisplayPageState extends State<QualificationDisplayPage> {
           ),
         ),
         SizedBox(height: 12.h),
-        ...List.generate(_qualificationResults.length, (index) {
-          final result = _qualificationResults[index];
+        ...groups.map((group) {
           return Padding(
-            padding: EdgeInsets.only(bottom: 12.h),
-            child: _buildRatingCard(result, isDark, theme),
+            padding: EdgeInsets.only(bottom: 10.h),
+            child: group.children.isEmpty
+                ? _buildLeafCard(group.parent, isDark, theme)
+                : _buildParentGroupCard(group, isDark, theme),
           );
         }),
       ],
     );
   }
 
-  Widget _buildRatingCard(Map<String, dynamic> result, bool isDark, ThemeData theme) {
-    final qualification = result['qualification'] as Map<String, dynamic>?;
-    final title = qualification?['title'] ?? 'Unknown';
-    final rating = (result['rating'] ?? 0) as num;
-    final ratingInt = rating.toInt();
-    final comment = result['comment'] ?? '';
+  /// Builds display groups: each computed parent with its sub-field results,
+  /// plus standalone (parent-less) leaves as single-item groups.
+  List<({Map<String, dynamic> parent, List<Map<String, dynamic>> children})>
+      _buildGroups() {
+    String? parentUuidOf(Map<String, dynamic> r) =>
+        (r['qualification'] as Map<String, dynamic>?)?['parent_uuid'] as String?;
+    String? qualUuidOf(Map<String, dynamic> r) =>
+        (r['qualification'] as Map<String, dynamic>?)?['uuid'] as String?;
 
+    final parents =
+        _qualificationResults.where((r) => r['is_computed'] == true).toList();
+    final leaves =
+        _qualificationResults.where((r) => r['is_computed'] != true).toList();
+    final claimed = <Map<String, dynamic>>{};
+
+    final groups =
+        <({Map<String, dynamic> parent, List<Map<String, dynamic>> children})>[];
+
+    for (final parent in parents) {
+      final parentUuid = qualUuidOf(parent);
+      final children = leaves
+          .where((leaf) => parentUuidOf(leaf) == parentUuid)
+          .toList();
+      claimed.addAll(children);
+      groups.add((parent: parent, children: children));
+    }
+
+    // Standalone leaves (and any orphans) become single-item groups.
+    for (final leaf in leaves) {
+      if (!claimed.contains(leaf)) {
+        groups.add((parent: leaf, children: const []));
+      }
+    }
+
+    return groups;
+  }
+
+  /// Expandable parent card: tap the header to reveal its sub-fields compactly.
+  Widget _buildParentGroupCard(
+    ({Map<String, dynamic> parent, List<Map<String, dynamic>> children}) group,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final qualification = group.parent['qualification'] as Map<String, dynamic>?;
+    final uuid = qualification?['uuid']?.toString() ?? '';
+    final title = qualification?['title'] ?? 'Unknown';
+    final average = ((group.parent['rating'] ?? 0) as num).toDouble();
+    final roundedForStars = average.round();
     final color = AppColors.cxEmeraldGreen;
+    final isExpanded = _expandedParents.contains(uuid);
 
     return Container(
-      padding: EdgeInsets.all(16.r),
       decoration: BoxDecoration(
-        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
-        borderRadius: BorderRadius.circular(16.r),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(isDark ? 0.3 : 0.08),
-            blurRadius: 15,
-            offset: const Offset(0, 4),
-          ),
-        ],
+        color: isDark ? color.withOpacity(0.10) : color.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(14.r),
         border: Border.all(
-          color: ratingInt > 0
-              ? color.withOpacity(isDark ? 0.5 : 0.3)
-              : (isDark
-                  ? theme.colorScheme.outline.withOpacity(0.3)
-                  : AppColors.cxPlatinumGray.withOpacity(0.5)),
-          width: ratingInt > 0 ? 2 : 1,
+          color: color.withOpacity(isDark ? 0.45 : 0.30),
+          width: 1.2,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(10.r),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      color.withOpacity(isDark ? 0.3 : 0.2),
-                      color.withOpacity(isDark ? 0.2 : 0.1),
-                    ],
-                  ),
-                  borderRadius: BorderRadius.circular(12.r),
-                ),
-                child: Icon(
-                  Icons.star_rounded,
-                  color: color,
-                  size: 20.sp,
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // Header (tappable)
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14.r),
+              onTap: () {
+                setState(() {
+                  if (isExpanded) {
+                    _expandedParents.remove(uuid);
+                  } else {
+                    _expandedParents.add(uuid);
+                  }
+                });
+              },
+              child: Padding(
+                padding: EdgeInsets.all(12.r),
+                child: Row(
                   children: [
-                    Text(
-                      title,
-                      style: TextStyle(
-                        fontSize: 15.sp,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? theme.colorScheme.onSurface : AppColors.cxDarkCharcoal,
+                    Container(
+                      padding: EdgeInsets.all(8.r),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(isDark ? 0.30 : 0.18),
+                        borderRadius: BorderRadius.circular(10.r),
+                      ),
+                      child: Icon(
+                        isExpanded ? Icons.folder_open_rounded : Icons.folder_rounded,
+                        color: color,
+                        size: 18.sp,
                       ),
                     ),
-                    if (comment.isNotEmpty) ...[
-                      SizedBox(height: 2.h),
-                      Text(
-                        comment,
-                        style: TextStyle(
-                          fontSize: 12.sp,
-                          color: isDark
-                              ? theme.colorScheme.onSurfaceVariant
-                              : AppColors.cxSilverTint,
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    SizedBox(width: 10.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            title,
+                            style: TextStyle(
+                              fontSize: 14.sp,
+                              fontWeight: FontWeight.w700,
+                              color: isDark ? theme.colorScheme.onSurface : AppColors.cxDarkCharcoal,
+                            ),
+                          ),
+                          SizedBox(height: 2.h),
+                          Row(
+                            children: [
+                              _buildMiniStars(roundedForStars, color, isDark, theme),
+                              SizedBox(width: 6.w),
+                              Text(
+                                '${group.children.length} sub-field${group.children.length == 1 ? '' : 's'}',
+                                style: TextStyle(
+                                  fontSize: 10.sp,
+                                  color: isDark
+                                      ? theme.colorScheme.onSurfaceVariant
+                                      : AppColors.cxSilverTint,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
+                    SizedBox(width: 8.w),
+                    Container(
+                      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 5.h),
+                      decoration: BoxDecoration(
+                        color: color.withOpacity(isDark ? 0.25 : 0.15),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Text(
+                        average > 0 ? average.toStringAsFixed(1) : '—',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: color,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    AnimatedRotation(
+                      turns: isExpanded ? 0.5 : 0,
+                      duration: const Duration(milliseconds: 200),
+                      child: Icon(
+                        Icons.keyboard_arrow_down_rounded,
+                        color: isDark
+                            ? theme.colorScheme.onSurfaceVariant
+                            : AppColors.cxSilverTint,
+                        size: 22.sp,
+                      ),
+                    ),
                   ],
                 ),
               ),
-            ],
+            ),
           ),
-          SizedBox(height: 16.h),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: List.generate(5, (index) {
-              final starRating = index + 1;
-              final isSelected = ratingInt >= starRating;
-
-              return Container(
-                padding: EdgeInsets.all(8.r),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? color.withOpacity(isDark ? 0.3 : 0.15)
-                      : (isDark
-                          ? theme.colorScheme.surfaceContainerHighest
-                          : AppColors.cxF5F7F9),
-                  borderRadius: BorderRadius.circular(12.r),
-                  border: Border.all(
-                    color: isSelected
-                        ? color
-                        : (isDark
-                            ? theme.colorScheme.outline.withOpacity(0.3)
-                            : AppColors.cxPlatinumGray),
-                    width: isSelected ? 2 : 1,
+          // Expanded children
+          AnimatedCrossFade(
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: EdgeInsets.fromLTRB(12.r, 0, 12.r, 8.r),
+              child: Column(
+                children: [
+                  Divider(
+                    height: 8.h,
+                    thickness: 1,
+                    color: color.withOpacity(0.15),
                   ),
-                ),
-                child: Icon(
-                  isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
-                  color: isSelected
-                      ? color
-                      : (isDark
-                          ? theme.colorScheme.onSurfaceVariant
-                          : AppColors.cxSilverTint),
-                  size: 24.sp,
-                ),
-              );
-            }),
+                  ...group.children.map(
+                    (child) => _buildChildRow(child, color, isDark, theme),
+                  ),
+                ],
+              ),
+            ),
+            crossFadeState:
+                isExpanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            duration: const Duration(milliseconds: 200),
           ),
         ],
       ),
+    );
+  }
+
+  /// One compact row for a sub-field inside an expanded parent.
+  Widget _buildChildRow(
+    Map<String, dynamic> result,
+    Color color,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final qualification = result['qualification'] as Map<String, dynamic>?;
+    final title = qualification?['title'] ?? 'Unknown';
+    final ratingInt = ((result['rating'] ?? 0) as num).toInt();
+
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 5.h),
+      child: Row(
+        children: [
+          Icon(Icons.subdirectory_arrow_right_rounded,
+              size: 15.sp,
+              color: isDark
+                  ? theme.colorScheme.onSurfaceVariant
+                  : AppColors.cxSilverTint),
+          SizedBox(width: 6.w),
+          Expanded(
+            child: Text(
+              title,
+              style: TextStyle(
+                fontSize: 12.5.sp,
+                fontWeight: FontWeight.w500,
+                color: isDark ? theme.colorScheme.onSurface : AppColors.cxDarkCharcoal,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(width: 8.w),
+          _buildMiniStars(ratingInt, color, isDark, theme),
+          SizedBox(width: 6.w),
+          Text(
+            '$ratingInt',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A compact standalone (parent-less) leaf card.
+  Widget _buildLeafCard(
+      Map<String, dynamic> result, bool isDark, ThemeData theme) {
+    final qualification = result['qualification'] as Map<String, dynamic>?;
+    final title = qualification?['title'] ?? 'Unknown';
+    final ratingInt = ((result['rating'] ?? 0) as num).toInt();
+    final comment = result['comment'] ?? '';
+    final color = AppColors.cxEmeraldGreen;
+
+    return Container(
+      padding: EdgeInsets.all(12.r),
+      decoration: BoxDecoration(
+        color: isDark ? theme.colorScheme.surface : AppColors.cxWhite,
+        borderRadius: BorderRadius.circular(14.r),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(isDark ? 0.25 : 0.06),
+            blurRadius: 12,
+            offset: const Offset(0, 3),
+          ),
+        ],
+        border: Border.all(
+          color: ratingInt > 0
+              ? color.withOpacity(isDark ? 0.45 : 0.25)
+              : (isDark
+                  ? theme.colorScheme.outline.withOpacity(0.3)
+                  : AppColors.cxPlatinumGray.withOpacity(0.5)),
+          width: ratingInt > 0 ? 1.5 : 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: EdgeInsets.all(8.r),
+            decoration: BoxDecoration(
+              color: color.withOpacity(isDark ? 0.28 : 0.15),
+              borderRadius: BorderRadius.circular(10.r),
+            ),
+            child: Icon(Icons.star_rounded, color: color, size: 18.sp),
+          ),
+          SizedBox(width: 10.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: TextStyle(
+                    fontSize: 13.5.sp,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? theme.colorScheme.onSurface : AppColors.cxDarkCharcoal,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (comment.isNotEmpty) ...[
+                  SizedBox(height: 2.h),
+                  Text(
+                    comment,
+                    style: TextStyle(
+                      fontSize: 11.sp,
+                      color: isDark
+                          ? theme.colorScheme.onSurfaceVariant
+                          : AppColors.cxSilverTint,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
+              ],
+            ),
+          ),
+          SizedBox(width: 8.w),
+          _buildMiniStars(ratingInt, color, isDark, theme),
+          SizedBox(width: 6.w),
+          Text(
+            '$ratingInt',
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// A compact inline row of 5 small stars filled up to [filled].
+  Widget _buildMiniStars(
+      int filled, Color color, bool isDark, ThemeData theme) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: List.generate(5, (index) {
+        final isSelected = filled >= index + 1;
+        return Icon(
+          isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+          size: 13.sp,
+          color: isSelected
+              ? color
+              : (isDark
+                  ? theme.colorScheme.onSurfaceVariant.withOpacity(0.5)
+                  : AppColors.cxPlatinumGray),
+        );
+      }),
     );
   }
 

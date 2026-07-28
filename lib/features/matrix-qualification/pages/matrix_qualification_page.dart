@@ -62,13 +62,9 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
       
       if (fields != null && fields.isNotEmpty) {
         final colors = [
-          // AppColors.cxRoyalBlue,
           AppColors.cxEmeraldGreen,
-          // AppColors.cxAmberGold,
-          // AppColors.cxPurple,
-          // AppColors.cxWarning,
         ];
-        
+
         final icons = [
           Icons.star_rounded,
           Icons.workspace_premium_rounded,
@@ -76,27 +72,59 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           Icons.trending_up_rounded,
           Icons.verified_rounded,
         ];
-        
-        setState(() {
-          _skillCategories = fields.asMap().entries.map((entry) {
-            final index = entry.key;
-            final field = entry.value;
-            final title = field['title'] ?? 'Unknown';
-            final uuid = field['uuid'] ?? field['id']?.toString() ?? '';
-            
-            return SkillCategory(
-              title: title,
-              description: field['description'] ?? '',
-              icon: icons[index % icons.length],
-              color: colors[index % colors.length],
-              uuid: uuid,
+
+        // The API returns a nested tree: top-level fields each carrying a
+        // `children` array. Flatten into an ordered list where every parent
+        // is immediately followed by its own sub-fields.
+        final categories = <SkillCategory>[];
+        var index = 0;
+
+        SkillCategory buildCategory(
+          Map<String, dynamic> field, {
+          String? parentUuid,
+          bool hasChildren = false,
+        }) {
+          final title = field['title'] ?? 'Unknown';
+          final uuid = field['uuid'] ?? field['id']?.toString() ?? '';
+          final category = SkillCategory(
+            title: title,
+            description: field['description'] ?? '',
+            icon: icons[index % icons.length],
+            color: colors[index % colors.length],
+            uuid: uuid,
+            parentUuid: parentUuid,
+            hasChildren: hasChildren,
+          );
+          index++;
+          return category;
+        }
+
+        for (final field in fields) {
+          final children = (field['children'] as List?) ?? const [];
+          final parent = buildCategory(field, hasChildren: children.isNotEmpty);
+          categories.add(parent);
+
+          for (final child in children) {
+            categories.add(
+              buildCategory(
+                child as Map<String, dynamic>,
+                parentUuid: parent.uuid,
+              ),
             );
-          }).toList();
-          
-          for (var category in _skillCategories) {
-            _ratings[category.title] = 0;
           }
-          
+        }
+
+        setState(() {
+          _skillCategories = categories;
+
+          // Only leaf fields hold a rating; parents are auto-computed.
+          _ratings.clear();
+          for (final category in _skillCategories) {
+            if (category.isRateable && category.uuid != null) {
+              _ratings[category.uuid!] = 0;
+            }
+          }
+
           _isLoadingFields = false;
         });
         print('✅ Loaded ${_skillCategories.length} matrix qualification fields');
@@ -169,9 +197,9 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     }
   }
 
-  void _updateRating(String category, int rating) {
+  void _updateRating(String categoryUuid, int rating) {
     setState(() {
-      _ratings[category] = rating;
+      _ratings[categoryUuid] = rating;
     });
   }
 
@@ -179,6 +207,19 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     if (_ratings.isEmpty) return 0;
     final total = _ratings.values.fold(0, (sum, rating) => sum + rating);
     return total / _ratings.length;
+  }
+
+  /// Live-computed average of a parent's sub-field ratings (only counts
+  /// sub-fields the rater has actually scored). Returns 0 when none rated yet.
+  double _parentAverage(SkillCategory parent) {
+    final childRatings = _skillCategories
+        .where((c) => c.parentUuid == parent.uuid)
+        .map((c) => _ratings[c.uuid] ?? 0)
+        .where((r) => r > 0)
+        .toList();
+    if (childRatings.isEmpty) return 0;
+    final total = childRatings.fold(0, (sum, r) => sum + r);
+    return total / childRatings.length;
   }
 
   Map<int, int> get _ratingDistribution {
@@ -199,9 +240,9 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
       return;
     }
 
-    final unratedCategories = _ratings.entries
-        .where((entry) => entry.value == 0)
-        .map((entry) => entry.key)
+    // Only leaf fields are rated; parents are auto-computed on the backend.
+    final unratedCategories = _skillCategories
+        .where((cat) => cat.isRateable && (_ratings[cat.uuid] ?? 0) == 0)
         .toList();
 
     if (unratedCategories.isNotEmpty) {
@@ -216,27 +257,21 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     try {
       final authManager = AuthManager();
       final employeeId = int.parse(_selectedEmployeeId!);
-      
+
       final items = <Map<String, dynamic>>[];
-      
-      for (var entry in _ratings.entries) {
-        final categoryTitle = entry.key;
-        final rating = entry.value;
-        
-        final category = _skillCategories.firstWhere(
-          (cat) => cat.title == categoryTitle,
-        );
-        
+
+      for (final category in _skillCategories) {
+        if (!category.isRateable) continue;
+
         final qualificationUuid = category.uuid ?? '';
-        
         if (qualificationUuid.isEmpty) {
-          print('⚠️ No UUID found for category: $categoryTitle');
+          print('⚠️ No UUID found for category: ${category.title}');
           continue;
         }
-        
+
         items.add({
           'qualification_uuid': qualificationUuid,
-          'rating': rating,
+          'rating': _ratings[qualificationUuid] ?? 0,
           'comment': category.description,
         });
       }
@@ -272,8 +307,10 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           
           setState(() {
             _selectedEmployeeId = null;
-            for (var category in _skillCategories) {
-              _ratings[category.title] = 0;
+            for (final category in _skillCategories) {
+              if (category.isRateable && category.uuid != null) {
+                _ratings[category.uuid!] = 0;
+              }
             }
           });
         } else {
@@ -1592,17 +1629,121 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
         SizedBox(height: 12.h),
         ...List.generate(_skillCategories.length, (index) {
           final category = _skillCategories[index];
+          // Indent sub-fields so the parent → child grouping reads clearly.
+          final leftInset = category.isChild ? 20.w : 0.0;
           return Padding(
-            padding: EdgeInsets.only(bottom: 12.h),
-            child: _buildRatingCard(category, isDark, theme),
+            padding: EdgeInsets.only(bottom: 12.h, left: leftInset),
+            child: category.hasChildren
+                ? _buildParentCard(category, isDark, theme)
+                : _buildRatingCard(category, isDark, theme),
           );
         }),
       ],
     );
   }
 
+  /// A parent field shown as a non-interactive header whose rating is the
+  /// live average of its sub-fields (updates as the sub-fields are rated).
+  Widget _buildParentCard(SkillCategory category, bool isDark, ThemeData theme) {
+    final average = _parentAverage(category);
+    final roundedForStars = average.round();
+
+    return Container(
+      padding: EdgeInsets.all(16.r),
+      decoration: BoxDecoration(
+        color: isDark
+            ? category.color.withOpacity(0.12)
+            : category.color.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(16.r),
+        border: Border.all(
+          color: category.color.withOpacity(isDark ? 0.5 : 0.35),
+          width: 1.5,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(10.r),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      category.color.withOpacity(isDark ? 0.35 : 0.25),
+                      category.color.withOpacity(isDark ? 0.25 : 0.15),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Icon(Icons.folder_rounded, color: category.color, size: 20.sp),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      category.title,
+                      style: TextStyle(
+                        fontSize: 15.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isDark ? theme.colorScheme.onSurface : AppColors.cxDarkCharcoal,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      'Auto-rated from sub-fields',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: isDark
+                            ? theme.colorScheme.onSurfaceVariant
+                            : AppColors.cxSilverTint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
+                decoration: BoxDecoration(
+                  color: category.color.withOpacity(isDark ? 0.25 : 0.15),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Text(
+                  average > 0 ? average.toStringAsFixed(1) : '—',
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: category.color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 12.h),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: List.generate(5, (index) {
+              final isSelected = roundedForStars >= index + 1;
+              return Icon(
+                isSelected ? Icons.star_rounded : Icons.star_outline_rounded,
+                color: isSelected
+                    ? category.color
+                    : (isDark
+                        ? theme.colorScheme.onSurfaceVariant
+                        : AppColors.cxSilverTint),
+                size: 24.sp,
+              );
+            }),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildRatingCard(SkillCategory category, bool isDark, ThemeData theme) {
-    final currentRating = _ratings[category.title] ?? 0;
+    final currentRating = _ratings[category.uuid] ?? 0;
 
     return Container(
       padding: EdgeInsets.all(16.r),
@@ -1683,7 +1824,7 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
               final isSelected = currentRating >= rating;
 
               return GestureDetector(
-                onTap: () => _updateRating(category.title, rating),
+                onTap: () => _updateRating(category.uuid ?? category.title, rating),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 200),
                   padding: EdgeInsets.all(8.r),
@@ -1774,11 +1915,23 @@ class SkillCategory {
   final Color color;
   final String? uuid;
 
+  /// UUID of the parent field, or null for a top-level field.
+  final String? parentUuid;
+
+  /// True when this field has sub-fields. A parent is not rated directly;
+  /// its rating is the average of its children's ratings.
+  final bool hasChildren;
+
   SkillCategory({
     required this.title,
     required this.description,
     required this.icon,
     required this.color,
     this.uuid,
+    this.parentUuid,
+    this.hasChildren = false,
   });
+
+  bool get isChild => parentUuid != null;
+  bool get isRateable => !hasChildren;
 }
