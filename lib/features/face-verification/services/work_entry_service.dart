@@ -544,14 +544,17 @@ class WorkEntryService {
       print('└─────────────────────────────────────────────────────────────┘');
       final now = DateTime.now();
 
+      // Cutoff logic only applies to branch 2
+      final isCutoffBranch = branchId == 2;
+
       // Check if department is excluded from cutoff logic
       final excludedDepartments = [28, 20];
       final isExcludedDepartment = excludedDepartments.contains(departmentId);
 
       DateTime adjustedTime = now;
 
-      if (!isExcludedDepartment) {
-        // Create 19:00:00 cutoff time for today (only for non-excluded departments)
+      if (isCutoffBranch && !isExcludedDepartment) {
+        // Create 19:00:00 cutoff time for today (only for branch 2, non-excluded departments)
         final cutoffTime = DateTime(now.year, now.month, now.day, 19, 0, 0);
 
         // Clamp time to cutoff if it exceeds 19:00:00
@@ -562,6 +565,10 @@ class WorkEntryService {
             '⏰ [WORK ENTRY] Time adjusted: ${DateFormat('HH:mm:ss').format(now)} -> 19:00:00',
           );
         }
+      } else if (!isCutoffBranch) {
+        print(
+          '⏰ [WORK ENTRY] Branch $branchId excluded from time cutoff logic',
+        );
       } else {
         print(
           '⏰ [WORK ENTRY] Department $departmentId excluded from time cutoff logic',

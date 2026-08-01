@@ -241,13 +241,14 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     }
 
     // Only leaf fields are rated; parents are auto-computed on the backend.
-    final unratedCategories = _skillCategories
-        .where((cat) => cat.isRateable && (_ratings[cat.uuid] ?? 0) == 0)
+    // Require at least one rated category rather than all of them.
+    final ratedCategories = _skillCategories
+        .where((cat) => cat.isRateable && (_ratings[cat.uuid] ?? 0) > 0)
         .toList();
 
-    if (unratedCategories.isNotEmpty) {
+    if (ratedCategories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please rate all categories')),
+        const SnackBar(content: Text('Please rate at least one category')),
       );
       return;
     }
@@ -269,9 +270,13 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           continue;
         }
 
+        final rating = _ratings[qualificationUuid] ?? 0;
+        // Only submit categories the user actually rated.
+        if (rating == 0) continue;
+
         items.add({
           'qualification_uuid': qualificationUuid,
-          'rating': _ratings[qualificationUuid] ?? 0,
+          'rating': rating,
           'comment': category.description,
         });
       }
