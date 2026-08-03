@@ -77,17 +77,23 @@ class _TrainingsSheetState extends State<_TrainingsSheet> {
         throw Exception('Failed to load trainings (${themesResp.statusCode})');
       }
 
-      final List<dynamic> themesData = json.decode(themesResp.body);
-      final themes = themesData
-          .map((e) => Map<String, dynamic>.from(e as Map))
-          .toList();
+      final decodedThemes = json.decode(themesResp.body);
+      final themes = <Map<String, dynamic>>[
+        if (decodedThemes is List)
+          for (final e in decodedThemes)
+            if (e is Map) Map<String, dynamic>.from(e),
+      ];
 
       final Set<int> attended = {};
       if (attendedResp.statusCode == 200) {
-        final List<dynamic> attendedData = json.decode(attendedResp.body);
-        for (final item in attendedData) {
-          final id = (item as Map)['id'];
-          if (id is int) attended.add(id);
+        final decodedAttended = json.decode(attendedResp.body);
+        if (decodedAttended is List) {
+          for (final item in decodedAttended) {
+            if (item is Map) {
+              final id = item['id'];
+              if (id is int) attended.add(id);
+            }
+          }
         }
       }
 

@@ -34,6 +34,7 @@ import '../../features/face-verification/pages/face_verification_page.dart';
 import '../../features/training-test/pages/training_test_page.dart';
 import '../../features/training-game-test/pages/training_game_landing_page.dart';
 import '../../features/wallet/pages/wallet_page.dart';
+import '../../features/salary/pages/salary_progress.dart';
 import '../../features/profile/pages/feedback_form_page.dart';
 import '../../features/calendar/pages/calendar_page.dart';
 import '../../features/task-management/pages/task_management_page.dart';
@@ -77,6 +78,7 @@ class AppRoutes {
   static const String orderCancel = '/orderCancel';
   static const String introEmployeeList = '/introEmployeeList';
   static const String introTrainingList = '/introTrainingList';
+  static const String salaryProgress = '/salaryProgress';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -312,6 +314,11 @@ class AppRoutes {
             final employee = state.extra as EmployeeBrief;
             return TrainingListDetail(employee: employee);
           },
+        ),
+        GoRoute(
+          path: '/salaryProgress',
+          name: salaryProgress,
+          builder: (context, state) => const SalaryProgress(),
         ),
       ],
     );

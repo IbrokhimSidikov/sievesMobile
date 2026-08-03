@@ -12,6 +12,7 @@ import '../../model/story_model.dart';
 import '../../../features/training-test/data/training_course_model.dart';
 import '../../../features/training-test/data/test_models.dart';
 import '../../../features/training-test/data/test_result_model.dart';
+import '../../../features/salary/models/salary_timeline_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
@@ -1598,6 +1599,37 @@ class ApiService {
     } catch (e) {
       print('❌ Exception submitting session: $e');
       rethrow;
+    }
+  }
+
+  // ==================== SALARY PROGRESS ====================
+
+  /// Full employment-contract salary timeline of a single employee
+  /// (GET /salary-progress/employee/{id}/timeline on the v3 API).
+  /// Returns null on any error so the caller can show an error state.
+  Future<SalaryTimeline?> getEmployeeSalaryTimeline(int employeeId) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/salary-progress/employee/$employeeId/timeline',
+      );
+
+      print('📈 [API] Fetching salary timeline: $uri');
+      final response = await _httpClient.get(uri, headers: headers);
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body) as Map<String, dynamic>;
+        print('✅ [API] Salary timeline fetched successfully');
+        return SalaryTimeline.fromJson(data);
+      } else {
+        print(
+          '❌ Error getting salary timeline: ${response.statusCode} - ${response.body}',
+        );
+        return null;
+      }
+    } catch (e) {
+      print('❌ Exception getting salary timeline: $e');
+      return null;
     }
   }
 

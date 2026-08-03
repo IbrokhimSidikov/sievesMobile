@@ -501,7 +501,37 @@ class AppLocalizations {
       'introSubmitDone': 'Submit & mark as done',
       'introUpdateNote': 'Update note',
       'introMarkNotDone': 'Mark as not done',
-      'introTapForDetails': 'Tap for details'
+      'introTapForDetails': 'Tap for details',
+      // Salary Progress
+      'salaryProgress': 'Salary Progress',
+      'salaryProgressSubtitle': 'Your growth journey',
+      'salaryProgressError': 'Could not load your salary progress',
+      'salaryProgressRetryHint':
+          'Please check your connection and try again.',
+      'salaryProgressRetry': 'Retry',
+      'salaryProgressEmpty': 'No salary history yet',
+      'salaryProgressEmptyHint':
+          'Your salary progression will appear here once you have an active contract.',
+      'currentSalaryStep': 'Current step',
+      'salaryActive': 'Active',
+      'salaryNotAssigned': 'Not assigned',
+      'perMonth': 'per month',
+      'salaryLadder': 'Salary Ladder',
+      'salaryGrowth': 'Salary Growth',
+      'nextSalaryStep': 'Next Step',
+      'salaryRaiseAhead': 'raise ahead',
+      'salaryTopReached': 'Top step reached',
+      'salaryTopReachedHint':
+          'You are on the highest salary structure. Congratulations!',
+      'salaryHistory': 'History',
+      'currencyUzs': 'UZS',
+      'totalTenure': 'Total tenure',
+      'salaryChanges': 'Salary periods',
+      'salaryYouAreHere': 'YOU ARE HERE',
+      'salaryNow': 'Now',
+      'stepXofY': 'Step {step} of {total}',
+      'stepShort': 'Step {step}',
+      'daysCount': '{count} days'
     },
     'uz': {
       'title': 'Sieves',
@@ -998,7 +1028,37 @@ class AppLocalizations {
       'introSubmitDone': 'Yuborish va bajarildi deb belgilash',
       'introUpdateNote': 'Izohni yangilash',
       'introMarkNotDone': 'Bajarilmagan deb belgilash',
-      'introTapForDetails': 'Batafsil uchun bosing'
+      'introTapForDetails': 'Batafsil uchun bosing',
+      // Salary Progress
+      'salaryProgress': 'Maosh o\'sishi',
+      'salaryProgressSubtitle': 'Sizning o\'sish yo\'lingiz',
+      'salaryProgressError': 'Maosh o\'sishini yuklab bo\'lmadi',
+      'salaryProgressRetryHint':
+          'Internet aloqasini tekshirib, qayta urinib ko\'ring.',
+      'salaryProgressRetry': 'Qayta urinish',
+      'salaryProgressEmpty': 'Hozircha maosh tarixi yo\'q',
+      'salaryProgressEmptyHint':
+          'Faol shartnomangiz bo\'lgach, maosh o\'sishingiz shu yerda ko\'rinadi.',
+      'currentSalaryStep': 'Joriy bosqich',
+      'salaryActive': 'Faol',
+      'salaryNotAssigned': 'Belgilanmagan',
+      'perMonth': 'oyiga',
+      'salaryLadder': 'Maosh bosqichlari',
+      'salaryGrowth': 'Maosh o\'sishi',
+      'nextSalaryStep': 'Keyingi bosqich',
+      'salaryRaiseAhead': 'oshadi',
+      'salaryTopReached': 'Eng yuqori bosqich',
+      'salaryTopReachedHint':
+          'Siz eng yuqori maosh bosqichidasiz. Tabriklaymiz!',
+      'salaryHistory': 'Tarix',
+      'currencyUzs': 'so\'m',
+      'totalTenure': 'Umumiy ish staji',
+      'salaryChanges': 'Maosh davrlari',
+      'salaryYouAreHere': 'SIZ SHU YERDA',
+      'salaryNow': 'Hozir',
+      'stepXofY': '{total} dan {step}-bosqich',
+      'stepShort': '{step}-bosqich',
+      'daysCount': '{count} kun'
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1506,7 +1566,37 @@ class AppLocalizations {
       'introSubmitDone': 'Отправить и отметить выполненным',
       'introUpdateNote': 'Обновить заметку',
       'introMarkNotDone': 'Отметить невыполненным',
-      'introTapForDetails': 'Нажмите для подробностей'
+      'introTapForDetails': 'Нажмите для подробностей',
+      // Salary Progress
+      'salaryProgress': 'Рост зарплаты',
+      'salaryProgressSubtitle': 'Ваш путь роста',
+      'salaryProgressError': 'Не удалось загрузить данные о зарплате',
+      'salaryProgressRetryHint':
+          'Проверьте подключение и попробуйте снова.',
+      'salaryProgressRetry': 'Повторить',
+      'salaryProgressEmpty': 'История зарплаты пока пуста',
+      'salaryProgressEmptyHint':
+          'Ваш рост зарплаты появится здесь после активного контракта.',
+      'currentSalaryStep': 'Текущая ступень',
+      'salaryActive': 'Активно',
+      'salaryNotAssigned': 'Не назначено',
+      'perMonth': 'в месяц',
+      'salaryLadder': 'Зарплатная лестница',
+      'salaryGrowth': 'Рост зарплаты',
+      'nextSalaryStep': 'Следующая ступень',
+      'salaryRaiseAhead': 'прибавка',
+      'salaryTopReached': 'Высшая ступень',
+      'salaryTopReachedHint':
+          'Вы на самой высокой зарплатной структуре. Поздравляем!',
+      'salaryHistory': 'История',
+      'currencyUzs': 'сум',
+      'totalTenure': 'Общий стаж',
+      'salaryChanges': 'Периоды зарплаты',
+      'salaryYouAreHere': 'ВЫ ЗДЕСЬ',
+      'salaryNow': 'Сейчас',
+      'stepXofY': 'Ступень {step} из {total}',
+      'stepShort': 'Ступень {step}',
+      'daysCount': '{count} дн.'
     },
   };
 
@@ -1980,5 +2070,37 @@ class AppLocalizations {
   String get introUpdateNote => translate('introUpdateNote');
   String get introMarkNotDone => translate('introMarkNotDone');
   String get introTapForDetails => translate('introTapForDetails');
+
+  // Salary Progress
+  String get salaryProgress => translate('salaryProgress');
+  String get salaryProgressSubtitle => translate('salaryProgressSubtitle');
+  String get salaryProgressError => translate('salaryProgressError');
+  String get salaryProgressRetryHint => translate('salaryProgressRetryHint');
+  String get salaryProgressRetry => translate('salaryProgressRetry');
+  String get salaryProgressEmpty => translate('salaryProgressEmpty');
+  String get salaryProgressEmptyHint => translate('salaryProgressEmptyHint');
+  String get currentSalaryStep => translate('currentSalaryStep');
+  String get salaryActive => translate('salaryActive');
+  String get salaryNotAssigned => translate('salaryNotAssigned');
+  String get perMonth => translate('perMonth');
+  String get salaryLadder => translate('salaryLadder');
+  String get salaryGrowth => translate('salaryGrowth');
+  String get nextSalaryStep => translate('nextSalaryStep');
+  String get salaryRaiseAhead => translate('salaryRaiseAhead');
+  String get salaryTopReached => translate('salaryTopReached');
+  String get salaryTopReachedHint => translate('salaryTopReachedHint');
+  String get salaryHistory => translate('salaryHistory');
+  String get currencyUzs => translate('currencyUzs');
+  String get totalTenure => translate('totalTenure');
+  String get salaryChanges => translate('salaryChanges');
+  String get salaryYouAreHere => translate('salaryYouAreHere');
+  String get salaryNow => translate('salaryNow');
+  String stepXofY(int step, int total) => translate('stepXofY')
+      .replaceAll('{step}', '$step')
+      .replaceAll('{total}', '$total');
+  String stepShort(int step) =>
+      translate('stepShort').replaceAll('{step}', '$step');
+  String daysCount(int count) =>
+      translate('daysCount').replaceAll('{count}', '$count');
 
 }
