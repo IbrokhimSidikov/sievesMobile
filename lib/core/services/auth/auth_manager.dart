@@ -42,6 +42,9 @@ class AuthManager {
   
   // Get current user role
   String? get currentUserRole => _currentIdentity?.role;
+
+  // Get the branch the current employee belongs to
+  int? get currentBranchId => _currentIdentity?.employee?.branchId;
   
   // Get current employee status (online/offline)
   String? get currentEmployeeStatus => _currentIdentity?.employee?.status;

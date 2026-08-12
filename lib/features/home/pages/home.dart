@@ -54,12 +54,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         const Color(0xFF9C8878),
         '/breakRecords',
       ),
-      _ModuleItem(
-        localizations.salaryProgress,
-        Icons.wallet_outlined,
-        const Color(0xFF9C8878),
-        '/salaryProgress',
-      ),
+      // _ModuleItem(
+      //   localizations.salaryProgress,
+      //   Icons.wallet_outlined,
+      //   const Color(0xFF9C8878),
+      //   '/salaryProgress',
+      // ),
       _ModuleItem(
         localizations.learning,
         Icons.laptop_mac_sharp,

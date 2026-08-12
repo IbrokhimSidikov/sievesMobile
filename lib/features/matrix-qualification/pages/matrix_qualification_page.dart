@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fl_chart/fl_chart.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/matrix_qualification.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/services/auth/auth_manager.dart';
 
@@ -73,6 +74,17 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           Icons.verified_rounded,
         ];
 
+        // Station fields belong to a branch: Central Kitchen raters see the
+        // production lines and nobody else does, everyone else sees the
+        // restaurant stations. Company-wide fields pass through untouched.
+        final branchId = authManager.currentBranchId;
+        final visibleFields = fields
+            .where((field) => isQualificationFieldVisibleForBranch(
+                  field['uuid']?.toString(),
+                  branchId,
+                ))
+            .toList();
+
         // The API returns a nested tree: top-level fields each carrying a
         // `children` array. Flatten into an ordered list where every parent
         // is immediately followed by its own sub-fields.
@@ -99,7 +111,7 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           return category;
         }
 
-        for (final field in fields) {
+        for (final field in visibleFields) {
           final children = (field['children'] as List?) ?? const [];
           final parent = buildCategory(field, hasChildren: children.isNotEmpty);
           categories.add(parent);
