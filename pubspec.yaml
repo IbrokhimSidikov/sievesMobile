@@ -3,7 +3,7 @@ description: "Sieves Mobile"
 
 publish_to: 'none'
 
-version: 1.48.0+82
+version: 1.49.0+83
 environment:
   sdk: ^3.8.1
 

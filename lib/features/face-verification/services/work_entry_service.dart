@@ -297,6 +297,99 @@ class WorkEntryService {
     }
   }
 
+  // ─── Time-log clamping ────────────────────────────────────────────────
+  // Branch 2 (legacy): every entry is capped at 19:00.
+  // Every other branch: a check-OUT made in the small hours is capped at
+  // 02:00, and a check-IN made before 08:00 is registered as 08:00.
+  // Departments 28 and 20 are exempt from all clamping.
+
+  /// Departments that always register their real time, with no clamping.
+  static const List<int> _cutoffExemptDepartments = [28, 20];
+
+  /// Legacy hard cap for branch 2.
+  static const int _branch2CutoffHour = 19;
+
+  /// Latest hour a check-out can register at once past midnight.
+  static const int _nightCheckOutCapHour = 2;
+
+  /// Earliest hour a check-in can register at.
+  static const int _morningCheckInFloorHour = 8;
+
+  /// Returns the time that should be sent as `time_log` for [now].
+  ///
+  /// [isCheckOut] is true when the employee is currently online (the entry
+  /// being created is a `stop`), false for a `start`.
+  DateTime _adjustTimeLog({
+    required DateTime now,
+    required int branchId,
+    required int departmentId,
+    required bool isCheckOut,
+  }) {
+    String fmt(DateTime t) => DateFormat('HH:mm:ss').format(t);
+
+    if (_cutoffExemptDepartments.contains(departmentId)) {
+      print(
+        '⏰ [WORK ENTRY] Department $departmentId excluded from time cutoff logic',
+      );
+      return now;
+    }
+
+    if (branchId == 2) {
+      final cutoff = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        _branch2CutoffHour,
+        0,
+        0,
+      );
+      if (now.isAfter(cutoff)) {
+        print(
+          '⏰ [WORK ENTRY] Branch 2 cutoff: ${fmt(now)} -> ${fmt(cutoff)}',
+        );
+        return cutoff;
+      }
+      return now;
+    }
+
+    final nightCap = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _nightCheckOutCapHour,
+      0,
+      0,
+    );
+    final morningFloor = DateTime(
+      now.year,
+      now.month,
+      now.day,
+      _morningCheckInFloorHour,
+      0,
+      0,
+    );
+
+    if (isCheckOut) {
+      // Only the overnight window is capped; a normal daytime/evening
+      // check-out registers at its real time.
+      if (now.isAfter(nightCap) && now.isBefore(morningFloor)) {
+        print(
+          '⏰ [WORK ENTRY] Night check-out cap: ${fmt(now)} -> ${fmt(nightCap)}',
+        );
+        return nightCap;
+      }
+      return now;
+    }
+
+    if (now.isBefore(morningFloor)) {
+      print(
+        '⏰ [WORK ENTRY] Early check-in floor: ${fmt(now)} -> ${fmt(morningFloor)}',
+      );
+      return morningFloor;
+    }
+    return now;
+  }
+
   Future<Map<String, dynamic>?> performCompleteWorkEntry(
     File capturedPhoto, {
     int? mood,
@@ -543,38 +636,12 @@ class WorkEntryService {
       print('│ STEP 6: Creating work entry                                │');
       print('└─────────────────────────────────────────────────────────────┘');
       final now = DateTime.now();
-
-      // Cutoff logic only applies to branch 2
-      final isCutoffBranch = branchId == 2;
-
-      // Check if department is excluded from cutoff logic
-      final excludedDepartments = [28, 20];
-      final isExcludedDepartment = excludedDepartments.contains(departmentId);
-
-      DateTime adjustedTime = now;
-
-      if (isCutoffBranch && !isExcludedDepartment) {
-        // Create 19:00:00 cutoff time for today (only for branch 2, non-excluded departments)
-        final cutoffTime = DateTime(now.year, now.month, now.day, 19, 0, 0);
-
-        // Clamp time to cutoff if it exceeds 19:00:00
-        adjustedTime = now.isAfter(cutoffTime) ? cutoffTime : now;
-
-        if (now.isAfter(cutoffTime)) {
-          print(
-            '⏰ [WORK ENTRY] Time adjusted: ${DateFormat('HH:mm:ss').format(now)} -> 19:00:00',
-          );
-        }
-      } else if (!isCutoffBranch) {
-        print(
-          '⏰ [WORK ENTRY] Branch $branchId excluded from time cutoff logic',
-        );
-      } else {
-        print(
-          '⏰ [WORK ENTRY] Department $departmentId excluded from time cutoff logic',
-        );
-      }
-
+      final adjustedTime = _adjustTimeLog(
+        now: now,
+        branchId: branchId,
+        departmentId: departmentId,
+        isCheckOut: isOnline,
+      );
       final timeLog = DateFormat('yyyy-MM-dd HH:mm:ss').format(adjustedTime);
 
       final Map<String, dynamic>? result;

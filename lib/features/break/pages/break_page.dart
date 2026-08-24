@@ -72,6 +72,12 @@ class _BreakPageState extends State<BreakPage>
   // (the check that would flip this to false is no longer called).
   bool _isCheckingDailyOrder = false;
 
+  // Attendance gate: an employee must be checked in ("online") to order.
+  // Branch 2 employees are exempt and may order whatever their status is.
+  // Seeded from the cached identity, then refreshed from the API on load and
+  // again right before an order is submitted.
+  bool _isEmployeeOnline = true;
+
   // Pizza product IDs — used only to detect which pos_category is the pizza
   // category when filtering combo options. Pizza type (Italiano/Americano) is
   // now handled by variant groups from the inventory response.
@@ -92,13 +98,43 @@ class _BreakPageState extends State<BreakPage>
       CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
 
+    _isEmployeeOnline = !_requiresOnlineStatus || _authManager.isEmployeeOnline;
+
     _fetchMenuItems();
+    _refreshEmployeeStatus();
     // _checkDailyOrderStatus();
 
     // Show notice dialog after frame is built
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _showNoticeDialog();
     });
+  }
+
+  // Only branch 2 employees may order while checked out; everyone else has to
+  // be online (checked in) to place a break order.
+  bool get _requiresOnlineStatus =>
+      _authManager.currentIdentity?.employee?.branchId != 2;
+
+  /// Fetches the employee's live attendance status and updates
+  /// [_isEmployeeOnline]. Returns whether ordering is allowed.
+  Future<bool> _refreshEmployeeStatus() async {
+    if (!_requiresOnlineStatus) return true;
+
+    final employeeId = _authManager.currentEmployeeId;
+    if (employeeId == null) return _isEmployeeOnline;
+
+    final status = await _authManager.apiService.getCurrentEmployeeStatus(
+      employeeId,
+    );
+    // A failed lookup must not lock out a checked-in employee: fall back to
+    // the status carried by the cached identity.
+    final isOnline = status != null
+        ? status.toLowerCase() == 'online'
+        : _authManager.isEmployeeOnline;
+
+    _isEmployeeOnline = isOnline;
+    if (mounted) setState(() {});
+    return isOnline;
   }
 
   // Check if current time is within evening order window (17:00 - 20:00)
@@ -632,6 +668,22 @@ class _BreakPageState extends State<BreakPage>
   }
 
   Future<void> _handleOrderSubmission() async {
+    // Attendance gate: must be checked in (branch 2 exempt).
+    if (_requiresOnlineStatus && !await _refreshEmployeeStatus()) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'You must be checked in to place a break order. Please register your check-in first.',
+            ),
+            backgroundColor: Colors.orange,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+      return;
+    }
+
     // Check time restriction first
     if (!_isWithinOrderTime()) {
       if (mounted) {
@@ -2274,7 +2326,9 @@ class _BreakPageState extends State<BreakPage>
     // Daily-order limit disabled: never block on today's order history.
     // final isOwnBranchUser = _authManager.isBreakOwnBranchUser;
     // final blockedByDailyLimit = _hasOrderedToday && !isOwnBranchUser;
-    final canOrder = _isWithinOrderTime() && !_isCheckingDailyOrder;
+    final blockedByStatus = _requiresOnlineStatus && !_isEmployeeOnline;
+    final canOrder =
+        _isWithinOrderTime() && !_isCheckingDailyOrder && !blockedByStatus;
 
     // Determine restriction message
     String? restrictionMessage;
@@ -2282,6 +2336,8 @@ class _BreakPageState extends State<BreakPage>
       restrictionMessage = null; // Still checking
       // } else if (blockedByDailyLimit) {
       //   restrictionMessage = 'Already ordered today';
+    } else if (blockedByStatus) {
+      restrictionMessage = 'Check in first to place an order';
     } else if (!_isWithinOrderTime()) {
       restrictionMessage = 'Outside order hours';
     }
