@@ -22,6 +22,10 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
   List<Map<String, dynamic>> _employees = [];
   List<SkillCategory> _skillCategories = [];
 
+  /// The branch this rater fills the matrix for — their own, unless they are
+  /// one of the cross-branch raters in [kMatrixRatingBranchByEmployee].
+  int? _ratingBranchId;
+
   final Map<String, int> _ratings = {};
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
@@ -36,6 +40,13 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     _pulseAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
+
+    final authManager = AuthManager();
+    _ratingBranchId = matrixRatingBranchId(
+      employeeId: authManager.currentEmployeeId,
+      branchId: authManager.currentBranchId,
+    );
+
     _loadData();
   }
 
@@ -77,11 +88,12 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
         // Station fields belong to a branch: Central Kitchen raters see the
         // production lines and nobody else does, everyone else sees the
         // restaurant stations. Company-wide fields pass through untouched.
-        final branchId = authManager.currentBranchId;
+        // Keyed off the *rated* branch, so a cross-branch rater gets the
+        // target branch's stations rather than their own.
         final visibleFields = fields
             .where((field) => isQualificationFieldVisibleForBranch(
                   field['uuid']?.toString(),
-                  branchId,
+                  _ratingBranchId,
                 ))
             .toList();
 
@@ -167,17 +179,32 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
       });
       
       final authManager = AuthManager();
-      final data = await authManager.apiService.getKitchenEmployees();
-      
+
+      // The kitchen-employees endpoint always answers for the caller's own
+      // branch (it reads branch_id off the token), so a cross-branch rater
+      // has to ask for the rated branch's roster explicitly.
+      final isCrossBranch =
+          _ratingBranchId != null && _ratingBranchId != authManager.currentBranchId;
+      final data = isCrossBranch
+          ? await authManager.apiService.getBranchEmployees(_ratingBranchId!)
+          : await authManager.apiService.getKitchenEmployees();
+
       if (data != null) {
         setState(() {
-          _employees = data.map((employee) {
+          _employees = data
+              .where((employee) => employee['deleted'] != 1 && employee['deleted'] != true)
+              .map((employee) {
             final individual = employee['individual'] ?? {};
             final firstName = individual['first_name'] ?? '';
             final lastName = individual['last_name'] ?? '';
-            final fullName = '$firstName $lastName'.trim();
+            final composedName = '$firstName $lastName'.trim();
+            // The branch roster endpoint carries full_name, the kitchen one
+            // carries the parts — take whichever is there.
+            final fullName = composedName.isNotEmpty
+                ? composedName
+                : (individual['full_name']?.toString().trim() ?? '');
             final jobPosition = employee['jobPosition'] ?? {};
-            
+
             return {
               'id': employee['id'].toString(),
               'name': fullName.isNotEmpty ? fullName : 'Unknown',
@@ -188,7 +215,10 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           }).toList();
           _isLoadingEmployees = false;
         });
-        print('✅ Loaded ${_employees.length} kitchen employees');
+        print(
+          '✅ Loaded ${_employees.length} employees for branch $_ratingBranchId'
+          '${isCrossBranch ? ' (cross-branch rater)' : ''}',
+        );
       } else {
         throw Exception('Failed to load employees');
       }

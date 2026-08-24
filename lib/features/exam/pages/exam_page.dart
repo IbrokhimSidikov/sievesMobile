@@ -58,6 +58,14 @@ class _ExamPageState extends State<ExamPage> {
   }
 
   Future<void> _openExam(ExamSummary exam) async {
+    // Exams are taken in order — a locked one only explains why. An already
+    // completed exam stays openable so its result is never hidden, even if a
+    // re-assigned earlier exam pushed it behind a lock.
+    if (exam.locked && !exam.isCompleted) {
+      _showLockedDialog(exam);
+      return;
+    }
+
     if (exam.isCompleted) {
       if (exam.attemptId == null) return;
       Navigator.of(context).push(
@@ -77,6 +85,86 @@ class _ExamPageState extends State<ExamPage> {
     );
     // Refresh state after returning from the exam flow.
     if (mounted) _loadExams();
+  }
+
+  void _showLockedDialog(ExamSummary exam) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor:
+            isDark ? const Color(0xFF1A1A24) : AppColors.cxPureWhite,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20.r)),
+        title: Row(
+          children: [
+            Icon(Icons.lock_outline_rounded,
+                color: AppColors.cxAmberGold, size: 22.r),
+            SizedBox(width: 10.w),
+            Expanded(
+              child: Text(
+                _l10n.examLockedTitle,
+                style:
+                    TextStyle(fontSize: 18.sp, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _l10n.examLockedBody,
+              style: TextStyle(fontSize: 14.sp, height: 1.5),
+            ),
+            if (exam.lockedByTitle != null &&
+                exam.lockedByTitle!.isNotEmpty) ...[
+              SizedBox(height: 14.h),
+              Container(
+                width: double.infinity,
+                padding: EdgeInsets.all(12.w),
+                decoration: BoxDecoration(
+                  color: AppColors.cxAmberGold.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12.r),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _l10n.examLockedBefore,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        color: isDark
+                            ? const Color(0xFF9CA3AF)
+                            : AppColors.cxSilverTint,
+                      ),
+                    ),
+                    SizedBox(height: 4.h),
+                    Text(
+                      exam.lockedByTitle!,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? const Color(0xFFE8E8F0)
+                            : AppColors.cxDarkCharcoal,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(_l10n.examBackToExams),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -173,116 +261,155 @@ class _ExamPageState extends State<ExamPage> {
 
   Widget _buildCard(ExamSummary exam, bool isDark) {
     final badge = _stateBadge(exam);
+    final locked = exam.locked && !exam.isCompleted;
 
     return GestureDetector(
       onTap: () => _openExam(exam),
-      child: Container(
-        margin: EdgeInsets.only(bottom: 14.h),
-        padding: EdgeInsets.all(18.w),
-        decoration: BoxDecoration(
-          color: isDark ? const Color(0xFF1A1A24) : Colors.white,
-          borderRadius: BorderRadius.circular(20.r),
-          border: Border.all(
-            color: isDark
-                ? const Color(0xFF374151)
-                : AppColors.cxPlatinumGray.withOpacity(0.4),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(isDark ? 0.3 : 0.05),
-              blurRadius: 16,
-              offset: const Offset(0, 6),
+      child: Opacity(
+        // A locked card stays readable but visibly out of reach.
+        opacity: locked ? 0.55 : 1,
+        child: Container(
+          margin: EdgeInsets.only(bottom: 14.h),
+          padding: EdgeInsets.all(18.w),
+          decoration: BoxDecoration(
+            color: locked
+                ? (isDark ? const Color(0xFF15151D) : const Color(0xFFF2F3F5))
+                : (isDark ? const Color(0xFF1A1A24) : Colors.white),
+            borderRadius: BorderRadius.circular(20.r),
+            border: Border.all(
+              color: isDark
+                  ? const Color(0xFF374151)
+                  : AppColors.cxPlatinumGray.withOpacity(0.4),
             ),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    exam.title,
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: isDark
-                          ? const Color(0xFFE8E8F0)
-                          : AppColors.cxDarkCharcoal,
-                    ),
-                  ),
-                ),
-                Container(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
-                  decoration: BoxDecoration(
-                    color: badge.color.withOpacity(0.14),
-                    borderRadius: BorderRadius.circular(8.r),
-                  ),
-                  child: Text(
-                    badge.label,
-                    style: TextStyle(
-                      fontSize: 11.sp,
-                      fontWeight: FontWeight.bold,
-                      color: badge.color,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            if (exam.description != null && exam.description!.isNotEmpty) ...[
-              SizedBox(height: 6.h),
-              Text(
-                exam.description!,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 13.sp,
-                  color: isDark
-                      ? const Color(0xFF9CA3AF)
-                      : AppColors.cxSilverTint,
-                  height: 1.4,
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(
+                    locked ? (isDark ? 0.15 : 0.02) : (isDark ? 0.3 : 0.05)),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
               ),
             ],
-            SizedBox(height: 12.h),
-            Row(
-              children: [
-                _metaChip(
-                  isDark,
-                  Icons.timer_outlined,
-                  exam.durationMinutes > 0
-                      ? '${exam.durationMinutes} ${_l10n.examMinutesShort}'
-                      : _l10n.examNoTimeLimit,
-                ),
-                SizedBox(width: 10.w),
-                _metaChip(
-                  isDark,
-                  Icons.emoji_events_outlined,
-                  '${exam.passingScore}%',
-                ),
-                const Spacer(),
-                if (exam.isCompleted && exam.scorePercentage != null)
-                  Text(
-                    '${exam.scorePercentage!.round()}%',
-                    style: TextStyle(
-                      fontSize: 16.sp,
-                      fontWeight: FontWeight.bold,
-                      color: (exam.passed ?? false)
-                          ? AppColors.cxEmeraldGreen
-                          : AppColors.cxCrimsonRed,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  if (locked) ...[
+                    Icon(Icons.lock_outline_rounded,
+                        size: 17.r, color: AppColors.cxAmberGold),
+                    SizedBox(width: 7.w),
+                  ],
+                  Expanded(
+                    child: Text(
+                      exam.title,
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: isDark
+                            ? const Color(0xFFE8E8F0)
+                            : AppColors.cxDarkCharcoal,
+                      ),
                     ),
-                  )
-                else
-                  Icon(
-                    Icons.chevron_right_rounded,
+                  ),
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10.w, vertical: 5.h),
+                    decoration: BoxDecoration(
+                      color: badge.color.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(8.r),
+                    ),
+                    child: Text(
+                      badge.label,
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        fontWeight: FontWeight.bold,
+                        color: badge.color,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              if (exam.description != null && exam.description!.isNotEmpty) ...[
+                SizedBox(height: 6.h),
+                Text(
+                  exam.description!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 13.sp,
                     color: isDark
                         ? const Color(0xFF9CA3AF)
                         : AppColors.cxSilverTint,
+                    height: 1.4,
                   ),
+                ),
               ],
-            ),
-          ],
+              SizedBox(height: 12.h),
+              Row(
+                children: [
+                  _metaChip(
+                    isDark,
+                    Icons.timer_outlined,
+                    exam.durationMinutes > 0
+                        ? '${exam.durationMinutes} ${_l10n.examMinutesShort}'
+                        : _l10n.examNoTimeLimit,
+                  ),
+                  SizedBox(width: 10.w),
+                  _metaChip(
+                    isDark,
+                    Icons.emoji_events_outlined,
+                    '${exam.passingScore}%',
+                  ),
+                  const Spacer(),
+                  if (exam.isCompleted && exam.scorePercentage != null)
+                    Text(
+                      '${exam.scorePercentage!.round()}%',
+                      style: TextStyle(
+                        fontSize: 16.sp,
+                        fontWeight: FontWeight.bold,
+                        color: (exam.passed ?? false)
+                            ? AppColors.cxEmeraldGreen
+                            : AppColors.cxCrimsonRed,
+                      ),
+                    )
+                  else
+                    Icon(
+                      locked
+                          ? Icons.lock_rounded
+                          : Icons.chevron_right_rounded,
+                      color: isDark
+                          ? const Color(0xFF9CA3AF)
+                          : AppColors.cxSilverTint,
+                    ),
+                ],
+              ),
+              if (locked &&
+                  exam.lockedByTitle != null &&
+                  exam.lockedByTitle!.isNotEmpty) ...[
+                SizedBox(height: 10.h),
+                Row(
+                  children: [
+                    Icon(Icons.subdirectory_arrow_right_rounded,
+                        size: 15.r, color: AppColors.cxAmberGold),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        '${_l10n.examLockedBefore} ${exam.lockedByTitle}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.cxAmberGold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
         ),
       ),
     );
@@ -309,6 +436,11 @@ class _ExamPageState extends State<ExamPage> {
   }
 
   _Badge _stateBadge(ExamSummary exam) {
+    // A completed exam still shows its own result, even further down a locked
+    // chain — only the not-yet-taken ones read as locked.
+    if (exam.locked && !exam.isCompleted) {
+      return _Badge(_l10n.examStateLocked, AppColors.cxAmberGold);
+    }
     if (exam.isCompleted) {
       final passed = exam.passed ?? false;
       return _Badge(

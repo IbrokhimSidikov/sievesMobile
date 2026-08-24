@@ -29,6 +29,17 @@ class ExamSummary {
   final double? scorePercentage;
   final bool? passed;
 
+  /// Position in the employee's sequential chain (0 = unordered).
+  final int sortOrder;
+
+  /// Exams are taken in order: this one stays locked until every earlier exam
+  /// has been passed. The server is the authority — it rejects a start on a
+  /// locked exam too, this flag only drives the UI.
+  final bool locked;
+
+  /// Title of the earlier exam that has to be passed first (when [locked]).
+  final String? lockedByTitle;
+
   ExamSummary({
     required this.examId,
     required this.title,
@@ -39,6 +50,9 @@ class ExamSummary {
     this.attemptId,
     this.scorePercentage,
     this.passed,
+    this.sortOrder = 0,
+    this.locked = false,
+    this.lockedByTitle,
   });
 
   bool get isCompleted => state == 'completed';
@@ -56,6 +70,9 @@ class ExamSummary {
         scorePercentage:
             json['score_percentage'] != null ? _asDouble(json['score_percentage']) : null,
         passed: json['passed'] as bool?,
+        sortOrder: _asInt(json['sort_order']) ?? 0,
+        locked: json['locked'] as bool? ?? false,
+        lockedByTitle: json['locked_by_title'] as String?,
       );
 }
 

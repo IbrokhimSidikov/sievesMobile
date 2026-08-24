@@ -41,3 +41,27 @@ bool isQualificationFieldVisibleForBranch(String? uuid, int? branchId) {
   if (uuid == null || !kPositionSkillsUuids.contains(uuid)) return true;
   return uuid == positionSkillsUuidForBranch(branchId);
 }
+
+// ─────────────────────── Cross-branch raters ───────────────────────
+
+/// Raters who evaluate a branch other than the one they are employed at,
+/// keyed by their own employee id. They rate that branch *instead of* their
+/// own — the matrix page shows the target branch's employees and stations,
+/// never their own.
+///
+/// Hardcoded on purpose: this is a two-person exception, so changing it needs
+/// an app release. If the list starts churning, move the mapping behind the
+/// API (an allowlist served with the identity) and keep
+/// [matrixRatingBranchId] as the single place the app reads it from.
+const Map<int, int> kMatrixRatingBranchByEmployee = {
+  // <employee id>: 7, // <name> — employed at branch 2, rates Central Kitchen
+  // <employee id>: 7, // <name> — employed at branch 2, rates Central Kitchen
+  226: 7,
+  220: 7,
+  // 1748: 7, // testing
+};
+
+/// The branch a rater fills the matrix for: their override if they have one,
+/// otherwise the branch they work at.
+int? matrixRatingBranchId({int? employeeId, int? branchId}) =>
+    kMatrixRatingBranchByEmployee[employeeId] ?? branchId;

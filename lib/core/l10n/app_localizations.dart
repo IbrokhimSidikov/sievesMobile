@@ -469,6 +469,11 @@ class AppLocalizations {
       'examTimeRemaining': 'Time left',
       'examResultPassed': 'Passed',
       'examResultFailed': 'Failed',
+      'examStateLocked': 'Locked',
+      'examLockedTitle': 'Exam locked',
+      'examLockedBody':
+          'Exams must be taken in order. Pass the previous exam to unlock this one.',
+      'examLockedBefore': 'Pass first:',
       'examYourScore': 'Your score',
       'examCorrect': 'Correct answers',
       'examPoints': 'Points',
@@ -996,6 +1001,11 @@ class AppLocalizations {
       'examTimeRemaining': 'Qolgan vaqt',
       'examResultPassed': 'O\'tdingiz',
       'examResultFailed': 'O\'ta olmadingiz',
+      'examStateLocked': 'Yopiq',
+      'examLockedTitle': 'Imtihon yopiq',
+      'examLockedBody':
+          'Imtihonlar navbat bilan topshiriladi. Buni ochish uchun oldingi imtihondan o\'ting.',
+      'examLockedBefore': 'Avval o\'ting:',
       'examYourScore': 'Sizning natijangiz',
       'examCorrect': 'To\'g\'ri javoblar',
       'examPoints': 'Ballar',
@@ -1534,6 +1544,11 @@ class AppLocalizations {
       'examTimeRemaining': 'Осталось',
       'examResultPassed': 'Пройден',
       'examResultFailed': 'Не пройден',
+      'examStateLocked': 'Заблокирован',
+      'examLockedTitle': 'Экзамен заблокирован',
+      'examLockedBody':
+          'Экзамены сдаются по порядку. Чтобы открыть этот, сдайте предыдущий экзамен.',
+      'examLockedBefore': 'Сначала сдайте:',
       'examYourScore': 'Ваш результат',
       'examCorrect': 'Правильных ответов',
       'examPoints': 'Баллы',
@@ -2034,6 +2049,10 @@ class AppLocalizations {
   String get examTimeRemaining => translate('examTimeRemaining');
   String get examResultPassed => translate('examResultPassed');
   String get examResultFailed => translate('examResultFailed');
+  String get examStateLocked => translate('examStateLocked');
+  String get examLockedTitle => translate('examLockedTitle');
+  String get examLockedBody => translate('examLockedBody');
+  String get examLockedBefore => translate('examLockedBefore');
   String get examYourScore => translate('examYourScore');
   String get examCorrect => translate('examCorrect');
   String get examPoints => translate('examPoints');
