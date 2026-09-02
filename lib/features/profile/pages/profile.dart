@@ -17,6 +17,7 @@ import '../../../core/router/app_routes.dart';
 import '../../../core/utils/work_time_calculator.dart';
 import '../../../core/model/work_entry_model.dart';
 import '../../../core/widgets/language_switcher.dart';
+import '../widgets/onboarding_checklist.dart';
 
 class Profile extends StatefulWidget {
   const Profile({super.key});
@@ -2267,6 +2268,10 @@ class _ProfileState extends State<Profile> {
                 ],
               ),
             ),
+
+            // ── Onboarding check-list (new employees) ────────────────
+            SizedBox(width: 8.w),
+            const OnboardingChecklistIcon(),
           ],
         ),
       ),
