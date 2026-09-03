@@ -1,6 +1,9 @@
+import 'dart:ui' show ImageFilter;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/services/auth/auth_manager.dart';
 
 /// ─────────────────────────────────────────────────────────────────────────
 /// Onboarding check-list for recently hired employees.
@@ -11,6 +14,44 @@ import '../../../core/constants/app_colors.dart';
 /// training was actually delivered, or proceeds without confirming and can
 /// escalate a complaint to head administration at the end.
 /// ─────────────────────────────────────────────────────────────────────────
+
+/// Snapshot of the checklist state for the current employee, as reported by
+/// `GET /onboarding-checklist/status`.
+class OnboardingChecklistStatus {
+  final int workedDays;
+  final int threshold;
+  final bool isDue;
+  final bool submitted;
+  final bool shouldPulse;
+
+  const OnboardingChecklistStatus({
+    required this.workedDays,
+    required this.threshold,
+    required this.isDue,
+    required this.submitted,
+    required this.shouldPulse,
+  });
+
+  factory OnboardingChecklistStatus.fromJson(Map<String, dynamic> json) {
+    final workedDays = (json['worked_days'] as num?)?.toInt() ?? 0;
+    final threshold = (json['threshold'] as num?)?.toInt() ?? 10;
+    final submitted = json['submitted'] == true || json['submitted'] == 1;
+    final isDue =
+        json['is_due'] == true ||
+        json['is_due'] == 1 ||
+        workedDays >= threshold;
+    final shouldPulse = json.containsKey('should_pulse')
+        ? (json['should_pulse'] == true || json['should_pulse'] == 1)
+        : (isDue && !submitted);
+    return OnboardingChecklistStatus(
+      workedDays: workedDays,
+      threshold: threshold,
+      isDue: isDue,
+      submitted: submitted,
+      shouldPulse: shouldPulse,
+    );
+  }
+}
 
 class OnboardingChecklistIcon extends StatefulWidget {
   const OnboardingChecklistIcon({super.key});
@@ -23,6 +64,12 @@ class OnboardingChecklistIcon extends StatefulWidget {
 class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulseController;
+  final AuthManager _authManager = AuthManager();
+
+  OnboardingChecklistStatus? _status;
+
+  bool get _shouldPulse => _status?.shouldPulse ?? false;
+  bool get _submitted => _status?.submitted ?? false;
 
   @override
   void initState() {
@@ -30,7 +77,8 @@ class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 1600),
-    )..repeat();
+    );
+    _loadStatus();
   }
 
   @override
@@ -39,18 +87,53 @@ class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
     super.dispose();
   }
 
-  void _openChecklist() {
-    showModalBottomSheet(
+  Future<void> _loadStatus() async {
+    final json = await _authManager.apiService.getOnboardingChecklistStatus();
+    if (!mounted) return;
+    setState(() {
+      _status = json != null ? OnboardingChecklistStatus.fromJson(json) : null;
+    });
+    _syncPulse();
+  }
+
+  /// Runs the pulse only while the checklist is due and not yet submitted.
+  void _syncPulse() {
+    if (_shouldPulse) {
+      if (!_pulseController.isAnimating) _pulseController.repeat();
+    } else {
+      _pulseController.stop();
+      _pulseController.value = 0;
+    }
+  }
+
+  Future<void> _openChecklist() async {
+    final submitted = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (_) => const OnboardingChecklistSheet(),
+      builder: (_) => OnboardingChecklistSheet(status: _status),
     );
+    if (submitted == true) {
+      // Optimistically stop pulsing, then re-sync with the backend.
+      if (mounted && _status != null) {
+        setState(() {
+          _status = OnboardingChecklistStatus(
+            workedDays: _status!.workedDays,
+            threshold: _status!.threshold,
+            isDue: _status!.isDue,
+            submitted: true,
+            shouldPulse: false,
+          );
+        });
+        _syncPulse();
+      }
+      await _loadStatus();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    const accent = AppColors.cxWarning;
+    final accent = _submitted ? AppColors.cx43C19F : AppColors.cxWarning;
 
     return GestureDetector(
       onTap: _openChecklist,
@@ -60,25 +143,28 @@ class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
         child: AnimatedBuilder(
           animation: _pulseController,
           builder: (context, child) {
-            final t = _pulseController.value;
+            final t = _shouldPulse ? _pulseController.value : 0.0;
             return Stack(
               alignment: Alignment.center,
               children: [
-                // Expanding, fading ring
-                Container(
-                  width: 40.w + (16.w * t),
-                  height: 40.w + (16.w * t),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: accent.withOpacity((1 - t) * 0.5),
-                      width: 2,
+                // Expanding, fading ring (only while pulsing)
+                if (_shouldPulse)
+                  Container(
+                    width: 40.w + (16.w * t),
+                    height: 40.w + (16.w * t),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: accent.withOpacity((1 - t) * 0.5),
+                        width: 2,
+                      ),
                     ),
                   ),
-                ),
                 // Softly breathing badge
                 Transform.scale(
-                  scale: 1.0 + 0.06 * (0.5 - (t - 0.5).abs()) * 2,
+                  scale: _shouldPulse
+                      ? 1.0 + 0.06 * (0.5 - (t - 0.5).abs()) * 2
+                      : 1.0,
                   child: Container(
                     width: 42.w,
                     height: 42.w,
@@ -97,11 +183,12 @@ class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
                         width: 1.5,
                       ),
                       boxShadow: [
-                        BoxShadow(
-                          color: accent.withOpacity(0.25 * (1 - t)),
-                          blurRadius: 14,
-                          spreadRadius: 2,
-                        ),
+                        if (_shouldPulse)
+                          BoxShadow(
+                            color: accent.withOpacity(0.25 * (1 - t)),
+                            blurRadius: 14,
+                            spreadRadius: 2,
+                          ),
                       ],
                     ),
                     child: Icon(
@@ -111,6 +198,26 @@ class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
                     ),
                   ),
                 ),
+                // Small "done" badge once the checklist has been submitted
+                if (_submitted)
+                  Positioned(
+                    right: 4.w,
+                    bottom: 4.w,
+                    child: Container(
+                      width: 16.w,
+                      height: 16.w,
+                      decoration: BoxDecoration(
+                        color: AppColors.cx43C19F,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 1.5),
+                      ),
+                      child: Icon(
+                        Icons.check_rounded,
+                        color: Colors.white,
+                        size: 10.sp,
+                      ),
+                    ),
+                  ),
               ],
             );
           },
@@ -122,38 +229,50 @@ class _OnboardingChecklistIconState extends State<OnboardingChecklistIcon>
 
 /// One item of the check-list.
 class _ChecklistItem {
+  /// Stable identifier sent to the backend.
+  final String key;
   final IconData icon;
   final String text;
 
-  const _ChecklistItem({required this.icon, required this.text});
+  const _ChecklistItem({
+    required this.key,
+    required this.icon,
+    required this.text,
+  });
 }
 
 const List<_ChecklistItem> _checklistItems = [
   _ChecklistItem(
+    key: 'welcome_intro',
     icon: Icons.handshake_rounded,
     text:
         'Meni Team Leader yoki Trainer kutib oldi va ish jarayoni bilan tanishtirdi.',
   ),
   _ChecklistItem(
+    key: 'team_intro',
     icon: Icons.groups_rounded,
     text: 'Meni filial jamoasi va asosiy mas’ul xodimlar bilan tanishtirishdi.',
   ),
   _ChecklistItem(
+    key: 'positions_explained',
     icon: Icons.badge_rounded,
     text:
         'Menga filialdagi asosiy pozitsiyalar va ularning vazifalari tushuntirildi.',
   ),
   _ChecklistItem(
+    key: 'safety_rules',
     icon: Icons.health_and_safety_rounded,
     text:
         'Menga xavfsizlik qoidalari, favqulodda holatlarda harakat qilish va mehnat xavfsizligi tushuntirildi.',
   ),
   _ChecklistItem(
+    key: 'hygiene_rules',
     icon: Icons.clean_hands_rounded,
     text:
         'Menga gigiyena, qo‘l yuvish va oziq-ovqat xavfsizligining asosiy qoidalari tushuntirildi.',
   ),
   _ChecklistItem(
+    key: 'role_duties',
     icon: Icons.assignment_ind_rounded,
     text:
         'Menga o‘z pozitsiyam bo‘yicha asosiy vazifalar, standartlar va kimga murojaat qilishim kerakligi tushuntirildi.',
@@ -161,7 +280,9 @@ const List<_ChecklistItem> _checklistItems = [
 ];
 
 class OnboardingChecklistSheet extends StatefulWidget {
-  const OnboardingChecklistSheet({super.key});
+  final OnboardingChecklistStatus? status;
+
+  const OnboardingChecklistSheet({super.key, this.status});
 
   @override
   State<OnboardingChecklistSheet> createState() =>
@@ -170,6 +291,14 @@ class OnboardingChecklistSheet extends StatefulWidget {
 
 class _OnboardingChecklistSheetState extends State<OnboardingChecklistSheet> {
   final PageController _pageController = PageController();
+  final AuthManager _authManager = AuthManager();
+
+  bool _isSubmitting = false;
+
+  /// Head-office branch. Its employees never escalate to a branch manager.
+  static const int _headOfficeBranchId = 2;
+
+  bool get _isHeadOffice => _authManager.currentBranchId == _headOfficeBranchId;
 
   /// Page 0 = intro, pages 1..N = questions, page N+1 = summary.
   int _currentPage = 0;
@@ -209,84 +338,361 @@ class _OnboardingChecklistSheetState extends State<OnboardingChecklistSheet> {
     }
   }
 
-  void _finish() {
-    // TODO: submit confirmations to the backend when the API is ready.
-    Navigator.of(context).pop();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: AppColors.cx43C19F,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12.r),
-        ),
-        content: const Text('Check-list yakunlandi. Rahmat!'),
-      ),
-    );
+  List<Map<String, dynamic>> _buildPayloadItems() {
+    return [
+      for (int i = 0; i < _checklistItems.length; i++)
+        {
+          'key': _checklistItems[i].key,
+          'text': _checklistItems[i].text,
+          'confirmed': _confirmed[i],
+        },
+    ];
   }
 
-  void _contactAdministration() {
-    // TODO: wire this to a real complaint / contact flow when available.
-    showDialog(
-      context: context,
-      builder: (dialogContext) {
-        final isDark = Theme.of(dialogContext).brightness == Brightness.dark;
-        return AlertDialog(
-          backgroundColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20.r),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.support_agent_rounded,
-                color: AppColors.cxWarning,
-                size: 26.sp,
+  void _showSnack(
+    String message,
+    Color color, {
+    IconData icon = Icons.check_rounded,
+  }) {
+    final messenger = ScaffoldMessenger.of(context);
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
+      SnackBar(
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        padding: EdgeInsets.zero,
+        margin: EdgeInsets.fromLTRB(16.w, 0, 16.w, 24.h),
+        duration: const Duration(seconds: 3),
+        content: Container(
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 12.h),
+          decoration: BoxDecoration(
+            color: isDark ? const Color(0xFF262633) : Colors.white,
+            borderRadius: BorderRadius.circular(18.r),
+            border: Border.all(color: color.withOpacity(0.35), width: 1),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(isDark ? 0.4 : 0.12),
+                blurRadius: 24,
+                offset: const Offset(0, 8),
               ),
-              SizedBox(width: 10.w),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 34.w,
+                height: 34.w,
+                decoration: BoxDecoration(
+                  color: color,
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Icon(icon, color: Colors.white, size: 20.sp),
+              ),
+              SizedBox(width: 12.w),
               Expanded(
                 child: Text(
-                  'Direktorga murojaat',
+                  message,
                   style: TextStyle(
-                    fontSize: 17.sp,
-                    fontWeight: FontWeight.w700,
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w600,
+                    height: 1.35,
+                    color: isDark ? const Color(0xFFE8E8F0) : AppColors.cxBlack,
                   ),
                 ),
               ),
             ],
           ),
-          content: Text(
-            'Belgilangan trening(lar) o‘tkazilmagani haqidagi murojaatingiz '
-            'bosh administratsiyaga yuboriladi. Davom etasizmi?',
-            style: TextStyle(fontSize: 14.sp, height: 1.5),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Bekor qilish'),
-            ),
-            FilledButton(
-              style: FilledButton.styleFrom(
-                backgroundColor: AppColors.cxWarning,
-              ),
-              onPressed: () {
-                Navigator.of(dialogContext).pop();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    behavior: SnackBarBehavior.floating,
-                    backgroundColor: AppColors.cxWarning,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12.r),
-                    ),
-                    content: const Text(
-                      'Murojaatingiz administratsiyaga yuborildi.',
-                    ),
+        ),
+      ),
+    );
+  }
+
+  /// Sends the checklist to the backend. When [notifyManager] is true the
+  /// backend pushes an FCM notification with the unconfirmed items to the
+  /// branch manager / director.
+  Future<void> _submit({
+    required bool notifyManager,
+    required bool contactManager,
+  }) async {
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
+
+    final result = await _authManager.apiService.submitOnboardingChecklist(
+      items: _buildPayloadItems(),
+      notifyManager: notifyManager,
+      contactManager: contactManager,
+    );
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    if (result == null) {
+      _showSnack(
+        'Yuborishda xatolik yuz berdi. Iltimos, qayta urinib ko‘ring.',
+        AppColors.cxCrimsonRed,
+        icon: Icons.priority_high_rounded,
+      );
+      return;
+    }
+
+    final notified = result['notified'] == true;
+    // Show the toast while the sheet context is still mounted, then close.
+    if (notifyManager) {
+      _showSnack(
+        notified
+            ? 'Murojaatingiz filial rahbariga yuborildi.'
+            : 'Check-list saqlandi. Filial rahbari topilmadi, '
+                  'administratsiya xabardor qilinadi.',
+        AppColors.cxWarning,
+        icon: notified ? Icons.send_rounded : Icons.check_rounded,
+      );
+    } else {
+      _showSnack('Check-list yakunlandi. Rahmat!', AppColors.cx43C19F);
+    }
+    Navigator.of(context).pop(true);
+  }
+
+  void _finish() {
+    final unconfirmed = _confirmed.where((c) => !c).length;
+    if (unconfirmed == 0 || _isHeadOffice) {
+      _submit(notifyManager: false, contactManager: false);
+      return;
+    }
+    _confirmSendUnconfirmed(unconfirmed);
+  }
+
+  /// At least one item is unconfirmed: ask whether to notify the manager.
+  void _confirmSendUnconfirmed(int unconfirmed) {
+    _showAppleDialog(
+      icon: Icons.report_problem_rounded,
+      accent: AppColors.cxWarning,
+      title: '$unconfirmed ta band tasdiqlanmadi',
+      message:
+          'Tasdiqlanmagan bandlar ro‘yxati filial menejeri / direktoriga '
+          'bildirishnoma sifatida yuborilsinmi?',
+      cancelLabel: 'Yubormasdan yakunlash',
+      confirmLabel: 'Yuborish',
+      onCancel: () => _submit(notifyManager: false, contactManager: false),
+      onConfirm: () => _submit(notifyManager: true, contactManager: false),
+    );
+  }
+
+  void _contactAdministration() {
+    _showAppleDialog(
+      icon: Icons.support_agent_rounded,
+      accent: AppColors.cxWarning,
+      title: 'Direktorga murojaat',
+      message:
+          'Check-list natijalari va tasdiqlanmagan bandlar filial '
+          'menejeri / direktoriga bildirishnoma sifatida yuboriladi. '
+          'Davom etasizmi?',
+      cancelLabel: 'Bekor qilish',
+      confirmLabel: 'Yuborish',
+      onConfirm: () => _submit(notifyManager: true, contactManager: true),
+    );
+  }
+
+  /// iOS-style alert: blurred backdrop, centred card, icon, bold title,
+  /// muted message and a hairline-separated action row.
+  Future<void> _showAppleDialog({
+    required IconData icon,
+    required Color accent,
+    required String title,
+    required String message,
+    required String cancelLabel,
+    required String confirmLabel,
+    required VoidCallback onConfirm,
+    VoidCallback? onCancel,
+  }) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    const iosBlue = Color(0xFF0A84FF);
+    final hairline = isDark
+        ? Colors.white.withOpacity(0.12)
+        : Colors.black.withOpacity(0.12);
+
+    Widget action({
+      required String label,
+      required Color color,
+      required FontWeight weight,
+      required VoidCallback onTap,
+      required BorderRadius radius,
+    }) {
+      return Expanded(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: radius,
+            onTap: onTap,
+            child: SizedBox(
+              height: 48.h,
+              child: Center(
+                child: Text(
+                  label,
+                  textAlign: TextAlign.center,
+                  maxLines: 2,
+                  style: TextStyle(
+                    fontSize: 15.sp,
+                    fontWeight: weight,
+                    color: color,
+                    letterSpacing: -0.2,
                   ),
-                );
-              },
-              child: const Text('Yuborish'),
+                ),
+              ),
             ),
-          ],
+          ),
+        ),
+      );
+    }
+
+    return showGeneralDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      barrierLabel: 'dismiss',
+      barrierColor: Colors.black.withOpacity(isDark ? 0.45 : 0.25),
+      transitionDuration: const Duration(milliseconds: 260),
+      transitionBuilder: (_, animation, __, child) {
+        final curved = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutBack,
+          reverseCurve: Curves.easeIn,
+        );
+        return FadeTransition(
+          opacity: animation,
+          child: ScaleTransition(
+            scale: Tween<double>(begin: 0.92, end: 1).animate(curved),
+            child: child,
+          ),
+        );
+      },
+      pageBuilder: (dialogContext, _, __) {
+        return BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+          child: Center(
+            child: Container(
+              width: 290.w,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2A2A36).withOpacity(0.96)
+                    : Colors.white.withOpacity(0.96),
+                borderRadius: BorderRadius.circular(24.r),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.25),
+                    blurRadius: 40,
+                    offset: const Offset(0, 16),
+                  ),
+                ],
+              ),
+              child: Material(
+                color: Colors.transparent,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: EdgeInsets.fromLTRB(22.w, 24.h, 22.w, 20.h),
+                      child: Column(
+                        children: [
+                          Container(
+                            width: 56.w,
+                            height: 56.w,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  accent.withOpacity(0.22),
+                                  accent.withOpacity(0.08),
+                                ],
+                              ),
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: accent.withOpacity(0.35),
+                                width: 1,
+                              ),
+                            ),
+                            child: Icon(icon, color: accent, size: 28.sp),
+                          ),
+                          SizedBox(height: 14.h),
+                          Text(
+                            title,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 17.sp,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                              height: 1.25,
+                              color: isDark
+                                  ? const Color(0xFFF2F2F7)
+                                  : AppColors.cxBlack,
+                            ),
+                          ),
+                          SizedBox(height: 8.h),
+                          Text(
+                            message,
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              fontSize: 13.sp,
+                              height: 1.45,
+                              color: isDark
+                                  ? const Color(0xFFA1A1AA)
+                                  : AppColors.cxBlack.withOpacity(0.6),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, thickness: 0.6, color: hairline),
+                    IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          action(
+                            label: cancelLabel,
+                            color: iosBlue,
+                            weight: FontWeight.w400,
+                            radius: BorderRadius.only(
+                              bottomLeft: Radius.circular(24.r),
+                            ),
+                            onTap: () {
+                              Navigator.of(dialogContext).pop();
+                              onCancel?.call();
+                            },
+                          ),
+                          VerticalDivider(
+                            width: 0.6,
+                            thickness: 0.6,
+                            color: hairline,
+                          ),
+                          action(
+                            label: confirmLabel,
+                            color: accent,
+                            weight: FontWeight.w700,
+                            radius: BorderRadius.only(
+                              bottomRight: Radius.circular(24.r),
+                            ),
+                            onTap: () {
+                              Navigator.of(dialogContext).pop();
+                              onConfirm();
+                            },
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
         );
       },
     );
@@ -925,7 +1331,7 @@ class _OnboardingChecklistSheetState extends State<OnboardingChecklistSheet> {
           width: double.infinity,
           height: 52.h,
           child: FilledButton(
-            onPressed: _finish,
+            onPressed: _isSubmitting ? null : _finish,
             style: FilledButton.styleFrom(
               backgroundColor: AppColors.cx43C19F,
               shape: RoundedRectangleBorder(
@@ -935,14 +1341,24 @@ class _OnboardingChecklistSheetState extends State<OnboardingChecklistSheet> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.check_circle_outline_rounded,
-                  size: 20.sp,
-                  color: Colors.white,
-                ),
+                if (_isSubmitting)
+                  SizedBox(
+                    width: 18.w,
+                    height: 18.w,
+                    child: const CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
+                  )
+                else
+                  Icon(
+                    Icons.check_circle_outline_rounded,
+                    size: 20.sp,
+                    color: Colors.white,
+                  ),
                 SizedBox(width: 8.w),
                 Text(
-                  'Yakunlash',
+                  _isSubmitting ? 'Yuborilmoqda…' : 'Yakunlash',
                   style: TextStyle(
                     fontSize: 16.sp,
                     fontWeight: FontWeight.w700,
@@ -953,39 +1369,41 @@ class _OnboardingChecklistSheetState extends State<OnboardingChecklistSheet> {
             ),
           ),
         ),
-        SizedBox(height: 10.h),
-        SizedBox(
-          width: double.infinity,
-          height: 52.h,
-          child: OutlinedButton(
-            onPressed: _contactAdministration,
-            style: OutlinedButton.styleFrom(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16.r),
-              ),
-              side: const BorderSide(color: AppColors.cxWarning, width: 1.5),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.support_agent_rounded,
-                  size: 20.sp,
-                  color: AppColors.cxWarning,
+        if (!_isHeadOffice) ...[
+          SizedBox(height: 10.h),
+          SizedBox(
+            width: double.infinity,
+            height: 52.h,
+            child: OutlinedButton(
+              onPressed: _isSubmitting ? null : _contactAdministration,
+              style: OutlinedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16.r),
                 ),
-                SizedBox(width: 8.w),
-                Text(
-                  'Direktorga murojaat',
-                  style: TextStyle(
-                    fontSize: 15.sp,
-                    fontWeight: FontWeight.w600,
+                side: const BorderSide(color: AppColors.cxWarning, width: 1.5),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.support_agent_rounded,
+                    size: 20.sp,
                     color: AppColors.cxWarning,
                   ),
-                ),
-              ],
+                  SizedBox(width: 8.w),
+                  Text(
+                    'Direktorga murojaat',
+                    style: TextStyle(
+                      fontSize: 15.sp,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.cxWarning,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }

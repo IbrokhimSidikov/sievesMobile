@@ -2125,4 +2125,73 @@ class ApiService {
       return null;
     }
   }
+
+  // ==================== ONBOARDING CHECKLIST ====================
+
+  static const String _onboardingChecklistBase =
+      'https://api.v3.sievesapp.com/onboarding-checklist';
+
+  /// Status of the intro-training checklist for the current employee.
+  ///
+  /// Returns a map with keys:
+  ///   worked_days  – distinct day sessions with a closed check-in/out pair
+  ///   threshold    – days after which the checklist becomes due
+  ///   is_due       – worked_days >= threshold
+  ///   submitted    – whether the employee already submitted the checklist
+  ///   should_pulse – is_due && !submitted
+  Future<Map<String, dynamic>?> getOnboardingChecklistStatus() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$_onboardingChecklistBase/status');
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+      print(
+        '❌ [API] Failed to load onboarding checklist status: '
+        '${response.statusCode} - ${response.body}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception loading onboarding checklist status: $e');
+      return null;
+    }
+  }
+
+  /// Submits the intro-training checklist.
+  ///
+  /// [items] is a list of `{key, text, confirmed}` maps.
+  /// [notifyManager] asks the backend to push an FCM notification to the
+  /// branch manager/director listing the unconfirmed items.
+  /// [contactManager] marks the submission as an explicit escalation request.
+  Future<Map<String, dynamic>?> submitOnboardingChecklist({
+    required List<Map<String, dynamic>> items,
+    required bool notifyManager,
+    required bool contactManager,
+  }) async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse('$_onboardingChecklistBase/submit');
+      final response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({
+          'items': items,
+          'notify_manager': notifyManager,
+          'contact_manager': contactManager,
+        }),
+      );
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        return json.decode(response.body) as Map<String, dynamic>;
+      }
+      print(
+        '❌ [API] Failed to submit onboarding checklist: '
+        '${response.statusCode} - ${response.body}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception submitting onboarding checklist: $e');
+      return null;
+    }
+  }
 }
