@@ -2194,4 +2194,55 @@ class ApiService {
       return null;
     }
   }
+
+  // ==================== MATRIX QUALIFICATION PHOTO ====================
+
+  /// Uploads a supporting image for a qualification result and returns its
+  /// public URL, to be passed as `photo_url` in the results submit payload.
+  /// Required when a photo-evidence field (Kaizen metodlari) is rated 5.
+  Future<String?> uploadMatrixQualificationPhoto(File photoFile) async {
+    try {
+      final token = await authService.getAccessToken();
+      if (token == null) {
+        print('❌ [API] No access token for matrix photo upload');
+        return null;
+      }
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/matrix-qualification/results/photo',
+      );
+      final ext = photoFile.path.split('.').last.toLowerCase();
+      final subtype = ext == 'png'
+          ? 'png'
+          : ext == 'webp'
+          ? 'webp'
+          : 'jpeg';
+      final request = http.MultipartRequest('POST', uri);
+      request.headers['Authorization'] = 'Bearer $token';
+      request.files.add(
+        await http.MultipartFile.fromPath(
+          'file',
+          photoFile.path,
+          contentType: MediaType('image', subtype),
+        ),
+      );
+
+      print('📸 [API] Uploading matrix qualification photo: $uri');
+      final streamed = await request.send();
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        final data = jsonDecode(response.body);
+        final url = data is Map ? data['url']?.toString() : null;
+        if (url != null && url.isNotEmpty) return url;
+        print('❌ [API] Unexpected matrix photo response: ${response.body}');
+        return null;
+      }
+      print(
+        '❌ [API] Matrix photo upload failed: ${response.statusCode} - ${response.body}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception uploading matrix photo: $e');
+      return null;
+    }
+  }
 }

@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/matrix_qualification.dart';
 import '../../../core/l10n/app_localizations.dart';
@@ -27,6 +30,14 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
   int? _ratingBranchId;
 
   final Map<String, int> _ratings = {};
+
+  /// Supporting photo per field uuid. Only collected for photo-evidence
+  /// fields (Kaizen metodlari) rated with the maximum score.
+  final Map<String, File> _photos = {};
+
+  /// Rating at which a photo-evidence field demands an image.
+  static const int _photoRequiredRating = 5;
+
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
 
@@ -110,14 +121,22 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
         }) {
           final title = field['title'] ?? 'Unknown';
           final uuid = field['uuid'] ?? field['id']?.toString() ?? '';
+          // The API flags photo-evidence fields; fall back to the title so an
+          // older backend still enforces the rule on the client.
+          final requiresPhoto =
+              field['requires_photo_for_max_rating'] == true ||
+              RegExp(r'ka[iy]zen', caseSensitive: false).hasMatch('$title');
           final category = SkillCategory(
             title: title,
             description: field['description'] ?? '',
-            icon: icons[index % icons.length],
+            icon: requiresPhoto
+                ? Icons.auto_graph_rounded
+                : icons[index % icons.length],
             color: colors[index % colors.length],
             uuid: uuid,
             parentUuid: parentUuid,
             hasChildren: hasChildren,
+            requiresPhotoForMaxRating: requiresPhoto,
           );
           index++;
           return category;
@@ -143,6 +162,7 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
 
           // Only leaf fields hold a rating; parents are auto-computed.
           _ratings.clear();
+          _photos.clear();
           for (final category in _skillCategories) {
             if (category.isRateable && category.uuid != null) {
               _ratings[category.uuid!] = 0;
@@ -274,6 +294,251 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     return distribution;
   }
 
+  /// Whether [category] currently demands a photo: it is a photo-evidence
+  /// field and holds the maximum rating.
+  bool _photoRequired(SkillCategory category) {
+    if (!category.requiresPhotoForMaxRating || category.uuid == null) {
+      return false;
+    }
+    return (_ratings[category.uuid] ?? 0) >= _photoRequiredRating;
+  }
+
+  Future<void> _pickPhoto(SkillCategory category, ImageSource source) async {
+    final uuid = category.uuid;
+    if (uuid == null) return;
+    try {
+      final picked = await ImagePicker().pickImage(
+        source: source,
+        imageQuality: 85,
+        maxWidth: 2000,
+      );
+      if (picked == null) return;
+      setState(() => _photos[uuid] = File(picked.path));
+    } catch (e) {
+      print('❌ Could not pick kaizen photo: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Rasmni tanlab bo‘lmadi'),
+          backgroundColor: AppColors.cxCrimsonRed,
+        ),
+      );
+    }
+  }
+
+  void _removePhoto(SkillCategory category) {
+    if (category.uuid == null) return;
+    setState(() => _photos.remove(category.uuid));
+  }
+
+  void _showPhotoSourceSheet(SkillCategory category, bool isDark) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: isDark ? const Color(0xFF1F1F2E) : Colors.white,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22.r)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(height: 8.h),
+            Container(
+              width: 40.w,
+              height: 4.h,
+              decoration: BoxDecoration(
+                color: Colors.grey.withOpacity(0.4),
+                borderRadius: BorderRadius.circular(4.r),
+              ),
+            ),
+            SizedBox(height: 8.h),
+            ListTile(
+              leading: const Icon(Icons.photo_camera_rounded),
+              title: const Text('Kamera'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickPhoto(category, ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_rounded),
+              title: const Text('Galereya'),
+              onTap: () {
+                Navigator.of(sheetContext).pop();
+                _pickPhoto(category, ImageSource.gallery);
+              },
+            ),
+            SizedBox(height: 8.h),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Photo picker shown under the stars when a photo-evidence field holds
+  /// the maximum rating.
+  Widget _buildPhotoEvidence(
+    SkillCategory category,
+    bool isDark,
+    ThemeData theme,
+  ) {
+    final photo = category.uuid != null ? _photos[category.uuid] : null;
+    final accent = category.color;
+
+    if (photo == null) {
+      return GestureDetector(
+        onTap: () => _showPhotoSourceSheet(category, isDark),
+        child: Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 14.h),
+          decoration: BoxDecoration(
+            color: AppColors.cxWarning.withOpacity(isDark ? 0.12 : 0.08),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(
+              color: AppColors.cxWarning.withOpacity(0.6),
+              width: 1.2,
+            ),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: EdgeInsets.all(8.r),
+                decoration: BoxDecoration(
+                  color: AppColors.cxWarning.withOpacity(0.18),
+                  borderRadius: BorderRadius.circular(10.r),
+                ),
+                child: Icon(
+                  Icons.add_a_photo_rounded,
+                  color: AppColors.cxWarning,
+                  size: 20.sp,
+                ),
+              ),
+              SizedBox(width: 12.w),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Kaizen analitikasi rasmi (majburiy)',
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w700,
+                        color: isDark
+                            ? theme.colorScheme.onSurface
+                            : AppColors.cxDarkCharcoal,
+                      ),
+                    ),
+                    SizedBox(height: 2.h),
+                    Text(
+                      '$_photoRequiredRating ball uchun natijani tasdiqlovchi rasm yuklang',
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: isDark
+                            ? theme.colorScheme.onSurfaceVariant
+                            : AppColors.cxSilverTint,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.cxWarning,
+                size: 22.sp,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(10.r),
+      decoration: BoxDecoration(
+        color: accent.withOpacity(isDark ? 0.12 : 0.06),
+        borderRadius: BorderRadius.circular(12.r),
+        border: Border.all(color: accent.withOpacity(0.5), width: 1.2),
+      ),
+      child: Row(
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10.r),
+            child: Image.file(
+              photo,
+              width: 64.w,
+              height: 64.w,
+              fit: BoxFit.cover,
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.check_circle_rounded,
+                      color: accent,
+                      size: 16.sp,
+                    ),
+                    SizedBox(width: 6.w),
+                    Expanded(
+                      child: Text(
+                        'Rasm biriktirildi',
+                        style: TextStyle(
+                          fontSize: 13.sp,
+                          fontWeight: FontWeight.w700,
+                          color: isDark
+                              ? theme.colorScheme.onSurface
+                              : AppColors.cxDarkCharcoal,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                SizedBox(height: 6.h),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () => _showPhotoSourceSheet(category, isDark),
+                      style: TextButton.styleFrom(
+                        padding: EdgeInsets.symmetric(horizontal: 8.w),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: Icon(Icons.refresh_rounded, size: 16.sp),
+                      label: Text(
+                        'Almashtirish',
+                        style: TextStyle(fontSize: 12.sp),
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                    TextButton.icon(
+                      onPressed: () => _removePhoto(category),
+                      style: TextButton.styleFrom(
+                        foregroundColor: AppColors.cxCrimsonRed,
+                        padding: EdgeInsets.symmetric(horizontal: 8.w),
+                        minimumSize: Size.zero,
+                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      ),
+                      icon: Icon(Icons.delete_outline_rounded, size: 16.sp),
+                      label: Text(
+                        'O‘chirish',
+                        style: TextStyle(fontSize: 12.sp),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submitQualification() async {
     if (_selectedEmployeeId == null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -291,6 +556,28 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
     if (ratedCategories.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Please rate at least one category')),
+      );
+      return;
+    }
+
+    // A top score on a photo-evidence field needs its image before we go.
+    final missingPhoto = ratedCategories.firstWhere(
+      (cat) => _photoRequired(cat) && !_photos.containsKey(cat.uuid),
+      orElse: () => SkillCategory(
+        title: '',
+        description: '',
+        icon: Icons.star,
+        color: Colors.transparent,
+      ),
+    );
+    if (missingPhoto.title.isNotEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '"${missingPhoto.title}" uchun $_photoRequiredRating ball qo‘yish uchun rasm yuklash majburiy',
+          ),
+          backgroundColor: AppColors.cxWarning,
+        ),
       );
       return;
     }
@@ -316,11 +603,35 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
         // Only submit categories the user actually rated.
         if (rating == 0) continue;
 
-        items.add({
+        final item = <String, dynamic>{
           'qualification_uuid': qualificationUuid,
           'rating': rating,
           'comment': category.description,
-        });
+        };
+
+        // Upload the evidence photo first and attach its URL.
+        final photo = _photos[qualificationUuid];
+        if (_photoRequired(category) && photo != null) {
+          final url = await authManager.apiService
+              .uploadMatrixQualificationPhoto(photo);
+          if (url == null) {
+            setState(() => _isSubmitting = false);
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    '"${category.title}" uchun rasm yuklanmadi. Qayta urinib ko‘ring.',
+                  ),
+                  backgroundColor: AppColors.cxCrimsonRed,
+                ),
+              );
+            }
+            return;
+          }
+          item['photo_url'] = url;
+        }
+
+        items.add(item);
       }
       
       if (items.isEmpty) {
@@ -354,6 +665,7 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
           
           setState(() {
             _selectedEmployeeId = null;
+            _photos.clear();
             for (final category in _skillCategories) {
               if (category.isRateable && category.uuid != null) {
                 _ratings[category.uuid!] = 0;
@@ -1904,6 +2216,10 @@ class _MatrixQualificationPageState extends State<MatrixQualificationPage> with 
               );
             }),
           ),
+          if (_photoRequired(category)) ...[
+            SizedBox(height: 14.h),
+            _buildPhotoEvidence(category, isDark, theme),
+          ],
         ],
       ),
     );
@@ -1969,6 +2285,10 @@ class SkillCategory {
   /// its rating is the average of its children's ratings.
   final bool hasChildren;
 
+  /// True when the maximum rating must be backed by an uploaded photo
+  /// (Kaizen metodlari — the kaizen analytics image).
+  final bool requiresPhotoForMaxRating;
+
   SkillCategory({
     required this.title,
     required this.description,
@@ -1977,6 +2297,7 @@ class SkillCategory {
     this.uuid,
     this.parentUuid,
     this.hasChildren = false,
+    this.requiresPhotoForMaxRating = false,
   });
 
   bool get isChild => parentUuid != null;
