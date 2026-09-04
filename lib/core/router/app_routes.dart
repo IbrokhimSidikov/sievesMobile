@@ -28,7 +28,7 @@ import '../../features/lms/models/test.dart';
 import '../../features/lms/models/test_answer.dart';
 import '../../features/lms/models/test_with_sessions.dart';
 import '../../features/notification/pages/notifications_new.dart';
-import '../../features/onboard/pages/onboard.dart';
+import '../../features/login/pages/login_page.dart';
 import '../../features/profile/pages/profile.dart';
 import '../../features/face-verification/pages/face_verification_page.dart';
 import '../../features/training-test/pages/training_test_page.dart';
@@ -44,7 +44,7 @@ import '../services/auth/auth_manager.dart';
 
 
 class AppRoutes {
-  static const String onboard = '/onboard';
+  static const String login = '/login';
   // static const String login = '/login';
   static const String home = '/home';
   static const String profile = '/profile';
@@ -89,11 +89,11 @@ class AppRoutes {
       initialLocation: initialLocation,
       routes: [
         GoRoute(
-          path: '/onboard',
-          name: onboard,
+          path: '/login',
+          name: login,
           pageBuilder: (context, state) => CustomTransitionPage(
             key: state.pageKey,
-            child: const Onboard(),
+            child: const LoginPage(),
             transitionsBuilder:
                 (context, animation, secondaryAnimation, child) {
                   return FadeTransition(opacity: animation, child: child);

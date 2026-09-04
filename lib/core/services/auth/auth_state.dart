@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../model/identity_model.dart';
+import 'login_exception.dart';
 
 /// Base class for all authentication states
 abstract class AuthState extends Equatable {
@@ -39,12 +40,16 @@ class AuthUnauthenticated extends AuthState {
   const AuthUnauthenticated();
 }
 
-/// Error state - something went wrong
+/// Error state - something went wrong.
+///
+/// [type] tells the UI which localized message to show. [message] is the raw
+/// detail for logs and for errors that have no type (e.g. logout failures).
 class AuthError extends AuthState {
   final String message;
+  final LoginErrorType type;
 
-  const AuthError(this.message);
+  const AuthError(this.message, {this.type = LoginErrorType.unknown});
 
   @override
-  List<Object?> get props => [message];
+  List<Object?> get props => [message, type];
 }

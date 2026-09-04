@@ -79,3 +79,9 @@ android {
 flutter {
     source = "../.."
 }
+
+dependencies {
+    // BiometricPrompt (local_auth) is hosted in an AppCompat theme; make the
+    // dependency explicit rather than relying on androidx.biometric's transitive one.
+    implementation("androidx.appcompat:appcompat:1.7.0")
+}

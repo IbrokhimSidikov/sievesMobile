@@ -1,7 +1,7 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'auth_manager.dart';
 import 'auth_state.dart';
+import 'login_exception.dart';
 import '../cache/menu_cache_service.dart';
 
 /// Cubit for managing authentication state throughout the app
@@ -13,7 +13,10 @@ class AuthCubit extends Cubit<AuthState> {
     // Set up callback for when session expires automatically
     _authManager.onSessionExpired = () {
       print('🔔 Session expired notification received');
-      emit(const AuthError('Your session has expired. Please log in again.'));
+      emit(const AuthError(
+        'Session expired',
+        type: LoginErrorType.sessionExpired,
+      ));
       // After showing error, return to unauthenticated state
       Future.delayed(const Duration(seconds: 3), () {
         if (!isClosed) {
@@ -49,33 +52,31 @@ class AuthCubit extends Cubit<AuthState> {
     }
   }
 
-  /// Perform login flow
-  Future<void> login(BuildContext context) async {
+  /// Sign in with username / password (typed, or read back from the secure
+  /// credential store after a biometric check).
+  Future<void> loginWithPassword({
+    required String username,
+    required String password,
+  }) async {
     emit(const AuthLoading());
-    
+
     try {
-      print('🔐 Starting login flow...');
-      
-      final success = await _authManager.login(context);
-      
-      if (success && _authManager.currentIdentity != null) {
-        print('✅ Login successful');
-        emit(AuthAuthenticated(_authManager.currentIdentity!));
-        
-        // Preload menu data in background after successful login
-        _preloadMenuData();
-      } else {
-        print('❌ Login failed');
-        emit(const AuthError('Login failed. Please try again.'));
-        // Return to unauthenticated after showing error
-        await Future.delayed(const Duration(seconds: 2));
-        emit(const AuthUnauthenticated());
-      }
+      final identity = await _authManager.loginWithPassword(
+        username: username,
+        password: password,
+      );
+      print('✅ Login successful');
+      emit(AuthAuthenticated(identity));
+
+      // Preload menu data in background after successful login
+      _preloadMenuData();
+    } on LoginException catch (e) {
+      print('❌ Login failed: $e');
+      emit(AuthError(e.detail ?? e.type.name, type: e.type));
+      emit(const AuthUnauthenticated());
     } catch (e) {
       print('❌ Login error: $e');
-      emit(AuthError('Login error: ${e.toString()}'));
-      // Return to unauthenticated after showing error
-      await Future.delayed(const Duration(seconds: 2));
+      emit(AuthError(e.toString(), type: LoginErrorType.unknown));
       emit(const AuthUnauthenticated());
     }
   }

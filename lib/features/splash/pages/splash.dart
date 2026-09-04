@@ -31,8 +31,8 @@ class _SplashScreenState extends State<SplashScreen> {
           // User is logged in, go to home
           context.go('/home');
         } else if (state is AuthUnauthenticated) {
-          // User is not logged in, go to onboard
-          context.go('/onboard');
+          // User is not logged in, go to login
+          context.go('/login');
         }
         // Stay on splash for AuthInitial and AuthLoading states
       },

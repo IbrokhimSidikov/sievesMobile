@@ -536,7 +536,42 @@ class AppLocalizations {
       'salaryNow': 'Now',
       'stepXofY': 'Step {step} of {total}',
       'stepShort': 'Step {step}',
-      'daysCount': '{count} days'
+      'daysCount': '{count} days',
+      // Login page
+      'loginWelcome': 'Welcome back',
+      'loginSubtitle': 'Sign in to your Sieves account',
+      'username': 'Username or email',
+      'password': 'Password',
+      'usernameRequired': 'Enter your username or email',
+      'passwordRequired': 'Enter your password',
+      'signIn': 'Sign in',
+      'signingIn': 'Signing in…',
+      'showPassword': 'Show password',
+      'hidePassword': 'Hide password',
+      'loginInvalidCredentials': 'Incorrect username or password',
+      'loginNetworkError': 'No connection. Check your internet and try again',
+      'loginTooManyAttempts': 'Too many attempts. Wait a moment and try again',
+      'loginMfaRequired': 'This account uses two-factor authentication, which the app does not support yet',
+      'loginIdentityNotFound': 'No employee profile is linked to this account. Contact your manager',
+      'loginNotConfigured': 'Password sign-in is not enabled for this app. Contact support',
+      'loginFailedGeneric': 'Sign-in failed. Please try again',
+      'sessionExpired': 'Your session has expired. Please sign in again',
+      'saveLoginTitle': 'Save your login?',
+      'saveLoginBody': 'Next time you can sign in with {biometric} instead of typing your password. Your login is stored securely on this device only.',
+      'saveLoginYes': 'Save',
+      'saveLoginNo': 'Not now',
+      'signInWith': 'Sign in with {biometric}',
+      'biometricReason': 'Sign in to Sieves',
+      'biometricFailed': '{biometric} check did not pass. Enter your password instead',
+      'savedLoginInvalid': 'Your saved password no longer works. Please sign in again',
+      'useAnotherAccount': 'Use another account',
+      'faceId': 'Face ID',
+      'fingerprint': 'Fingerprint',
+      'biometrics': 'Biometrics',
+      'biometricPromptTitle': 'Sign in with {biometric}?',
+      'biometricPromptBody': 'Confirm with {biometric} to sign in without typing your password.',
+      'biometricPromptAccept': 'Use {biometric}',
+      'biometricPromptDecline': 'Enter password',
     },
     'uz': {
       'title': 'Sieves',
@@ -1068,7 +1103,42 @@ class AppLocalizations {
       'salaryNow': 'Hozir',
       'stepXofY': '{total} dan {step}-bosqich',
       'stepShort': '{step}-bosqich',
-      'daysCount': '{count} kun'
+      'daysCount': '{count} kun',
+      // Login page
+      'loginWelcome': 'Xush kelibsiz',
+      'loginSubtitle': 'Sieves hisobingizga kiring',
+      'username': 'Foydalanuvchi nomi yoki email',
+      'password': 'Parol',
+      'usernameRequired': 'Foydalanuvchi nomi yoki emailni kiriting',
+      'passwordRequired': 'Parolni kiriting',
+      'signIn': 'Kirish',
+      'signingIn': 'Kirilmoqda…',
+      'showPassword': 'Parolni ko\'rsatish',
+      'hidePassword': 'Parolni yashirish',
+      'loginInvalidCredentials': 'Foydalanuvchi nomi yoki parol noto\'g\'ri',
+      'loginNetworkError': 'Internet aloqasi yo\'q. Ulanishni tekshirib, qayta urinib ko\'ring',
+      'loginTooManyAttempts': 'Juda ko\'p urinish. Biroz kutib, qayta urinib ko\'ring',
+      'loginMfaRequired': 'Bu hisobda ikki bosqichli tekshiruv yoqilgan, ilova hozircha uni qo\'llab-quvvatlamaydi',
+      'loginIdentityNotFound': 'Bu hisobga xodim profili bog\'lanmagan. Menejeringizga murojaat qiling',
+      'loginNotConfigured': 'Parol orqali kirish bu ilova uchun yoqilmagan. Qo\'llab-quvvatlash xizmatiga murojaat qiling',
+      'loginFailedGeneric': 'Kirish amalga oshmadi. Qayta urinib ko\'ring',
+      'sessionExpired': 'Sessiya muddati tugadi. Qayta kiring',
+      'saveLoginTitle': 'Login ma\'lumotlari saqlansinmi?',
+      'saveLoginBody': 'Keyingi safar parol o\'rniga {biometric} orqali kirishingiz mumkin. Ma\'lumotlar faqat shu qurilmada xavfsiz saqlanadi.',
+      'saveLoginYes': 'Saqlash',
+      'saveLoginNo': 'Hozir emas',
+      'signInWith': '{biometric} orqali kirish',
+      'biometricReason': 'Sieves ilovasiga kirish',
+      'biometricFailed': '{biometric} tekshiruvi o\'tmadi. Parolni kiriting',
+      'savedLoginInvalid': 'Saqlangan parol endi ishlamaydi. Qayta kiring',
+      'useAnotherAccount': 'Boshqa hisob bilan kirish',
+      'faceId': 'Face ID',
+      'fingerprint': 'Barmoq izi',
+      'biometrics': 'Biometriya',
+      'biometricPromptTitle': '{biometric} orqali kirilsinmi?',
+      'biometricPromptBody': 'Parol yozmasdan kirish uchun {biometric} bilan tasdiqlang.',
+      'biometricPromptAccept': '{biometric} ishlatish',
+      'biometricPromptDecline': 'Parol kiritish',
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1611,7 +1681,42 @@ class AppLocalizations {
       'salaryNow': 'Сейчас',
       'stepXofY': 'Ступень {step} из {total}',
       'stepShort': 'Ступень {step}',
-      'daysCount': '{count} дн.'
+      'daysCount': '{count} дн.',
+      // Login page
+      'loginWelcome': 'С возвращением',
+      'loginSubtitle': 'Войдите в свой аккаунт Sieves',
+      'username': 'Имя пользователя или email',
+      'password': 'Пароль',
+      'usernameRequired': 'Введите имя пользователя или email',
+      'passwordRequired': 'Введите пароль',
+      'signIn': 'Войти',
+      'signingIn': 'Вход…',
+      'showPassword': 'Показать пароль',
+      'hidePassword': 'Скрыть пароль',
+      'loginInvalidCredentials': 'Неверное имя пользователя или пароль',
+      'loginNetworkError': 'Нет соединения. Проверьте интернет и попробуйте снова',
+      'loginTooManyAttempts': 'Слишком много попыток. Подождите немного и попробуйте снова',
+      'loginMfaRequired': 'Для этого аккаунта включена двухфакторная проверка, приложение пока её не поддерживает',
+      'loginIdentityNotFound': 'К этому аккаунту не привязан профиль сотрудника. Обратитесь к менеджеру',
+      'loginNotConfigured': 'Вход по паролю не включён для этого приложения. Обратитесь в поддержку',
+      'loginFailedGeneric': 'Не удалось войти. Попробуйте снова',
+      'sessionExpired': 'Сессия истекла. Войдите снова',
+      'saveLoginTitle': 'Сохранить вход?',
+      'saveLoginBody': 'В следующий раз вы сможете войти через {biometric}, не вводя пароль. Данные хранятся только на этом устройстве.',
+      'saveLoginYes': 'Сохранить',
+      'saveLoginNo': 'Не сейчас',
+      'signInWith': 'Войти через {biometric}',
+      'biometricReason': 'Вход в Sieves',
+      'biometricFailed': 'Проверка {biometric} не пройдена. Введите пароль',
+      'savedLoginInvalid': 'Сохранённый пароль больше не подходит. Войдите снова',
+      'useAnotherAccount': 'Войти в другой аккаунт',
+      'faceId': 'Face ID',
+      'fingerprint': 'Отпечаток пальца',
+      'biometrics': 'Биометрия',
+      'biometricPromptTitle': 'Войти через {biometric}?',
+      'biometricPromptBody': 'Подтвердите через {biometric}, чтобы войти без ввода пароля.',
+      'biometricPromptAccept': 'Использовать {biometric}',
+      'biometricPromptDecline': 'Ввести пароль',
     },
   };
 
@@ -2121,5 +2226,47 @@ class AppLocalizations {
       translate('stepShort').replaceAll('{step}', '$step');
   String daysCount(int count) =>
       translate('daysCount').replaceAll('{count}', '$count');
+
+  // Login page
+  String get loginWelcome => translate('loginWelcome');
+  String get loginSubtitle => translate('loginSubtitle');
+  String get username => translate('username');
+  String get password => translate('password');
+  String get usernameRequired => translate('usernameRequired');
+  String get passwordRequired => translate('passwordRequired');
+  String get signIn => translate('signIn');
+  String get signingIn => translate('signingIn');
+  String get showPassword => translate('showPassword');
+  String get hidePassword => translate('hidePassword');
+  String get loginInvalidCredentials => translate('loginInvalidCredentials');
+  String get loginNetworkError => translate('loginNetworkError');
+  String get loginTooManyAttempts => translate('loginTooManyAttempts');
+  String get loginMfaRequired => translate('loginMfaRequired');
+  String get loginIdentityNotFound => translate('loginIdentityNotFound');
+  String get loginNotConfigured => translate('loginNotConfigured');
+  String get loginFailedGeneric => translate('loginFailedGeneric');
+  String get sessionExpired => translate('sessionExpired');
+  String get saveLoginTitle => translate('saveLoginTitle');
+  String saveLoginBody(String biometric) =>
+      translate('saveLoginBody').replaceAll('{biometric}', biometric);
+  String get saveLoginYes => translate('saveLoginYes');
+  String get saveLoginNo => translate('saveLoginNo');
+  String signInWith(String biometric) =>
+      translate('signInWith').replaceAll('{biometric}', biometric);
+  String get biometricReason => translate('biometricReason');
+  String biometricFailed(String biometric) =>
+      translate('biometricFailed').replaceAll('{biometric}', biometric);
+  String get savedLoginInvalid => translate('savedLoginInvalid');
+  String get useAnotherAccount => translate('useAnotherAccount');
+  String get faceId => translate('faceId');
+  String get fingerprint => translate('fingerprint');
+  String get biometrics => translate('biometrics');
+  String biometricPromptTitle(String biometric) =>
+      translate('biometricPromptTitle').replaceAll('{biometric}', biometric);
+  String biometricPromptBody(String biometric) =>
+      translate('biometricPromptBody').replaceAll('{biometric}', biometric);
+  String biometricPromptAccept(String biometric) =>
+      translate('biometricPromptAccept').replaceAll('{biometric}', biometric);
+  String get biometricPromptDecline => translate('biometricPromptDecline');
 
 }

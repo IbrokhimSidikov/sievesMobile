@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_tokens.dart';
+
 abstract class AppColors{
   static const Color cx43C19F = Color(0xFF43C19F);
   static const Color cx292B2F = Color(0xFF292B2F);
@@ -54,6 +56,7 @@ abstract class AppColors{
 class AppTheme {
   // Light Theme
   static ThemeData lightTheme = ThemeData(
+    extensions: const [AppTokens.light],
     brightness: Brightness.light,
     primaryColor: AppColors.cxRoyalBlue,
     scaffoldBackgroundColor: AppColors.cxSoftWhite,
@@ -95,6 +98,7 @@ class AppTheme {
 
   // Dark Theme - Professional & Modern
   static ThemeData darkTheme = ThemeData(
+    extensions: const [AppTokens.dark],
     brightness: Brightness.dark,
     primaryColor: const Color(0xFF6366F1), // Modern indigo
     scaffoldBackgroundColor: const Color(0xFF0F0F14), // Deep dark background

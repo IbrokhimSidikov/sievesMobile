@@ -681,7 +681,7 @@ class _ProfileState extends State<Profile> {
       await context.read<AuthCubit>().logout();
       print('✅ [Profile] AuthCubit.logout() completed');
 
-      // The global BlocListener in main.dart will handle navigation to /onboard
+      // The global BlocListener in main.dart will handle navigation to /login
       // when AuthUnauthenticated state is emitted
 
       print('═══════════════════════════════════════════════════════');

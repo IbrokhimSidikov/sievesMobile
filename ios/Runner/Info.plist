@@ -22,19 +22,6 @@
 	<string>$(FLUTTER_BUILD_NAME)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleTypeRole</key>
-			<string>None</string>
-			<key>CFBundleURLName</key>
-			<string>auth0</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>sievesmob</string>
-			</array>
-		</dict>
-	</array>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
 	<key>LSRequiresIPhoneOS</key>
@@ -74,6 +61,8 @@
 	</dict>
 	<key>io.flutter.embedded_views_preview</key>
 	<true/>
+	<key>NSFaceIDUsageDescription</key>
+	<string>Sieves uses Face ID to sign you in without typing your password</string>
 	<key>NSCameraUsageDescription</key>
 	<string>This app needs camera access to verify your identity for order placement</string>
 	<key>NSPhotoLibraryUsageDescription</key>

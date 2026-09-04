@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'package:auth0_flutter/auth0_flutter.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:http/http.dart' as http;
+
+import 'login_exception.dart';
 
 class AuthService {
   late final Auth0 _auth0;
@@ -28,6 +31,10 @@ class AuthService {
   static const String _clientId = 'HzIOKK7VlhRTVJxLVdL0djqCWwuGK5wH';
   static const String _audience = 'localhost:8080/loook-api/web';
 
+  /// Auth0 database connection the backend creates employees in
+  /// (see sieves-api `Identity::createAuthUser`).
+  static const String _realm = 'Username-Password-Authentication';
+
   // Storage keys
   final String _accessTokenKey = 'access_token';
   final String _refreshTokenKey = 'refresh_token';
@@ -39,99 +46,84 @@ class AuthService {
     _auth0 = Auth0(_domain, _clientId);
   }
 
-  // Login with Auth0
-  Future<bool> login() async {
+  /// Signs in with a username (or email) and password through Auth0's
+  /// resource-owner password grant against the database connection the
+  /// backend creates users in.
+  ///
+  /// Returns the Auth0 subject (`sub`) of the signed-in user, which the
+  /// backend uses as `auth_id`. Throws [LoginException] on failure.
+  ///
+  /// Requires the "Password" grant to be enabled on the Auth0 application
+  /// (Dashboard > Applications > Advanced Settings > Grant Types).
+  Future<String> loginWithPassword({
+    required String username,
+    required String password,
+  }) async {
+    final Credentials credentials;
     try {
-      print('');
-      print('═══════════════════════════════════════════════════════');
-      print('🚀 Starting Auth0 login with auth0_flutter...');
-      print('═══════════════════════════════════════════════════════');
-      print('📋 Configuration:');
-      print('   Domain: $_domain');
-      print('   Client ID: $_clientId');
-      print('   Audience: $_audience');
-      print('   URL Scheme: sievesmob');
-      print('   Callback URL: sievesmob://callback');
-      print('   Use Refresh Tokens: true ✅');
-      print('');
-      print('⏳ Opening Auth0 login page...');
-      
-      final credentials = await _auth0
-          .webAuthentication(scheme: 'sievesmob')
-          .login(
-            audience: _audience,
-            scopes: {'openid', 'profile', 'email', 'offline_access'},
-            // useRefreshTokens: true, // CRITICAL: Enable refresh tokens (same as web app)
-            // redirectUrl: 'sievesmob://callback',
-            redirectUrl: 'sievesmob://exodelicainc.eu.auth0.com/android/com.sieves.v1.sieves_mob/callback',
-            parameters: {
-              'max_age': '0',
-            },
-          );
-
-      print('');
-      print('✅ Credentials received from Auth0!');
-      print('   Access Token: ${credentials.accessToken.substring(0, 20)}...');
-      print('   ID Token: ${credentials.idToken.substring(0, 20)}...');
-      print('   Has Refresh Token: ${credentials.refreshToken != null}');
-      print('   Expires At: ${credentials.expiresAt}');
-      print('');
-      
-      await _storeCredentials(credentials);
-      
-      // Get user profile
-      print('📞 Fetching user profile from Auth0...');
-      await _getUserProfile(credentials.accessToken);
-      
-      print('');
-      print('✅ Login completed successfully');
-      print('═══════════════════════════════════════════════════════');
-      print('');
-      return true;
-    } catch (e, stackTrace) {
-      print('');
-      print('═══════════════════════════════════════════════════════');
-      print('❌ LOGIN ERROR OCCURRED');
-      print('═══════════════════════════════════════════════════════');
-      print('Error: $e');
-      print('Error type: ${e.runtimeType}');
-      print('Stack trace:');
-      print(stackTrace);
-      print('═══════════════════════════════════════════════════════');
-      print('');
-      
-      // Check for specific error types
-      if (e.toString().contains('User cancelled') || 
-          e.toString().contains('CANCELED') ||
-          e.toString().contains('cancelled') ||
-          e.toString().contains('a0.session.user_cancelled')) {
-        print('🚫 User cancelled the login - this is normal behavior');
-        return false;
+      print('🔐 Signing in with password for "$username"...');
+      credentials = await _auth0.api.login(
+        usernameOrEmail: username.trim(),
+        password: password,
+        connectionOrRealm: _realm,
+        audience: _audience,
+        scopes: {'openid', 'profile', 'email', 'offline_access'},
+      );
+    } on ApiException catch (e) {
+      print('❌ Auth0 password login failed: ${e.code} — ${e.message}');
+      throw LoginException(_mapApiError(e), '${e.code}: ${e.message}');
+    } on SocketException catch (e) {
+      throw LoginException(LoginErrorType.network, e.message);
+    } on TimeoutException catch (e) {
+      throw LoginException(LoginErrorType.network, e.message);
+    } catch (e) {
+      final text = e.toString().toLowerCase();
+      if (text.contains('network') ||
+          text.contains('socket') ||
+          text.contains('timed out') ||
+          text.contains('host lookup')) {
+        throw LoginException(LoginErrorType.network, e.toString());
       }
-      
-      // Check for callback URL mismatch
-      if (e.toString().contains('callback') || 
-          e.toString().contains('redirect') ||
-          e.toString().contains('URL')) {
-        print('');
-        print('⚠️  POSSIBLE CALLBACK URL ISSUE');
-        print('   Check Auth0 Dashboard > Application Settings > Allowed Callback URLs');
-        print('   Must include: sievesmob://callback');
-        print('');
-      }
-      
-      // Check for audience issues
-      if (e.toString().contains('audience')) {
-        print('');
-        print('⚠️  POSSIBLE AUDIENCE ISSUE');
-        print('   Current audience: $_audience');
-        print('   Verify this matches your Auth0 API identifier');
-        print('');
-      }
-      
-      // Re-throw other errors so they can be handled by the UI
-      rethrow;
+      throw LoginException(LoginErrorType.unknown, e.toString());
     }
+
+    print('✅ Credentials received (refresh token: ${credentials.refreshToken != null})');
+    await _storeCredentials(credentials);
+
+    final sub = credentials.user.sub;
+    // Same post-login step the web app performs: mirror the token onto the
+    // backend identity row.
+    await _getBackendIdentity(sub, credentials.accessToken);
+    return sub;
+  }
+
+  LoginErrorType _mapApiError(ApiException e) {
+    if (e.isMultifactorRequired || e.isMultifactorEnrollRequired) {
+      return LoginErrorType.mfaRequired;
+    }
+    final code = e.code.toLowerCase();
+    final message = e.message.toLowerCase();
+    if (code == 'too_many_attempts' || message.contains('too many attempts')) {
+      return LoginErrorType.tooManyAttempts;
+    }
+    if (code == 'invalid_grant' ||
+        code == 'invalid_user_password' ||
+        code == 'access_denied' ||
+        message.contains('wrong email or password') ||
+        message.contains('wrong username or password')) {
+      return LoginErrorType.invalidCredentials;
+    }
+    if (code == 'unauthorized_client' ||
+        code == 'invalid_request' ||
+        message.contains('grant type') ||
+        message.contains('realm') ||
+        message.contains('connection')) {
+      return LoginErrorType.notConfigured;
+    }
+    if (code.contains('network') || message.contains('network')) {
+      return LoginErrorType.network;
+    }
+    return LoginErrorType.unknown;
   }
 
   // Store credentials securely
@@ -161,30 +153,6 @@ class AuthService {
     
     // Start proactive refresh timer after storing credentials
     _startProactiveRefreshTimer();
-  }
-
-  // Get user profile from Auth0
-  Future<void> _getUserProfile(String accessToken) async {
-    try {
-      final response = await http.get(
-        Uri.parse('https://$_domain/userinfo'),
-        headers: {
-          'Authorization': 'Bearer $accessToken',
-        },
-      );
-
-      if (response.statusCode == 200) {
-        final userProfile = json.decode(response.body);
-        print('✅ User profile: $userProfile');
-        
-        // Now call your backend identity service
-        await _getBackendIdentity(userProfile['sub'], accessToken);
-      } else {
-        print('❌ Get user profile failed: ${response.statusCode}');
-      }
-    } catch (e) {
-      print('❌ Get user profile error: $e');
-    }
   }
 
   // Get backend identity (same flow as Angular app)

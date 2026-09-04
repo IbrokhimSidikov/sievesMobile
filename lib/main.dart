@@ -14,7 +14,10 @@ import 'core/l10n/app_localizations_delegate.dart';
 import 'firebase_options.dart';
 import 'core/constants/app_colors.dart';
 import 'core/router/app_routes.dart';
+import 'core/services/auth/login_exception.dart';
+import 'core/l10n/app_localizations.dart';
 import 'core/utils/global_keys.dart';
+import 'core/utils/snackbar_helper.dart';
 import 'core/services/auth/auth_cubit.dart';
 import 'core/services/auth/auth_manager.dart';
 import 'core/services/auth/auth_state.dart';
@@ -29,9 +32,7 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Initialize Firebase
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
 
   FirebaseMessaging.onMessage.listen((RemoteMessage message) {
     print('📩 [FOREGROUND] Notification received');
@@ -40,30 +41,29 @@ void main() async {
     print('📦 Data: ${message.data}');
   });
   // 🔔 iOS foreground notification presentation
-  await FirebaseMessaging.instance
-      .setForegroundNotificationPresentationOptions(
+  await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
     alert: true,
     badge: true,
     sound: true,
   );
 
   // Set up background message handler
-  FirebaseMessaging.onBackgroundMessage(
-    firebaseMessagingBackgroundHandler,
-  );
+  FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
   // Initialize notification service in background (don't await)
   print('🚀 Starting app - notification service will initialize in background');
-  NotificationService().initialize().then((_) {
-    print('✅ Notification service initialized');
-    NotificationService().testNotificationSetup();
-  }).catchError((e) {
-    print('⚠️ Notification service initialization failed: $e');
-  });
+  NotificationService()
+      .initialize()
+      .then((_) {
+        print('✅ Notification service initialized');
+        NotificationService().testNotificationSetup();
+      })
+      .catchError((e) {
+        print('⚠️ Notification service initialization failed: $e');
+      });
 
   runApp(const MyApp());
 }
-
 
 class MyApp extends StatefulWidget {
   const MyApp({super.key});
@@ -76,7 +76,7 @@ class _MyAppState extends State<MyApp> {
   late final VersionService _versionService;
   bool _isInitialized = false;
   final localeProvider = LocaleProvider();
-  String _initialRoute = '/onboard';
+  String _initialRoute = AppRoutes.login;
   late GoRouter _router;
 
   @override
@@ -110,22 +110,28 @@ class _MyAppState extends State<MyApp> {
       print('🔐 Checking authentication status...');
       final authManager = AuthManager();
       final isAuthenticated = await authManager.restoreSession();
-      
+
       setState(() {
-        _initialRoute = isAuthenticated ? '/home' : '/onboard';
-        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: rootNavigatorKey);
+        _initialRoute = isAuthenticated ? '/home' : AppRoutes.login;
+        _router = AppRoutes.createRouter(
+          _initialRoute,
+          navigatorKey: rootNavigatorKey,
+        );
         _isInitialized = true;
       });
-      
+
       print('✅ Initial route set to: $_initialRoute');
-      
+
       // Check for updates after app loads
       _checkForUpdates();
     } catch (e) {
       print('❌ Error checking auth status: $e');
       setState(() {
-        _initialRoute = '/onboard';
-        _router = AppRoutes.createRouter(_initialRoute, navigatorKey: rootNavigatorKey);
+        _initialRoute = AppRoutes.login;
+        _router = AppRoutes.createRouter(
+          _initialRoute,
+          navigatorKey: rootNavigatorKey,
+        );
         _isInitialized = true;
       });
     }
@@ -152,9 +158,7 @@ class _MyAppState extends State<MyApp> {
           showDialog(
             context: context,
             barrierDismissible: !updateStatus.isUpdateRequired,
-            builder: (context) => ForceUpdateDialog(
-              updateStatus: updateStatus,
-            ),
+            builder: (context) => ForceUpdateDialog(updateStatus: updateStatus),
           );
         } else {
           print('⚠️ Navigator context not available yet, retrying...');
@@ -197,7 +201,7 @@ class _MyAppState extends State<MyApp> {
                   ),
                   SizedBox(height: 50),
                   Text(
-                    '1.48.0',
+                    '1.50.0',
                     style: TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,
@@ -246,20 +250,29 @@ class _MyAppState extends State<MyApp> {
                             builder: (_) => const _LogoutLoadingOverlay(),
                           );
                         }
-                      } else if (state is AuthError) {
-                        rootNavigatorKey.currentState?.popUntil((route) => route.isFirst);
-                        print('❌ [GLOBAL] Auth error: ${state.message}');
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(state.message),
-                            backgroundColor: Colors.red,
-                            duration: const Duration(seconds: 3),
-                          ),
+                      } else if (state is AuthError &&
+                          state.type == LoginErrorType.sessionExpired) {
+                        // Sign-in errors are handled on the login page; only a
+                        // session that died mid-use needs a global notice.
+                        rootNavigatorKey.currentState?.popUntil(
+                          (route) => route.isFirst,
                         );
+                        print('❌ [GLOBAL] Auth error: ${state.message}');
+                        final navContext = rootNavigatorKey.currentContext;
+                        if (navContext != null) {
+                          SnackbarHelper.showError(
+                            navContext,
+                            AppLocalizations.of(navContext).sessionExpired,
+                          );
+                        }
                       } else if (state is AuthUnauthenticated) {
-                        rootNavigatorKey.currentState?.popUntil((route) => route.isFirst);
-                        print('🔐 [GLOBAL] Session expired - navigating to onboard');
-                        _router.go('/onboard');
+                        rootNavigatorKey.currentState?.popUntil(
+                          (route) => route.isFirst,
+                        );
+                        print(
+                          '🔐 [GLOBAL] Session expired - navigating to login',
+                        );
+                        _router.go(AppRoutes.login);
                       }
                     },
                     child: AnimatedSwitcher(
@@ -287,12 +300,14 @@ class _MyAppState extends State<MyApp> {
                           ),
                         ),
                         darkTheme: AppTheme.darkTheme.copyWith(
-                            textTheme: GoogleFonts.nunitoTextTheme(
-                                Theme.of(context).textTheme,
-                            )),
+                          textTheme: GoogleFonts.nunitoTextTheme(
+                            Theme.of(context).textTheme,
+                          ),
+                        ),
                         themeMode: themeMode,
                         routerConfig: _router,
-                        scaffoldMessengerKey: GlobalKey<ScaffoldMessengerState>(),
+                        scaffoldMessengerKey:
+                            GlobalKey<ScaffoldMessengerState>(),
                       ),
                     ),
                   );
@@ -329,12 +344,10 @@ class _BouncingDotsLoaderState extends State<_BouncingDotsLoader>
     );
 
     _animations = _controllers.map((controller) {
-      return Tween<double>(begin: 0, end: -20).animate(
-        CurvedAnimation(
-          parent: controller,
-          curve: Curves.easeInOut,
-        ),
-      );
+      return Tween<double>(
+        begin: 0,
+        end: -20,
+      ).animate(CurvedAnimation(parent: controller, curve: Curves.easeInOut));
     }).toList();
 
     // Start animations with delay
