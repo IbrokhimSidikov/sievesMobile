@@ -54,23 +54,38 @@ void main() {
       ],
     });
 
-    test('interleaves passed milestones and ends with today', () {
-      final kinds = buildRoadmap(timeline).map((i) => i.kind).toList();
-      expect(kinds, [
-        RoadmapKind.hire, // hire
-        RoadmapKind.milestone, // 1 month
-        RoadmapKind.training, // month 2
-        RoadmapKind.milestone, // 3 months
-        RoadmapKind.milestone, // 6 months
-        RoadmapKind.promotion, // month 7
-        RoadmapKind.milestone, // 1 year
-        RoadmapKind.today,
-      ]);
-    });
+    test(
+      'skips trainings, interleaves milestones, then today and upcoming',
+      () {
+        final kinds = buildRoadmap(timeline).map((i) => i.kind).toList();
+        expect(kinds, [
+          RoadmapKind.hire, // hire
+          RoadmapKind.milestone, // 1 month
+          RoadmapKind.milestone, // 3 months
+          RoadmapKind.milestone, // 6 months
+          RoadmapKind.promotion, // month 7
+          RoadmapKind.milestone, // 1 year
+          RoadmapKind.today,
+          RoadmapKind.upcoming, // 2 years
+          RoadmapKind.upcoming, // 3 years
+        ]);
+      },
+    );
 
     test('today node carries the day number', () {
-      final today = buildRoadmap(timeline).last;
+      final today = buildRoadmap(
+        timeline,
+      ).firstWhere((i) => i.kind == RoadmapKind.today);
       expect(today.dayNumber, _today().difference(hire).inDays + 1);
+    });
+
+    test('upcoming stops carry months and days left', () {
+      final upcoming = buildRoadmap(timeline).where((i) => i.isUpcoming);
+      expect(upcoming.map((i) => i.milestoneMonths), [24, 36]);
+      expect(
+        upcoming.first.daysLeft,
+        addMonths(hire, 24).difference(_today()).inDays,
+      );
     });
 
     test('counts promotions', () {

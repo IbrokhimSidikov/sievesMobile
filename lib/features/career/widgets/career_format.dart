@@ -72,13 +72,8 @@ class RoadmapStyle {
         Icons.swap_vert_rounded,
         l.careerStepChanged,
       ),
-      RoadmapKind.training => RoadmapStyle(
-        t.info,
-        Icons.school_rounded,
-        l.careerTraining,
-      ),
       RoadmapKind.milestone => RoadmapStyle(
-        t.primary,
+        t.info,
         Icons.emoji_events_rounded,
         formatMilestone(l, item.milestoneMonths ?? 0),
       ),
@@ -90,9 +85,14 @@ class RoadmapStyle {
       ),
       RoadmapKind.today => RoadmapStyle(
         t.primary,
-        Icons.flag_rounded,
+        Icons.near_me_rounded,
         l.careerToday,
         major: true,
+      ),
+      RoadmapKind.upcoming => RoadmapStyle(
+        t.textSecondary,
+        Icons.lock_rounded,
+        formatMilestone(l, item.milestoneMonths ?? 0),
       ),
     };
   }

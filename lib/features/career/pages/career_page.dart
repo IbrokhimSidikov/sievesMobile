@@ -10,7 +10,7 @@ import '../cubit/career_cubit.dart';
 import '../models/career_roadmap.dart';
 import '../widgets/career_hero_header.dart';
 import '../widgets/career_milestone_card.dart';
-import '../widgets/career_roadmap_list.dart';
+import '../widgets/career_road_map.dart';
 import '../widgets/career_state_views.dart';
 
 /// Career roadmap of the logged-in employee: from the day they were hired to
@@ -125,7 +125,9 @@ class _CareerView extends StatelessWidget {
                               ),
                             ),
                           ),
-                          CareerRoadmapSliver(items: roadmap),
+                          SliverToBoxAdapter(
+                            child: CareerRoadMap(items: roadmap),
+                          ),
                         ],
                       ),
                     },

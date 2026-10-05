@@ -82,9 +82,15 @@ class CareerHeroHeader extends StatelessWidget {
           ),
           if (profile != null) ...[
             SizedBox(height: 24.h),
-            _Identity(profile: profile),
-            SizedBox(height: 20.h),
-            _Tenure(profile: profile),
+            // Name and position on the left, time with the team on the right.
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(child: _Identity(profile: profile)),
+                SizedBox(width: 12.w),
+                _Tenure(profile: profile),
+              ],
+            ),
             SizedBox(height: 16.h),
             Row(
               children: [
@@ -202,31 +208,43 @@ class _Tenure extends StatelessWidget {
     final hire = profile.hireDate;
     if (hire == null) return const SizedBox.shrink();
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          formatTenure(l, hire, tenureEnd(profile)),
-          style: TextStyle(
-            fontSize: 32.sp,
-            fontWeight: FontWeight.w800,
-            letterSpacing: -0.5,
-            height: 1.1,
-            color: Colors.white,
-            fontFeatures: const [FontFeature.tabularFigures()],
+    final caption = TextStyle(
+      fontSize: 11.sp,
+      fontWeight: FontWeight.w500,
+      color: Colors.white.withValues(alpha: 0.85),
+    );
+
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxWidth: 150.w),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerRight,
+            child: Text(
+              formatTenure(l, hire, tenureEnd(profile)),
+              style: TextStyle(
+                fontSize: 28.sp,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                height: 1.1,
+                color: Colors.white,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
           ),
-        ),
-        SizedBox(height: 2.h),
-        Text(
-          '${l.careerWithTeam} · '
-          '${l.careerSince.replaceAll('{date}', formatCareerDate(context, hire))}',
-          style: TextStyle(
-            fontSize: 12.sp,
-            fontWeight: FontWeight.w500,
-            color: Colors.white.withValues(alpha: 0.85),
+          SizedBox(height: 2.h),
+          Text(l.careerWithTeam, style: caption, textAlign: TextAlign.end),
+          Text(
+            l.careerSince.replaceAll('{date}', formatCareerDate(context, hire)),
+            style: caption,
+            textAlign: TextAlign.end,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

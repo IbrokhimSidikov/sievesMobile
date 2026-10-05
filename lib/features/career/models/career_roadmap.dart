@@ -8,22 +8,30 @@ enum RoadmapKind {
   promotion,
   renewal,
   stepChanged,
-  training,
   milestone,
   exit,
   today,
+
+  /// Anniversary still ahead, drawn as a locked stop after "today".
+  upcoming,
 }
+
+/// How many future anniversaries the roadmap shows after "today".
+const int kUpcomingMilestoneCount = 2;
 
 /// One node on the career roadmap, ready to render.
 class RoadmapItem {
   final RoadmapKind kind;
   final DateTime? date;
 
-  /// Step / training theme, depending on [kind].
+  /// Salary step name for hire / contract stops.
   final String? detail;
 
-  /// Milestone length in months ([RoadmapKind.milestone] only).
+  /// Anniversary length in months (milestone and upcoming stops).
   final int? milestoneMonths;
+
+  /// Days until an upcoming stop is reached.
+  final int? daysLeft;
 
   /// Day of employment, 1 = hire day ([RoadmapKind.today] only).
   final int? dayNumber;
@@ -33,8 +41,11 @@ class RoadmapItem {
     this.date,
     this.detail,
     this.milestoneMonths,
+    this.daysLeft,
     this.dayNumber,
   });
+
+  bool get isUpcoming => kind == RoadmapKind.upcoming;
 }
 
 class NextMilestone {
@@ -81,8 +92,9 @@ int monthsBetween(DateTime from, DateTime to) {
 DateTime tenureEnd(CareerProfile profile) =>
     profile.isActive ? _today() : (profile.exitDate ?? _today());
 
-/// Roadmap nodes, oldest first: API events, passed anniversaries, and a
-/// closing "today" node while the employee is still working.
+/// Roadmap stops, oldest first: hire, contract changes, exit and passed
+/// anniversaries, then — while still employed — "today" followed by the next
+/// [kUpcomingMilestoneCount] anniversaries. Trainings are left out.
 List<RoadmapItem> buildRoadmap(CareerTimeline timeline) {
   final profile = timeline.profile;
   if (profile == null) return const [];
@@ -91,23 +103,20 @@ List<RoadmapItem> buildRoadmap(CareerTimeline timeline) {
   for (final event in timeline.events) {
     final kind = switch (event.type) {
       CareerEventType.hire => RoadmapKind.hire,
-      CareerEventType.training => RoadmapKind.training,
       CareerEventType.exit => RoadmapKind.exit,
       CareerEventType.contract => switch (event.change) {
         CareerChange.promotion => RoadmapKind.promotion,
         CareerChange.demotion => RoadmapKind.stepChanged,
         _ => RoadmapKind.renewal,
       },
-      CareerEventType.unknown => null,
+      CareerEventType.training || CareerEventType.unknown => null,
     };
     if (kind == null) continue;
     items.add(
       RoadmapItem(
         kind: kind,
         date: event.date,
-        detail: event.type == CareerEventType.training
-            ? event.trainingTheme
-            : event.salaryStructureName,
+        detail: event.salaryStructureName,
       ),
     );
   }
@@ -149,6 +158,22 @@ List<RoadmapItem> buildRoadmap(CareerTimeline timeline) {
         dayNumber: hire == null ? null : today.difference(hire).inDays + 1,
       ),
     );
+    if (hire != null) {
+      sorted.addAll(
+        kCareerMilestoneMonths
+            .map((months) => (months, addMonths(hire, months)))
+            .where((m) => m.$2.isAfter(today))
+            .take(kUpcomingMilestoneCount)
+            .map(
+              (m) => RoadmapItem(
+                kind: RoadmapKind.upcoming,
+                date: m.$2,
+                milestoneMonths: m.$1,
+                daysLeft: m.$2.difference(today).inDays,
+              ),
+            ),
+      );
+    }
   }
   return sorted;
 }
