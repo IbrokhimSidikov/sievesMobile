@@ -62,7 +62,10 @@ class _CareerView extends StatelessWidget {
                 ),
                 slivers: [
                   SliverToBoxAdapter(
-                    child: CareerHeroHeader(timeline: timeline),
+                    child: CareerHeroHeader(
+                      timeline: timeline,
+                      currentStepDays: currentStepDays(roadmap),
+                    ),
                   ),
                   SliverPadding(
                     padding: EdgeInsets.fromLTRB(

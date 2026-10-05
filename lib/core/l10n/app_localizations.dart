@@ -593,6 +593,8 @@ class AppLocalizations {
       'careerRenewed': "Contract renewed",
       'careerStepChanged': "Step changed",
       'careerYouAreHere': "You are here",
+      'careerDaysInStep': "{n} days at this step",
+      'careerDaysInStepSoFar': "{n} days at this step so far",
       'careerExit': "Employment ended",
       'careerToday': "Today",
       'careerDayOfJourney': "Day {n} of your journey",
@@ -1196,6 +1198,8 @@ class AppLocalizations {
       'careerRenewed': "Shartnoma yangilandi",
       'careerStepChanged': "Bosqich o'zgardi",
       'careerYouAreHere': "Siz shu yerdasiz",
+      'careerDaysInStep': "Bu bosqichda {n} kun",
+      'careerDaysInStepSoFar': "Bu bosqichda {n} kun (davom etmoqda)",
       'careerExit': "Ishdan bo'shadi",
       'careerToday': "Bugun",
       'careerDayOfJourney': "Yo'lingizning {n}-kuni",
@@ -1810,6 +1814,8 @@ class AppLocalizations {
       'careerRenewed': "Договор продлён",
       'careerStepChanged': "Ступень изменена",
       'careerYouAreHere': "Вы здесь",
+      'careerDaysInStep': "{n} дн. на этой ступени",
+      'careerDaysInStepSoFar': "{n} дн. на этой ступени (сейчас)",
       'careerExit': "Работа завершена",
       'careerToday': "Сегодня",
       'careerDayOfJourney': "{n}-й день вашего пути",
@@ -2406,6 +2412,8 @@ class AppLocalizations {
   String get careerRenewed => translate('careerRenewed');
   String get careerStepChanged => translate('careerStepChanged');
   String get careerYouAreHere => translate('careerYouAreHere');
+  String get careerDaysInStep => translate('careerDaysInStep');
+  String get careerDaysInStepSoFar => translate('careerDaysInStepSoFar');
   String get careerExit => translate('careerExit');
   String get careerToday => translate('careerToday');
   String get careerDayOfJourney => translate('careerDayOfJourney');

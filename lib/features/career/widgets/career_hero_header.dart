@@ -12,7 +12,10 @@ import 'career_format.dart';
 class CareerHeroHeader extends StatelessWidget {
   final CareerTimeline? timeline;
 
-  const CareerHeroHeader({super.key, this.timeline});
+  /// Days on the current salary step, shown in the step pill.
+  final int? currentStepDays;
+
+  const CareerHeroHeader({super.key, this.timeline, this.currentStepDays});
 
   @override
   Widget build(BuildContext context) {
@@ -86,7 +89,9 @@ class CareerHeroHeader extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(child: _Identity(profile: profile)),
+                Expanded(
+                  child: _Identity(profile: profile, stepDays: currentStepDays),
+                ),
                 SizedBox(width: 12.w),
                 _Tenure(profile: profile),
               ],
@@ -125,8 +130,9 @@ class CareerHeroHeader extends StatelessWidget {
 
 class _Identity extends StatelessWidget {
   final CareerProfile profile;
+  final int? stepDays;
 
-  const _Identity({required this.profile});
+  const _Identity({required this.profile, this.stepDays});
 
   @override
   Widget build(BuildContext context) {
@@ -178,7 +184,11 @@ class _Identity extends StatelessWidget {
                 SizedBox(width: 4.w),
                 Flexible(
                   child: Text(
-                    '${l.careerStep}: ${profile.salaryStructureName}',
+                    [
+                      '${l.careerStep}: ${profile.salaryStructureName}',
+                      if (stepDays != null)
+                        l.careerDaysShort.replaceAll('{n}', '$stepDays'),
+                    ].join(' · '),
                     style: TextStyle(
                       fontSize: 12.sp,
                       fontWeight: FontWeight.w600,

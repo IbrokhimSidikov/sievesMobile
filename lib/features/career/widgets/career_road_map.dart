@@ -60,7 +60,7 @@ class _CareerRoadMapState extends State<CareerRoadMap>
         final geo = _RoadGeometry(
           width: constraints.maxWidth,
           items: items,
-          rowHeight: 150.h,
+          rowHeight: 164.h,
           top: 24.h,
         );
 
@@ -616,6 +616,61 @@ class _StopCard extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
             ),
           ],
+          if (item.daysInStep != null) ...[
+            SizedBox(height: 8.h),
+            _StepDaysPill(item: item, color: style.color),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// "214 days at this step" under a stop where a salary step began; the
+/// current step shows "... so far" with a filled pill.
+class _StepDaysPill extends StatelessWidget {
+  final RoadmapItem item;
+  final Color color;
+
+  const _StepDaysPill({required this.item, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    final t = context.tokens;
+    final l = AppLocalizations.of(context);
+    final current = item.isCurrentStep;
+    final text = (current ? l.careerDaysInStepSoFar : l.careerDaysInStep)
+        .replaceAll('{n}', '${item.daysInStep}');
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 3.h),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: current ? 0.16 : 0.10),
+        borderRadius: BorderRadius.circular(8.r),
+        border: Border.all(color: color.withValues(alpha: 0.20)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            current ? Icons.timelapse_rounded : Icons.hourglass_bottom_rounded,
+            size: 12.sp,
+            color: color,
+          ),
+          SizedBox(width: 4.w),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 11.sp,
+                fontWeight: FontWeight.w700,
+                color: t.textPrimary,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
         ],
       ),
     );

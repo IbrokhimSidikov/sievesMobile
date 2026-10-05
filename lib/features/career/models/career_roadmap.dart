@@ -36,6 +36,14 @@ class RoadmapItem {
   /// Day of employment, 1 = hire day ([RoadmapKind.today] only).
   final int? dayNumber;
 
+  /// Days spent on this salary step, set only on the stop where the step
+  /// began (hire, or a contract that changed the step). Renewals on the same
+  /// step don't restart the count.
+  final int? daysInStep;
+
+  /// Whether [daysInStep] is still counting (the employee's current step).
+  final bool isCurrentStep;
+
   const RoadmapItem({
     required this.kind,
     this.date,
@@ -43,7 +51,20 @@ class RoadmapItem {
     this.milestoneMonths,
     this.daysLeft,
     this.dayNumber,
+    this.daysInStep,
+    this.isCurrentStep = false,
   });
+
+  RoadmapItem copyWith({int? daysInStep, bool? isCurrentStep}) => RoadmapItem(
+    kind: kind,
+    date: date,
+    detail: detail,
+    milestoneMonths: milestoneMonths,
+    daysLeft: daysLeft,
+    dayNumber: dayNumber,
+    daysInStep: daysInStep ?? this.daysInStep,
+    isCurrentStep: isCurrentStep ?? this.isCurrentStep,
+  );
 
   bool get isUpcoming => kind == RoadmapKind.upcoming;
 }
@@ -147,7 +168,11 @@ List<RoadmapItem> buildRoadmap(CareerTimeline timeline) {
       final byDate = da.compareTo(db);
       return byDate != 0 ? byDate : a.key - b.key;
     });
-  final sorted = indexed.map((e) => e.value).toList();
+  final sorted = _withStepDurations(
+    indexed.map((e) => e.value).toList(),
+    tenureEnd(profile),
+    stillEmployed: profile.isActive,
+  );
 
   if (profile.isActive) {
     final today = _today();
@@ -176,6 +201,53 @@ List<RoadmapItem> buildRoadmap(CareerTimeline timeline) {
     }
   }
   return sorted;
+}
+
+const _contractKinds = {
+  RoadmapKind.hire,
+  RoadmapKind.promotion,
+  RoadmapKind.renewal,
+  RoadmapKind.stepChanged,
+};
+
+/// Marks each stop where a salary step began with the days spent on it: up
+/// to the next step change, or to [end] (exit / today) for the last step.
+List<RoadmapItem> _withStepDurations(
+  List<RoadmapItem> items,
+  DateTime end, {
+  required bool stillEmployed,
+}) {
+  // Indexes of the stops that start a new step.
+  final starts = <int>[];
+  String? step;
+  for (var i = 0; i < items.length; i++) {
+    final item = items[i];
+    if (!_contractKinds.contains(item.kind) || item.date == null) continue;
+    if (starts.isEmpty || item.detail != step) {
+      starts.add(i);
+      step = item.detail;
+    }
+  }
+
+  final out = [...items];
+  for (var s = 0; s < starts.length; s++) {
+    final from = items[starts[s]].date!;
+    final isLast = s == starts.length - 1;
+    final to = isLast ? end : items[starts[s + 1]].date!;
+    out[starts[s]] = items[starts[s]].copyWith(
+      daysInStep: to.difference(from).inDays.clamp(0, 1 << 30),
+      isCurrentStep: isLast && stillEmployed,
+    );
+  }
+  return out;
+}
+
+/// Days on the current salary step, or null when unknown / no longer employed.
+int? currentStepDays(List<RoadmapItem> roadmap) {
+  for (final item in roadmap.reversed) {
+    if (item.isCurrentStep) return item.daysInStep;
+  }
+  return null;
 }
 
 /// The next anniversary still ahead, or null once the last one passed or the

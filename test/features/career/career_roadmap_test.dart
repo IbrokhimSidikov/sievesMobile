@@ -88,6 +88,24 @@ void main() {
       );
     });
 
+    test('days per salary step, current step still counting', () {
+      final roadmap = buildRoadmap(timeline);
+      final hireStop = roadmap.firstWhere((i) => i.kind == RoadmapKind.hire);
+      final promo = roadmap.firstWhere((i) => i.kind == RoadmapKind.promotion);
+      expect(hireStop.daysInStep, addMonths(hire, 7).difference(hire).inDays);
+      expect(hireStop.isCurrentStep, isFalse);
+      expect(promo.daysInStep, _today().difference(addMonths(hire, 7)).inDays);
+      expect(promo.isCurrentStep, isTrue);
+      expect(currentStepDays(roadmap), promo.daysInStep);
+      // Milestones and today carry no step duration.
+      expect(
+        roadmap
+            .where((i) => i.kind == RoadmapKind.milestone)
+            .every((i) => i.daysInStep == null),
+        isTrue,
+      );
+    });
+
     test('counts promotions', () {
       expect(timeline.promotionCount, 1);
     });
@@ -121,6 +139,34 @@ void main() {
     // 1, 3 months passed before the exit; 6 months (10 Sep) did not.
     expect(kinds.where((k) => k == RoadmapKind.milestone).length, 2);
     expect(nextMilestone(timeline.profile!), isNull);
+    // Last step ends at the exit date and is not "current".
+    final hireStop = buildRoadmap(timeline).first;
+    expect(hireStop.daysInStep, DateTime(2022, 9, 1).difference(hire).inDays);
+    expect(hireStop.isCurrentStep, isFalse);
+    expect(currentStepDays(buildRoadmap(timeline)), isNull);
+  });
+
+  test('renewal on the same step does not restart the count', () {
+    final hire = addMonths(_today(), -10);
+    final roadmap = buildRoadmap(
+      CareerTimeline.fromJson({
+        'employee': {'employeeName': 'X', 'hireDate': _iso(hire)},
+        'events': [
+          {'date': _iso(hire), 'type': 'hire', 'salaryStructureName': 'L1'},
+          {
+            'date': _iso(addMonths(hire, 5)),
+            'type': 'contract',
+            'change': 'renewal',
+            'salaryStructureName': 'L1',
+          },
+        ],
+      }),
+    );
+    final hireStop = roadmap.firstWhere((i) => i.kind == RoadmapKind.hire);
+    final renewal = roadmap.firstWhere((i) => i.kind == RoadmapKind.renewal);
+    expect(hireStop.daysInStep, _today().difference(hire).inDays);
+    expect(hireStop.isCurrentStep, isTrue);
+    expect(renewal.daysInStep, isNull);
   });
 
   test('no contract yet: empty roadmap', () {
