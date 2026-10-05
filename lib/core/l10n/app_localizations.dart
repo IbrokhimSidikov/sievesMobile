@@ -45,6 +45,8 @@ class AppLocalizations {
       'productivityTimerSubtitle': 'Track your focus time',
       'checklist': 'Checklist',
       'checklistSubtitle': 'Manage your tasks',
+      'rateCalculator': 'Rate calculator',
+      'rateCalculatorHint': 'Enter an amount in either field',
       'faceIdSubtitle': 'Work entry device',
       'calendar': 'Calendar',
       'calendarSubtitle': 'Training schedule',
@@ -66,6 +68,9 @@ class AppLocalizations {
       'daysAvailable': 'Days Available',
       'daysUsed': 'Days Used',
       'maxDays': 'Max Days',
+      'vacationHistory': 'Vacation History',
+      'noVacationHistory': 'No vacations taken yet',
+      'seeAll': 'See all',
       'jobInformation': 'Job Information',
       'branch': 'Branch',
       'department': 'Department',
@@ -572,6 +577,7 @@ class AppLocalizations {
       'biometricPromptBody': 'Confirm with {biometric} to sign in without typing your password.',
       'biometricPromptAccept': 'Use {biometric}',
       'biometricPromptDecline': 'Enter password',
+      'careerTitle':'Career Progress',
     },
     'uz': {
       'title': 'Sieves',
@@ -608,6 +614,8 @@ class AppLocalizations {
       'productivityTimerSubtitle': 'Diqqat vaqtini kuzatish',
       'checklist': 'Checklist ro\'yxati',
       'checklistSubtitle': 'Vazifalarni boshqarish',
+      'rateCalculator': 'Kurs kalkulyatori',
+      'rateCalculatorHint': 'Istalgan maydonga summa kiriting',
       'faceIdSubtitle': 'Ishga keldi-ketdi',
       'calendar': 'Kalendar',
       'calendarSubtitle': 'Trening jadvali',
@@ -629,6 +637,10 @@ class AppLocalizations {
       'daysAvailable': 'Mavjud kunlar',
       'daysUsed': 'Ishlatilgan kunlar',
       'maxDays': 'Maksimal kunlar',
+      'vacationHistory': 'Ta’tillar tarixi',
+      'noVacationHistory': 'Hali ta’til olinmagan',
+      'seeAll': 'Barchasi',
+      'dayCount': '{count} kun',
       'jobInformation': 'Ish ma’lumotlari',
       'branch': 'Filial',
       'department': 'Bo‘lim',
@@ -1139,6 +1151,8 @@ class AppLocalizations {
       'biometricPromptBody': 'Parol yozmasdan kirish uchun {biometric} bilan tasdiqlang.',
       'biometricPromptAccept': '{biometric} ishlatish',
       'biometricPromptDecline': 'Parol kiritish',
+      'careerTitle':'Kariera yo\'li',
+
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1203,6 +1217,8 @@ class AppLocalizations {
       'productivityTimerSubtitle': 'Отслеживайте время фокуса',
       'checklist': 'Список задач',
       'checklistSubtitle': 'Управляйте задачами',
+      'rateCalculator': 'Калькулятор курса',
+      'rateCalculatorHint': 'Введите сумму в любое поле',
       'faceIdSubtitle': 'Устройство распознавания',
       'calendar': 'Календарь',
       'calendarSubtitle': 'Расписание тренингов',
@@ -1224,6 +1240,9 @@ class AppLocalizations {
       'daysAvailable': 'Доступные дни',
       'daysUsed': 'Исп. дни',
       'maxDays': 'Максимум дней',
+      'vacationHistory': 'История отпусков',
+      'noVacationHistory': 'Отпусков пока не было',
+      'seeAll': 'Все',
       'jobInformation': 'Информация о работе',
       'branch': 'Филиал',
       'department': 'Отдел',
@@ -1717,6 +1736,8 @@ class AppLocalizations {
       'biometricPromptBody': 'Подтвердите через {biometric}, чтобы войти без ввода пароля.',
       'biometricPromptAccept': 'Использовать {biometric}',
       'biometricPromptDecline': 'Ввести пароль',
+      'careerTitle':'Карьера',
+
     },
   };
 
@@ -1759,6 +1780,8 @@ class AppLocalizations {
       translate('productivityTimerSubtitle');
   String get checklist => translate('checklist');
   String get checklistSubtitle => translate('checklistSubtitle');
+  String get rateCalculator => translate('rateCalculator');
+  String get rateCalculatorHint => translate('rateCalculatorHint');
   // Task Management
   String get tasks => translate('tasks');
   String get tasksSubtitle => translate('tasksSubtitle');
@@ -1829,6 +1852,26 @@ class AppLocalizations {
   String get daysAvailable => translate('daysAvailable');
   String get daysUsed => translate('daysUsed');
   String get maxDays => translate('maxDays');
+  String get vacationHistory => translate('vacationHistory');
+  String get noVacationHistory => translate('noVacationHistory');
+  String get seeAll => translate('seeAll');
+  String dayCount(int count) {
+    switch (locale.languageCode) {
+      case 'en':
+        return '$count day${count == 1 ? '' : 's'}';
+      case 'ru':
+        final mod10 = count % 10;
+        final mod100 = count % 100;
+        final word = mod10 == 1 && mod100 != 11
+            ? 'день'
+            : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+            ? 'дня'
+            : 'дней';
+        return '$count $word';
+      default:
+        return translate('dayCount').replaceAll('{count}', count.toString());
+    }
+  }
   String get jobInformation => translate('jobInformation');
   String get branch => translate('branch');
   String get department => translate('department');
@@ -2260,6 +2303,7 @@ class AppLocalizations {
   String get useAnotherAccount => translate('useAnotherAccount');
   String get faceId => translate('faceId');
   String get fingerprint => translate('fingerprint');
+  String get careerTitle => translate('careerTitle');
   String get biometrics => translate('biometrics');
   String biometricPromptTitle(String biometric) =>
       translate('biometricPromptTitle').replaceAll('{biometric}', biometric);

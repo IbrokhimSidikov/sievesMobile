@@ -9,6 +9,7 @@ import '../../model/break_order_model.dart';
 import '../../model/history_model.dart';
 import '../../model/inventory_model.dart';
 import '../../model/story_model.dart';
+import '../../model/day_session_announcement_model.dart';
 import '../../../features/training-test/data/training_course_model.dart';
 import '../../../features/training-test/data/test_models.dart';
 import '../../../features/training-test/data/test_result_model.dart';
@@ -2122,6 +2123,34 @@ class ApiService {
       }
     } catch (e) {
       print('❌ [API] Exception getting day session: $e');
+      return null;
+    }
+  }
+
+  // ==================== DAY SESSION ANNOUNCEMENT ====================
+
+  /// Amount set by an admin for the current day session of the employee's
+  /// branch. Returns null on network/server error; a returned object with a
+  /// null `amount` means nothing was set for today.
+  Future<DaySessionAnnouncement?> getCurrentDaySessionAnnouncement() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/day-session-announcement/current',
+      );
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        return DaySessionAnnouncement.fromJson(
+          json.decode(response.body) as Map<String, dynamic>,
+        );
+      }
+      print(
+        '❌ [API] Failed to load day session announcement: '
+        '${response.statusCode} - ${response.body}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception loading day session announcement: $e');
       return null;
     }
   }

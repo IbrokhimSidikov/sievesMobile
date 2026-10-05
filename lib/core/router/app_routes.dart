@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:sieves_mob/features/career/pages/career_page.dart';
 import 'package:sieves_mob/features/exam/pages/exam_page.dart';
 import 'package:sieves_mob/features/home/pages/home.dart';
 import 'package:sieves_mob/features/introduction-trainings/pages/intro_employee_list.dart';
@@ -79,6 +80,7 @@ class AppRoutes {
   static const String introEmployeeList = '/introEmployeeList';
   static const String introTrainingList = '/introTrainingList';
   static const String salaryProgress = '/salaryProgress';
+  static const String careerpage = '/careerpage';
 
   static GoRouter createRouter(
     String initialLocation, {
@@ -278,6 +280,11 @@ class AppRoutes {
           path: '/taskManagement',
           name: taskManagement,
           builder: (context, state) => const TaskManagementPage(),
+        ),
+        GoRoute(
+          path: '/careerpage',
+          name: careerpage,
+          builder: (context, state) => const CareerPage(),
         ),
         GoRoute(
           path: '/taskDetail/:id',

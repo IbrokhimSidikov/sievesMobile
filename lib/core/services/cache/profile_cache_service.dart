@@ -226,8 +226,9 @@ class ProfileCacheService {
   Future<void> cacheVacationData(
     int employeeId,
     int availableDays,
-    int totalDays,
-  ) async {
+    int totalDays, {
+    List<String> vacationDates = const [],
+  }) async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final cacheKey = _getVacationCacheKey(employeeId);
@@ -236,6 +237,7 @@ class ProfileCacheService {
       final data = {
         'availableDays': availableDays,
         'totalDays': totalDays,
+        'vacationDates': vacationDates,
       };
 
       final jsonString = jsonEncode(data);

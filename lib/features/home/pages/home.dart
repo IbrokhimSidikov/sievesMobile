@@ -11,8 +11,10 @@ import '../../../core/services/theme/theme_cubit.dart';
 import '../../../core/providers/locale_provider.dart';
 import '../../../core/services/api/api_service.dart';
 import '../../../core/model/story_model.dart';
+import '../../../core/model/day_session_announcement_model.dart';
 import '../../stories/pages/story_viewer.dart';
 import '../../trainings/pages/trainings_modal.dart';
+import '../shared/day_amount_chip.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -32,6 +34,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   late final ApiService _apiService;
   List<UserStories> _userStories = [];
   bool _isLoadingStories = true;
+  DaySessionAnnouncement? _dayAnnouncement;
 
   List<_ModuleItem> get modules {
     final localizations = AppLocalizations.of(context);
@@ -77,6 +80,12 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         Icons.history_outlined,
         const Color(0xFF6E6050),
         '/history',
+      ),
+      _ModuleItem(
+        localizations.careerTitle,
+        Icons.pin_drop,
+        const Color(0xFF6E6050),
+        '/careerpage',
       ),
       _ModuleItem(
         localizations.lWallet,
@@ -227,6 +236,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     _loadUnreadCount();
     _loadCurrentStatus();
     _loadUserStories();
+    _loadDayAnnouncement();
 
     // Refresh badge every 5 seconds when on home page
     _startPeriodicRefresh();
@@ -248,6 +258,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
       _loadUnreadCount();
       // Refresh employee status when returning to home
       _loadCurrentStatus();
+      _loadDayAnnouncement();
     }
   }
 
@@ -288,6 +299,14 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           _isLoadingStories = false;
         });
       }
+    }
+  }
+
+  Future<void> _loadDayAnnouncement() async {
+    final announcement = await _apiService.getCurrentDaySessionAnnouncement();
+    // Keep the last value on a failed refresh instead of hiding the chip.
+    if (mounted && announcement != null) {
+      setState(() => _dayAnnouncement = announcement);
     }
   }
 
@@ -476,7 +495,20 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
                           children: [
                             _getUserDisplayName(context),
                             SizedBox(height: 4.h),
-                            _buildStatusBadge(theme),
+                            Row(
+                              children: [
+                                _buildStatusBadge(theme),
+                                // Managers and directors only (enforced by the API).
+                                if (_dayAnnouncement?.canView == true) ...[
+                                  SizedBox(width: 8.w),
+                                  Flexible(
+                                    child: DayAmountChip(
+                                      announcement: _dayAnnouncement!,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
                           ],
                         ),
                       ),

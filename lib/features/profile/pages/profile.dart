@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import 'package:sieves_mob/core/l10n/app_localizations.dart';
 import '../../../core/constants/app_colors.dart';
@@ -16,6 +17,7 @@ import '../../../core/services/cache/profile_cache_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/work_time_calculator.dart';
 import '../../../core/model/work_entry_model.dart';
+import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/language_switcher.dart';
 import '../widgets/onboarding_checklist.dart';
 
@@ -51,6 +53,9 @@ class _ProfileState extends State<Profile> {
   );
   int _availableVacationDays = 0;
   int _totalVacationDays = 0;
+  // Distinct vacation days (date only, UTC), most recent first.
+  List<DateTime> _vacationDates = [];
+  bool _isVacationHistoryExpanded = false;
   double _bonusAmount = 0.0;
   String _bonusMonth = '';
   String? _error;
@@ -802,12 +807,15 @@ class _ProfileState extends State<Profile> {
         final cachedData = await _cacheService.getCachedVacationData(
           employeeId,
         );
-        if (cachedData != null) {
+        if (cachedData != null && cachedData.containsKey('vacationDates')) {
           print('✅ Loaded vacation data from cache');
           if (mounted) {
             setState(() {
               _availableVacationDays = cachedData['availableDays'] as int? ?? 0;
               _totalVacationDays = cachedData['totalDays'] as int? ?? 0;
+              _vacationDates = _toVacationDays(
+                (cachedData['vacationDates'] as List?)?.cast<String>() ?? [],
+              );
               _isLoadingVacation = false;
               _isVacationFromCache = true;
             });
@@ -827,6 +835,12 @@ class _ProfileState extends State<Profile> {
       final vacationEntries =
           (vacationResponse?['entries'] as List<WorkEntry>?) ?? [];
       final totalVacations = vacationResponse?['totalCount'] ?? 0;
+      final vacationDates = _toVacationDays(
+        vacationEntries.map((e) => e.checkInTime),
+      );
+      final cachedVacationDates = vacationDates
+          .map((d) => d.toIso8601String().split('T')[0])
+          .toList();
 
       print('📊 Found $totalVacations vacation entries');
 
@@ -883,11 +897,13 @@ class _ProfileState extends State<Profile> {
           employeeId,
           availableDays,
           totalVacations,
+          vacationDates: cachedVacationDates,
         );
 
         setState(() {
           _availableVacationDays = availableDays;
           _totalVacationDays = totalVacations;
+          _vacationDates = vacationDates;
           _isLoadingVacation = false;
           _isVacationFromCache = false;
         });
@@ -952,11 +968,13 @@ class _ProfileState extends State<Profile> {
           employeeId,
           availableDays,
           totalVacations,
+          vacationDates: cachedVacationDates,
         );
 
         setState(() {
           _availableVacationDays = availableDays;
           _totalVacationDays = totalVacations;
+          _vacationDates = vacationDates;
           _isLoadingVacation = false;
           _isVacationFromCache = false;
         });
@@ -967,8 +985,38 @@ class _ProfileState extends State<Profile> {
         _isLoadingVacation = false;
         _availableVacationDays = 0;
         _totalVacationDays = 0;
+        _vacationDates = [];
       });
     }
+  }
+
+  /// Normalises raw check-in timestamps to distinct calendar days (UTC, so
+  /// day arithmetic is exact), sorted most recent first.
+  List<DateTime> _toVacationDays(Iterable<String?> raw) {
+    final days = <DateTime>{};
+    for (final value in raw) {
+      final parsed = value == null ? null : DateTime.tryParse(value)?.toLocal();
+      if (parsed != null) {
+        days.add(DateTime.utc(parsed.year, parsed.month, parsed.day));
+      }
+    }
+    return days.toList()..sort((a, b) => b.compareTo(a));
+  }
+
+  /// The API returns one vacation entry per day; merge consecutive days into
+  /// periods, most recent first.
+  List<_VacationPeriod> _groupVacationPeriods(List<DateTime> days) {
+    final periods = <_VacationPeriod>[];
+    for (final day in days) {
+      if (periods.isNotEmpty &&
+          periods.last.start.difference(day).inDays == 1) {
+        final last = periods.removeLast();
+        periods.add(_VacationPeriod(day, last.end, last.days + 1));
+      } else {
+        periods.add(_VacationPeriod(day, day, 1));
+      }
+    }
+    return periods;
   }
 
   /// Load bonus data for previous month from API
@@ -3800,8 +3848,270 @@ class _ProfileState extends State<Profile> {
                       ),
                     ],
                   ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    child: Divider(height: 1, thickness: 1, color: borderColor),
+                  ),
+
+                  // ── History ─────────────────────────────────────────────
+                  _buildVacationHistorySection(accent),
                 ],
               ),
+      ),
+    );
+  }
+
+  static const int _vacationHistoryPreviewCount = 3;
+
+  Widget _buildVacationHistorySection(Color accent) {
+    final t = context.tokens;
+    final l = AppLocalizations.of(context);
+    final periods = _groupVacationPeriods(_vacationDates);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Semantics(
+          button: true,
+          expanded: _isVacationHistoryExpanded,
+          child: InkWell(
+            onTap: () => setState(
+              () => _isVacationHistoryExpanded = !_isVacationHistoryExpanded,
+            ),
+            borderRadius: BorderRadius.circular(8.r),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(minHeight: 44.h),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.vacationHistory,
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: t.textPrimary,
+                      ),
+                    ),
+                  ),
+                  if (periods.isNotEmpty) ...[
+                    Text(
+                      l.dayCount(_vacationDates.length),
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w500,
+                        color: t.textSecondary,
+                      ),
+                    ),
+                    SizedBox(width: 4.w),
+                  ],
+                  AnimatedRotation(
+                    turns: _isVacationHistoryExpanded ? 0.5 : 0,
+                    duration: const Duration(milliseconds: 200),
+                    child: Icon(
+                      Icons.keyboard_arrow_down_rounded,
+                      color: t.textSecondary,
+                      size: 22.sp,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          alignment: Alignment.topCenter,
+          child: !_isVacationHistoryExpanded
+              ? const SizedBox(width: double.infinity)
+              : Padding(
+                  padding: EdgeInsets.only(top: 8.h),
+                  child: periods.isEmpty
+                      ? Row(
+                          children: [
+                            Icon(
+                              Icons.event_busy_rounded,
+                              color: t.textSecondary,
+                              size: 16.sp,
+                            ),
+                            SizedBox(width: 8.w),
+                            Expanded(
+                              child: Text(
+                                l.noVacationHistory,
+                                style: TextStyle(
+                                  fontSize: 12.sp,
+                                  color: t.textSecondary,
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          children: [
+                            for (final period in periods.take(
+                              _vacationHistoryPreviewCount,
+                            ))
+                              Padding(
+                                padding: EdgeInsets.only(bottom: 8.h),
+                                child: _buildVacationPeriodRow(period, accent),
+                              ),
+                            if (periods.length > _vacationHistoryPreviewCount)
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () =>
+                                      _showVacationHistorySheet(periods, accent),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: accent,
+                                    minimumSize: Size(44.w, 44.h),
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8.w,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    l.seeAll,
+                                    style: TextStyle(
+                                      fontSize: 12.sp,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVacationPeriodRow(_VacationPeriod period, Color accent) {
+    final t = context.tokens;
+
+    return Row(
+      children: [
+        Container(
+          width: 36.w,
+          height: 36.w,
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.12),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Icon(
+            Icons.event_available_rounded,
+            color: accent,
+            size: 18.sp,
+          ),
+        ),
+        SizedBox(width: 12.w),
+        Expanded(
+          child: Text(
+            _formatVacationPeriod(period),
+            style: TextStyle(
+              fontSize: 14.sp,
+              fontWeight: FontWeight.w500,
+              color: t.textPrimary,
+            ),
+          ),
+        ),
+        SizedBox(width: 8.w),
+        Container(
+          padding: EdgeInsets.symmetric(horizontal: 8.w, vertical: 4.h),
+          decoration: BoxDecoration(
+            color: accent.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(8.r),
+          ),
+          child: Text(
+            AppLocalizations.of(context).dayCount(period.days),
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: accent,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _formatVacationPeriod(_VacationPeriod period) {
+    final locale = Localizations.localeOf(context).languageCode;
+    final full = DateFormat('d MMM yyyy', locale);
+    if (period.days == 1) return full.format(period.start);
+    final startFormat = period.start.year == period.end.year
+        ? DateFormat('d MMM', locale)
+        : full;
+    return '${startFormat.format(period.start)} – ${full.format(period.end)}';
+  }
+
+  void _showVacationHistorySheet(List<_VacationPeriod> periods, Color accent) {
+    final t = context.tokens;
+    final l = AppLocalizations.of(context);
+
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: t.surface,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
+      ),
+      builder: (sheetContext) => SafeArea(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(sheetContext).size.height * 0.75,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(height: 12.h),
+              Container(
+                width: 40.w,
+                height: 4.h,
+                decoration: BoxDecoration(
+                  color: t.outlineStrong,
+                  borderRadius: BorderRadius.circular(2.r),
+                ),
+              ),
+              Padding(
+                padding: EdgeInsets.fromLTRB(20.w, 16.h, 20.w, 12.h),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        l.vacationHistory,
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: t.textPrimary,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      l.dayCount(_vacationDates.length),
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w500,
+                        color: t.textSecondary,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Divider(height: 1, thickness: 1, color: t.outline),
+              Flexible(
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  padding: EdgeInsets.fromLTRB(20.w, 12.h, 20.w, 20.h),
+                  itemCount: periods.length,
+                  separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                  itemBuilder: (_, i) =>
+                      _buildVacationPeriodRow(periods[i], accent),
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -4093,4 +4403,12 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+}
+
+class _VacationPeriod {
+  const _VacationPeriod(this.start, this.end, this.days);
+
+  final DateTime start;
+  final DateTime end;
+  final int days;
 }

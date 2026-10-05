@@ -51,6 +51,10 @@ post_install do |installer|
     # Enforce minimum iOS version across all pod targets
     target.build_configurations.each do |config|
       config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0'
+      # Xcode 26 verifies each pod's module standalone, where CocoaPods-only
+      # plugins (auth0_flutter, ...) can't see Flutter.h once Flutter itself
+      # comes from Swift Package Manager.
+      config.build_settings['ENABLE_MODULE_VERIFIER'] = 'NO'
     end
   end
 end
