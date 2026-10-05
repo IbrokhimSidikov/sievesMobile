@@ -578,6 +578,35 @@ class AppLocalizations {
       'biometricPromptAccept': 'Use {biometric}',
       'biometricPromptDecline': 'Enter password',
       'careerTitle':'Career Progress',
+      'careerSubtitle': "Your journey with the team",
+      'careerSince': "Since {date}",
+      'careerWithTeam': "with the team",
+      'careerContracts': "Contracts",
+      'careerTrainings': "Trainings",
+      'careerPromotions': "Promotions",
+      'careerStep': "Step",
+      'careerNextMilestone': "Next milestone",
+      'careerDaysLeft': "{n} days to go",
+      'careerRoadmap': "Roadmap",
+      'careerJoined': "Joined the team",
+      'careerPromoted': "Promoted to the next step",
+      'careerRenewed': "Contract renewed",
+      'careerStepChanged': "Step changed",
+      'careerTraining': "Training completed",
+      'careerExit': "Employment ended",
+      'careerToday': "Today",
+      'careerDayOfJourney': "Day {n} of your journey",
+      'careerOneMonthWithTeam': "1 month with the team",
+      'careerMonthsWithTeam': "{n} months with the team",
+      'careerOneYearWithTeam': "1 year with the team",
+      'careerYearsWithTeam': "{n} years with the team",
+      'careerYearsShort': "{n} yr",
+      'careerMonthsShort': "{n} mo",
+      'careerDaysShort': "{n} d",
+      'careerLoadError': "Couldn't load your career",
+      'careerLoadErrorHint': "Check your connection and try again.",
+      'careerEmpty': "No career history yet",
+      'careerEmptyHint': "Your roadmap appears once your employment contract is added.",
     },
     'uz': {
       'title': 'Sieves',
@@ -1152,6 +1181,35 @@ class AppLocalizations {
       'biometricPromptAccept': '{biometric} ishlatish',
       'biometricPromptDecline': 'Parol kiritish',
       'careerTitle':'Kariera yo\'li',
+      'careerSubtitle': "Jamoadagi yo'lingiz",
+      'careerSince': "{date} dan beri",
+      'careerWithTeam': "jamoada",
+      'careerContracts': "Shartnomalar",
+      'careerTrainings': "Treninglar",
+      'careerPromotions': "Ko'tarilishlar",
+      'careerStep': "Bosqich",
+      'careerNextMilestone': "Keyingi marra",
+      'careerDaysLeft': "{n} kun qoldi",
+      'careerRoadmap': "Yo'l xaritasi",
+      'careerJoined': "Jamoaga qo'shildi",
+      'careerPromoted': "Keyingi bosqichga ko'tarildi",
+      'careerRenewed': "Shartnoma yangilandi",
+      'careerStepChanged': "Bosqich o'zgardi",
+      'careerTraining': "Trening o'tildi",
+      'careerExit': "Ishdan bo'shadi",
+      'careerToday': "Bugun",
+      'careerDayOfJourney': "Yo'lingizning {n}-kuni",
+      'careerOneMonthWithTeam': "Jamoada 1 oy",
+      'careerMonthsWithTeam': "Jamoada {n} oy",
+      'careerOneYearWithTeam': "Jamoada 1 yil",
+      'careerYearsWithTeam': "Jamoada {n} yil",
+      'careerYearsShort': "{n} yil",
+      'careerMonthsShort': "{n} oy",
+      'careerDaysShort': "{n} kun",
+      'careerLoadError': "Kariera ma'lumotlari yuklanmadi",
+      'careerLoadErrorHint': "Internetni tekshirib, qayta urinib ko'ring.",
+      'careerEmpty': "Hali kariera tarixi yo'q",
+      'careerEmptyHint': "Mehnat shartnomangiz kiritilgach, yo'l xaritangiz shu yerda paydo bo'ladi.",
 
     },
     'ru': {
@@ -1737,6 +1795,35 @@ class AppLocalizations {
       'biometricPromptAccept': 'Использовать {biometric}',
       'biometricPromptDecline': 'Ввести пароль',
       'careerTitle':'Карьера',
+      'careerSubtitle': "Ваш путь в команде",
+      'careerSince': "С {date}",
+      'careerWithTeam': "в команде",
+      'careerContracts': "Договоры",
+      'careerTrainings': "Тренинги",
+      'careerPromotions': "Повышения",
+      'careerStep': "Ступень",
+      'careerNextMilestone': "Следующий рубеж",
+      'careerDaysLeft': "Осталось {n} дн.",
+      'careerRoadmap': "Дорожная карта",
+      'careerJoined': "Принят в команду",
+      'careerPromoted': "Повышение до следующей ступени",
+      'careerRenewed': "Договор продлён",
+      'careerStepChanged': "Ступень изменена",
+      'careerTraining': "Пройден тренинг",
+      'careerExit': "Работа завершена",
+      'careerToday': "Сегодня",
+      'careerDayOfJourney': "{n}-й день вашего пути",
+      'careerOneMonthWithTeam': "1 месяц в команде",
+      'careerMonthsWithTeam': "{n} мес. в команде",
+      'careerOneYearWithTeam': "1 год в команде",
+      'careerYearsWithTeam': "Лет в команде: {n}",
+      'careerYearsShort': "{n} г.",
+      'careerMonthsShort': "{n} мес.",
+      'careerDaysShort': "{n} дн.",
+      'careerLoadError': "Не удалось загрузить карьеру",
+      'careerLoadErrorHint': "Проверьте соединение и попробуйте снова.",
+      'careerEmpty': "Истории карьеры пока нет",
+      'careerEmptyHint': "Дорожная карта появится после добавления трудового договора.",
 
     },
   };
@@ -2304,6 +2391,35 @@ class AppLocalizations {
   String get faceId => translate('faceId');
   String get fingerprint => translate('fingerprint');
   String get careerTitle => translate('careerTitle');
+  String get careerSubtitle => translate('careerSubtitle');
+  String get careerSince => translate('careerSince');
+  String get careerWithTeam => translate('careerWithTeam');
+  String get careerContracts => translate('careerContracts');
+  String get careerTrainings => translate('careerTrainings');
+  String get careerPromotions => translate('careerPromotions');
+  String get careerStep => translate('careerStep');
+  String get careerNextMilestone => translate('careerNextMilestone');
+  String get careerDaysLeft => translate('careerDaysLeft');
+  String get careerRoadmap => translate('careerRoadmap');
+  String get careerJoined => translate('careerJoined');
+  String get careerPromoted => translate('careerPromoted');
+  String get careerRenewed => translate('careerRenewed');
+  String get careerStepChanged => translate('careerStepChanged');
+  String get careerTraining => translate('careerTraining');
+  String get careerExit => translate('careerExit');
+  String get careerToday => translate('careerToday');
+  String get careerDayOfJourney => translate('careerDayOfJourney');
+  String get careerOneMonthWithTeam => translate('careerOneMonthWithTeam');
+  String get careerMonthsWithTeam => translate('careerMonthsWithTeam');
+  String get careerOneYearWithTeam => translate('careerOneYearWithTeam');
+  String get careerYearsWithTeam => translate('careerYearsWithTeam');
+  String get careerYearsShort => translate('careerYearsShort');
+  String get careerMonthsShort => translate('careerMonthsShort');
+  String get careerDaysShort => translate('careerDaysShort');
+  String get careerLoadError => translate('careerLoadError');
+  String get careerLoadErrorHint => translate('careerLoadErrorHint');
+  String get careerEmpty => translate('careerEmpty');
+  String get careerEmptyHint => translate('careerEmptyHint');
   String get biometrics => translate('biometrics');
   String biometricPromptTitle(String biometric) =>
       translate('biometricPromptTitle').replaceAll('{biometric}', biometric);

@@ -14,6 +14,7 @@ import '../../../features/training-test/data/training_course_model.dart';
 import '../../../features/training-test/data/test_models.dart';
 import '../../../features/training-test/data/test_result_model.dart';
 import '../../../features/salary/models/salary_timeline_model.dart';
+import '../../../features/career/models/career_timeline_model.dart';
 import '../auth/auth_service.dart';
 import 'http_client.dart';
 
@@ -2123,6 +2124,33 @@ class ApiService {
       }
     } catch (e) {
       print('❌ [API] Exception getting day session: $e');
+      return null;
+    }
+  }
+
+  // ==================== CAREER ROADMAP ====================
+
+  /// Career timeline of the logged-in employee: hire, contract changes,
+  /// trainings and exit, oldest first. Returns null on network/server error.
+  Future<CareerTimeline?> getMyCareerTimeline() async {
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(
+        'https://api.v3.sievesapp.com/employee-lifecycle/me/timeline',
+      );
+      final response = await _httpClient.get(uri, headers: headers);
+      if (response.statusCode == 200) {
+        return CareerTimeline.fromJson(
+          json.decode(response.body) as Map<String, dynamic>,
+        );
+      }
+      print(
+        '❌ [API] Failed to load career timeline: '
+        '${response.statusCode} - ${response.body}',
+      );
+      return null;
+    } catch (e) {
+      print('❌ [API] Exception loading career timeline: $e');
       return null;
     }
   }
