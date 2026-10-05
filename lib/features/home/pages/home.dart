@@ -1,21 +1,18 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
-import '../../../core/router/app_routes.dart';
+import '../../../core/navigation/app_modules.dart';
+import '../../../core/providers/locale_provider.dart';
 import '../../../core/services/auth/auth_manager.dart';
 import '../../../core/services/theme/theme_cubit.dart';
-import '../../../core/providers/locale_provider.dart';
-import '../../../core/services/api/api_service.dart';
-import '../../../core/model/story_model.dart';
-import '../../../core/model/day_session_announcement_model.dart';
-import '../../stories/pages/story_viewer.dart';
 import '../../trainings/pages/trainings_modal.dart';
-import '../shared/day_amount_chip.dart';
 
+/// "Others" tab: the bento grid of every module that is not a tab of its own
+/// and not listed under Productivity (see `AppModules`).
+///
+/// Also hosts the language and theme switches and the trainings shortcut.
 class Home extends StatefulWidget {
   const Home({super.key});
 
@@ -23,319 +20,21 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> with WidgetsBindingObserver {
+class _HomeState extends State<Home> {
   final AuthManager _authManager = AuthManager();
-  final ScrollController _scrollController = ScrollController();
-  double _scrollOffset = 0;
-  int _unreadNotificationCount = 0;
-  Timer? _refreshTimer;
-  String? _currentEmployeeStatus;
-  bool _isLoadingStatus = true;
-  late final ApiService _apiService;
-  List<UserStories> _userStories = [];
-  bool _isLoadingStories = true;
-  DaySessionAnnouncement? _dayAnnouncement;
 
-  List<_ModuleItem> get modules {
-    final localizations = AppLocalizations.of(context);
-    final allModules = [
-      _ModuleItem(
-        localizations.profile,
-        Icons.person_outline,
-        const Color(0xFF8D7B6B),
-        '/profile',
-      ),
-      _ModuleItem(
-        localizations.attendance,
-        Icons.calendar_today_outlined,
-        const Color(0xFF7A6A5A),
-        '/attendance',
-      ),
-      _ModuleItem(
-        localizations.breakRecords,
-        Icons.coffee_outlined,
-        const Color(0xFF9C8878),
-        '/breakRecords',
-      ),
-      // _ModuleItem(
-      //   localizations.salaryProgress,
-      //   Icons.wallet_outlined,
-      //   const Color(0xFF9C8878),
-      //   '/salaryProgress',
-      // ),
-      _ModuleItem(
-        localizations.learning,
-        Icons.laptop_mac_sharp,
-        const Color(0xFF7B7060),
-        '/lmsPage',
-      ),
-      _ModuleItem(
-        localizations.hr,
-        Icons.menu_book_outlined,
-        const Color(0xFF8A7868),
-        '/hrPage',
-      ),
-      _ModuleItem(
-        localizations.history,
-        Icons.history_outlined,
-        const Color(0xFF6E6050),
-        '/history',
-      ),
-      _ModuleItem(
-        localizations.careerTitle,
-        Icons.pin_drop,
-        const Color(0xFF6E6050),
-        '/careerpage',
-      ),
-      _ModuleItem(
-        localizations.lWallet,
-        Icons.wallet_outlined,
-        const Color(0xFF957A6A),
-        '/wallet',
-      ),
-      _ModuleItem(
-        localizations.qualificationDisplayPage,
-        Icons.verified_user_outlined,
-        const Color(0xFF7C6C5C),
-        '/qualificationDisplayPage',
-      ),
-      _ModuleItem(
-        localizations.feedback,
-        Icons.feedback_outlined,
-        const Color(0xFF7C6C5C),
-        '/feedbackForm',
-      ),
-      if (_authManager.hasCancelAccess)
-        _ModuleItem(
-            'Otmen chek',
-            Icons.cancel_outlined,
-            const Color(0xFF6E5E4E),
-            AppRoutes.orderCancel
-        ),
-      if (_authManager.hasBreakAccess)
-        _ModuleItem(
-          localizations.breakOrder,
-          Icons.restaurant_menu_rounded,
-          const Color(0xFF9E8272),
-          '/breakOrder',
-        ),
-      if (_authManager.hasBreakAccess)
-        _ModuleItem(
-          localizations.faceVerification,
-          Icons.face_2_outlined,
-          const Color(0xFF856E5E),
-          '/faceVerification',
-        ),
-      if (_authManager.hasStopwatchAccess)
-        _ModuleItem(
-          localizations.tasks,
-          Icons.task_alt,
-          const Color(0xFF6E5E4E),
-          '/taskManagement',
-        ),
-      if (_authManager.hasStopwatchAccess)
-        _ModuleItem(
-          localizations.employeeProductivity,
-          Icons.timer_outlined,
-          const Color(0xFF7A6555),
-          '/employeeProductivity',
-        ),
-      _ModuleItem(
-        localizations.checklist,
-        Icons.checklist_outlined,
-        const Color(0xFF887060),
-        '/checklist',
-      ),
-    ];
-    return allModules;
-  }
+  List<AppModule> get modules => AppModules.inGroup(
+        ModuleGroup.others,
+        AppLocalizations.of(context),
+        _authManager,
+      );
 
-  // Helper method to get user's display name
-  Widget _getUserDisplayName(BuildContext context) {
-    final identity = _authManager.currentIdentity;
-
-    String text;
-
-    if (identity != null) {
-      if (identity.employee?.individual != null) {
-        final firstName = identity.employee!.individual!.firstName;
-        final lastName = identity.employee!.individual!.lastName;
-
-        if (firstName != null && lastName != null) {
-          text = '$firstName $lastName';
-        } else {
-          text = identity.username ?? '';
-        }
-      } else {
-        text = identity.username ?? '';
-      }
-    } else {
-      text = 'Welcome';
-    }
-
-    final theme = Theme.of(context);
-
-    return RichText(
-      text: TextSpan(
-        style: TextStyle(
-          fontSize: 20.sp,
-          fontWeight: FontWeight.w600,
-          color: theme.colorScheme.onSurface,
-        ),
-        children: [
-          TextSpan(text: text),
-          WidgetSpan(
-            alignment: PlaceholderAlignment.middle,
-            child: Padding(
-              padding: const EdgeInsets.only(left: 6),
-              child: Icon(
-                Icons.verified,
-                size: 20.sp,
-                color: const Color(0xFF0378fe),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  void _navigateToModule(_ModuleItem module) {
-    if (module.route != null) {
-      context.push(module.route!);
-    } else {
-      _showComingSoon(module.title);
-    }
-  }
-
-  // Show coming soon dialog for unimplemented modules
-  void _showComingSoon(String moduleTitle) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Text('$moduleTitle'),
-          content: Text(AppLocalizations.of(context).comingSoon),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _apiService = ApiService(_authManager.authService);
-    _scrollController.addListener(_onScroll);
-    WidgetsBinding.instance.addObserver(this);
-    _loadUnreadCount();
-    _loadCurrentStatus();
-    _loadUserStories();
-    _loadDayAnnouncement();
-
-    // Refresh badge every 5 seconds when on home page
-    _startPeriodicRefresh();
-  }
-
-  void _startPeriodicRefresh() {
-    _refreshTimer = Timer.periodic(const Duration(seconds: 5), (timer) {
-      if (mounted) {
-        _loadUnreadCount();
-      }
-    });
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    // Refresh when app comes to foreground
-    if (state == AppLifecycleState.resumed) {
-      _loadUnreadCount();
-      // Refresh employee status when returning to home
-      _loadCurrentStatus();
-      _loadDayAnnouncement();
-    }
-  }
-
-  Future<void> _loadCurrentStatus() async {
-    final employeeId = _authManager.currentEmployeeId;
-    if (employeeId != null) {
-      final status = await _apiService.getCurrentEmployeeStatus(employeeId);
-      if (mounted) {
-        setState(() {
-          _currentEmployeeStatus = status;
-          _isLoadingStatus = false;
-        });
-        print('🔄 [HOME] Status loaded from API: $status');
-      }
-    }
-  }
-
-  Future<void> _loadUserStories() async {
-    try {
-      final stories = await _apiService.getAdminStories();
-      if (mounted) {
-        setState(() {
-          _userStories = stories;
-          _isLoadingStories = false;
-        });
-        final totalStories = stories.fold<int>(
-          0,
-          (sum, userStory) => sum + userStory.stories.length,
-        );
-        print(
-          '📖 [HOME] Admin stories loaded: $totalStories stories from ${stories.length} users',
-        );
-      }
-    } catch (e) {
-      print('❌ [HOME] Error loading admin stories: $e');
-      if (mounted) {
-        setState(() {
-          _isLoadingStories = false;
-        });
-      }
-    }
-  }
-
-  Future<void> _loadDayAnnouncement() async {
-    final announcement = await _apiService.getCurrentDaySessionAnnouncement();
-    // Keep the last value on a failed refresh instead of hiding the chip.
-    if (mounted && announcement != null) {
-      setState(() => _dayAnnouncement = announcement);
-    }
-  }
-
-  void _onScroll() {
-    setState(() {
-      _scrollOffset = _scrollController.offset;
-    });
-  }
-
-  Future<void> _loadUnreadCount() async {
-    final count = await _apiService.getUnreadNotificationCount();
-    if (mounted) {
-      setState(() {
-        _unreadNotificationCount = count;
-      });
-    }
-  }
-
-  @override
-  void dispose() {
-    _refreshTimer?.cancel();
-    WidgetsBinding.instance.removeObserver(this);
-    _scrollController.dispose();
-    super.dispose();
-  }
+  void _navigateToModule(AppModule module) => context.push(module.route);
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final l = AppLocalizations.of(context);
 
     return Scaffold(
       backgroundColor: theme.scaffoldBackgroundColor,
@@ -343,7 +42,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
         elevation: 0,
         backgroundColor: Colors.transparent,
         title: Text(
-          AppLocalizations.of(context).dashboard,
+          l.others,
           style: TextStyle(
             fontSize: 26.sp,
             fontWeight: FontWeight.w600,
@@ -358,7 +57,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
           ),
           // Theme toggle switch
           Padding(
-            padding: EdgeInsets.only(right: 12.sp),
+            padding: EdgeInsets.only(right: 8.sp),
             child: GestureDetector(
               onTap: () {
                 context.read<ThemeCubit>().toggleTheme();
@@ -413,125 +112,31 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
               ),
             ),
           ),
-          // Notification button with badge
+          // Trainings shortcut
           Padding(
-            padding: EdgeInsets.only(right: 16.sp),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                IconButton(
-                  onPressed: () async {
-                    await context.push(AppRoutes.notificationNew);
-                    // Reload unread count when returning from notifications page
-                    _loadUnreadCount();
-                  },
-                  icon: Icon(
-                    Icons.notifications_none,
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                if (_unreadNotificationCount > 0)
-                  Positioned(
-                    right: 8.w,
-                    top: 8.h,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: _unreadNotificationCount > 9 ? 5.w : 6.w,
-                        vertical: 2.h,
-                      ),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFEF4444),
-                        borderRadius: BorderRadius.circular(10.r),
-                        border: Border.all(
-                          color: theme.scaffoldBackgroundColor,
-                          width: 1.5,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFEF4444).withOpacity(0.3),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Text(
-                        _unreadNotificationCount > 99
-                            ? '99+'
-                            : '$_unreadNotificationCount',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 9.sp,
-                          fontWeight: FontWeight.w700,
-                          height: 1.2,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+            padding: EdgeInsets.only(right: 12.sp),
+            child: IconButton(
+              onPressed: () => showTrainingsModal(context),
+              tooltip: l.learning,
+              icon: Icon(
+                Icons.school_rounded,
+                size: 26.sp,
+                color: theme.colorScheme.onSurface,
+              ),
             ),
           ),
         ],
       ),
       body: CustomScrollView(
-        controller: _scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           SliverPadding(
-            padding: EdgeInsets.symmetric(horizontal: 20.sp, vertical: 12.sp),
-            sliver: SliverToBoxAdapter(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  SizedBox(height: 4.sp),
-                  Row(
-                    children: [
-                      Padding(
-                        padding: EdgeInsets.only(right: 16.w),
-                        child: _buildUserAvatar(),
-                      ),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _getUserDisplayName(context),
-                            SizedBox(height: 4.h),
-                            Row(
-                              children: [
-                                _buildStatusBadge(theme),
-                                // Managers and directors only (enforced by the API).
-                                if (_dayAnnouncement?.canView == true) ...[
-                                  SizedBox(width: 8.w),
-                                  Flexible(
-                                    child: DayAmountChip(
-                                      announcement: _dayAnnouncement!,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                      GestureDetector(
-                        onTap: () => showTrainingsModal(context),
-                        child: Padding(
-                          padding: EdgeInsets.only(right: 16.w),
-                          child: Icon(
-                            Icons.school,
-                            size: 30.sp,
-                            color: theme.colorScheme.onSurface,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24.sp),
-                ],
-              ),
+            padding: EdgeInsets.fromLTRB(
+              20.sp,
+              8.sp,
+              20.sp,
+              24.sp + MediaQuery.paddingOf(context).bottom,
             ),
-          ),
-          SliverPadding(
-            padding: EdgeInsets.fromLTRB(20.sp, 0, 20.sp, 40.sp),
             sliver: SliverToBoxAdapter(child: _buildBentoGrid(theme)),
           ),
         ],
@@ -546,7 +151,7 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     final gap = 12.sp;
 
     // Helper to safely get module at index
-    _ModuleItem? at(int i) => i < mods.length ? mods[i] : null;
+    AppModule? at(int i) => i < mods.length ? mods[i] : null;
 
     // Build rows progressively consuming the modules list
     final rows = <Widget>[];
@@ -724,125 +329,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildUserAvatar() {
-    final identity = _authManager.currentIdentity;
-    final userPhoto = identity?.employee?.individual?.photoUrl;
-    final firstUserStories = _userStories.isNotEmpty
-        ? _userStories.first
-        : null;
-    final hasStories =
-        firstUserStories != null && firstUserStories.stories.isNotEmpty;
-    final stories = hasStories ? firstUserStories.stories : <Story>[];
-
-    // Build a list of viewed flags per story segment
-    final viewedFlags = stories.map((s) => s.isViewed).toList();
-
-    return GestureDetector(
-      onTap: hasStories
-          ? () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) =>
-                      StoryViewer(userStories: firstUserStories),
-                ),
-              );
-            }
-          : null,
-      child: SizedBox(
-        width: 66.w,
-        height: 66.h,
-        child: CustomPaint(
-          painter: hasStories
-              ? _StoryRingPainter(
-                  segmentCount: stories.length,
-                  viewedFlags: viewedFlags,
-                  ringColor: const Color(0xFFDD2A7B),
-                  viewedColor: Colors.grey.shade400,
-                  strokeWidth: 2.5.w,
-                  gapDegrees: stories.length == 1 ? 0 : 5,
-                  backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-                )
-              : null,
-          child: Center(
-            child: CircleAvatar(
-              radius: hasStories ? 27.r : 30.r,
-              backgroundImage: userPhoto != null
-                  ? NetworkImage(userPhoto)
-                  : null,
-              backgroundColor: Colors.grey.shade300,
-              child: userPhoto == null
-                  ? Icon(
-                      Icons.person,
-                      size: hasStories ? 26.sp : 30.sp,
-                      color: Colors.grey.shade600,
-                    )
-                  : null,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildStatusBadge(ThemeData theme) {
-    // Use real-time status from API, fallback to cached status if still loading
-    final status =
-        (_currentEmployeeStatus ?? _authManager.currentEmployeeStatus)
-            ?.toLowerCase() ??
-        'offline';
-    final isOnline = status == 'online';
-
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isOnline
-              ? [
-                  AppColors.cxEmeraldGreen,
-                  AppColors.cxEmeraldGreen.withOpacity(0.8),
-                ]
-              : [
-                  AppColors.cxSilverTint,
-                  AppColors.cxSilverTint.withOpacity(0.8),
-                ],
-        ),
-        borderRadius: BorderRadius.circular(20.r),
-        boxShadow: [
-          BoxShadow(
-            color:
-                (isOnline ? AppColors.cxEmeraldGreen : AppColors.cxSilverTint)
-                    .withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8.w,
-            height: 8.h,
-            decoration: const BoxDecoration(
-              color: AppColors.cxPureWhite,
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: 6.w),
-          Text(
-            isOnline ? 'ONLINE' : 'OFFLINE',
-            style: TextStyle(
-              fontSize: 11.sp,
-              fontWeight: FontWeight.bold,
-              color: AppColors.cxPureWhite,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildLanguageDropdown(ThemeData theme) {
     final localeProvider = Provider.of<LocaleProvider>(context);
     final currentLocale = localeProvider.locale.languageCode;
@@ -935,16 +421,6 @@ class _HomeState extends State<Home> with WidgetsBindingObserver {
   }
 }
 
-// Module Item Model
-class _ModuleItem {
-  final String title;
-  final IconData icon;
-  final Color color;
-  final String? route;
-
-  _ModuleItem(this.title, this.icon, this.color, this.route);
-}
-
 // Bento card size variants
 enum _BentoSize { large, medium, small, wide }
 
@@ -952,7 +428,7 @@ enum _BentoSize { large, medium, small, wide }
 //  Bento Card
 // ────────────────────────────────────────────
 class _BentoCard extends StatefulWidget {
-  final _ModuleItem module;
+  final AppModule module;
   final VoidCallback onTap;
   final _BentoSize size;
 
@@ -1008,95 +484,99 @@ class _BentoCardState extends State<_BentoCard>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
-    final color = widget.module.color;
+    final color = widget.module.accent.resolve(context);
     final isLarge = widget.size == _BentoSize.large;
     final isSmall = widget.size == _BentoSize.small;
 
-    return GestureDetector(
-      onTapDown: (_) => _controller.forward(),
-      onTapUp: (_) {
-        _controller.reverse();
-        Future.delayed(const Duration(milliseconds: 100), widget.onTap);
-      },
-      onTapCancel: () => _controller.reverse(),
-      child: ScaleTransition(
-        scale: _scaleAnim,
-        child: Container(
-          height: _height,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22.r),
-            gradient: LinearGradient(
-              colors: isDark
-                  ? [const Color(0xFF2F2F2F), const Color(0xFF1A1A1A)]
-                  : [color.withOpacity(0.18), color.withOpacity(0.10)],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFFFFCB74).withOpacity(0.55)
-                  : color.withOpacity(0.18),
-              width: isDark ? 1.6 : 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
+    return Semantics(
+      button: true,
+      label: widget.module.title,
+      child: GestureDetector(
+        onTapDown: (_) => _controller.forward(),
+        onTapUp: (_) {
+          _controller.reverse();
+          Future.delayed(const Duration(milliseconds: 100), widget.onTap);
+        },
+        onTapCancel: () => _controller.reverse(),
+        child: ScaleTransition(
+          scale: _scaleAnim,
+          child: Container(
+            height: _height,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22.r),
+              gradient: LinearGradient(
+                colors: isDark
+                    ? [const Color(0xFF2F2F2F), const Color(0xFF1A1A1A)]
+                    : [color.withOpacity(0.18), color.withOpacity(0.10)],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              border: Border.all(
                 color: isDark
-                    ? const Color(0xFFFFCB74).withOpacity(0.10)
-                    : color.withOpacity(0.10),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-                spreadRadius: -4,
+                    ? const Color(0xFFFFCB74).withOpacity(0.55)
+                    : color.withOpacity(0.18),
+                width: isDark ? 1.6 : 1.2,
               ),
-              BoxShadow(
-                color: Colors.black.withOpacity(isDark ? 0.40 : 0.05),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(22.r),
-            child: Stack(
-              children: [
-                // ── Background decorative circles ──
-                Positioned(
-                  top: -28.sp,
-                  right: -28.sp,
-                  child: Container(
-                    width: isLarge ? 110.sp : 70.sp,
-                    height: isLarge ? 110.sp : 70.sp,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDark
-                          ? const Color(0xFFFFCB74).withOpacity(0.08)
-                          : color.withOpacity(0.07),
-                    ),
-                  ),
+              boxShadow: [
+                BoxShadow(
+                  color: isDark
+                      ? const Color(0xFFFFCB74).withOpacity(0.10)
+                      : color.withOpacity(0.10),
+                  blurRadius: 16,
+                  offset: const Offset(0, 6),
+                  spreadRadius: -4,
                 ),
-                if (!isSmall)
+                BoxShadow(
+                  color: Colors.black.withOpacity(isDark ? 0.40 : 0.05),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(22.r),
+              child: Stack(
+                children: [
+                  // ── Background decorative circles ──
                   Positioned(
-                    bottom: -20.sp,
-                    left: -20.sp,
+                    top: -28.sp,
+                    right: -28.sp,
                     child: Container(
-                      width: isLarge ? 80.sp : 50.sp,
-                      height: isLarge ? 80.sp : 50.sp,
+                      width: isLarge ? 110.sp : 70.sp,
+                      height: isLarge ? 110.sp : 70.sp,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: isDark
-                            ? const Color(0xFFF6F6F6).withOpacity(0.04)
-                            : color.withOpacity(0.05),
+                            ? const Color(0xFFFFCB74).withOpacity(0.08)
+                            : color.withOpacity(0.07),
                       ),
                     ),
                   ),
+                  if (!isSmall)
+                    Positioned(
+                      bottom: -20.sp,
+                      left: -20.sp,
+                      child: Container(
+                        width: isLarge ? 80.sp : 50.sp,
+                        height: isLarge ? 80.sp : 50.sp,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: isDark
+                              ? const Color(0xFFF6F6F6).withOpacity(0.04)
+                              : color.withOpacity(0.05),
+                        ),
+                      ),
+                    ),
 
-                // ── Content ──
-                Padding(
-                  padding: EdgeInsets.all(isSmall ? 10.sp : 16.sp),
-                  child: isSmall
-                      ? _buildSmallContent(isDark, color)
-                      : _buildFullContent(isDark, color, isLarge),
-                ),
-              ],
+                  // ── Content ──
+                  Padding(
+                    padding: EdgeInsets.all(isSmall ? 10.sp : 16.sp),
+                    child: isSmall
+                        ? _buildSmallContent(isDark, color)
+                        : _buildFullContent(isDark, color, isLarge),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -1126,7 +606,7 @@ class _BentoCardState extends State<_BentoCard>
           child: Text(
             widget.module.title,
             style: TextStyle(
-              fontSize: 11.5.sp,
+              fontSize: 12.sp,
               fontWeight: FontWeight.w700,
               color: textColor,
               height: 1.25,
@@ -1147,6 +627,7 @@ class _BentoCardState extends State<_BentoCard>
     final subtitleColor = isDark
         ? const Color(0xFFF6F6F6).withOpacity(0.60)
         : _darken(color, 0.20).withOpacity(0.75);
+    final subtitle = widget.module.subtitle;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -1192,10 +673,10 @@ class _BentoCardState extends State<_BentoCard>
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                 ),
-                if (isLarge) ...[
+                if (isLarge && subtitle != null) ...[
                   SizedBox(height: 4.h),
                   Text(
-                    _getSubtitle(widget.module.title, context),
+                    subtitle,
                     style: TextStyle(
                       fontSize: 11.sp,
                       fontWeight: FontWeight.w500,
@@ -1220,121 +701,4 @@ class _BentoCardState extends State<_BentoCard>
         .withLightness((hsl.lightness - amount).clamp(0.0, 1.0))
         .toColor();
   }
-
-  String _getSubtitle(String title, BuildContext context) {
-    final l = AppLocalizations.of(context);
-    if (title == l.profile) return l.profileSubtitle;
-    if (title == l.attendance) return l.attendanceSubtitle;
-    if (title == l.breakOrder) return l.breakOrderSubtitle;
-    if (title == l.breakRecords) return l.breakRecordsSubtitle;
-    if (title == l.history) return l.historySubtitle;
-    if (title == l.lWallet) return l.lWalletSubtitle;
-    if (title == l.learning) return l.learningSubtitle;
-    if (title == l.productivityTimer) return l.productivityTimerSubtitle;
-    if (title == l.checklist) return l.checklistSubtitle;
-    if (title == l.faceVerification) return l.faceIdSubtitle;
-    if (title == l.calendar) return l.calendarSubtitle;
-    if (title == l.tasks) return l.tasksSubtitle;
-    return 'Tap to explore';
-  }
-}
-
-// ────────────────────────────────────────────
-//  Story Ring Painter
-// ────────────────────────────────────────────
-class _StoryRingPainter extends CustomPainter {
-  final int segmentCount;
-  final List<bool> viewedFlags;
-  final Color ringColor;
-  final Color viewedColor;
-  final double strokeWidth;
-  final double gapDegrees;
-  final Color backgroundColor;
-
-  _StoryRingPainter({
-    required this.segmentCount,
-    required this.viewedFlags,
-    required this.ringColor,
-    required this.viewedColor,
-    required this.strokeWidth,
-    required this.gapDegrees,
-    required this.backgroundColor,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    if (segmentCount == 0) return;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = (size.width / 2) - strokeWidth / 2;
-    final rect = Rect.fromCircle(center: center, radius: radius);
-
-    // Total degrees for all gaps
-    final totalGapDegrees = gapDegrees * segmentCount;
-    final segmentDegrees = (360.0 - totalGapDegrees) / segmentCount;
-
-    // Start from top (-90 degrees)
-    double startAngle = -90.0;
-
-    for (int i = 0; i < segmentCount; i++) {
-      final isViewed = i < viewedFlags.length ? viewedFlags[i] : false;
-
-      // Gap paint (background color to create separation)
-      if (segmentCount > 1) {
-        final gapPaint = Paint()
-          ..color = backgroundColor
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = strokeWidth + 1
-          ..strokeCap = StrokeCap.round;
-
-        canvas.drawArc(
-          rect,
-          _toRadians(startAngle - gapDegrees / 2),
-          _toRadians(gapDegrees),
-          false,
-          gapPaint,
-        );
-      }
-
-      // Segment paint
-      final segmentPaint = Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = strokeWidth
-        ..strokeCap = segmentCount == 1 ? StrokeCap.butt : StrokeCap.round;
-
-      if (isViewed) {
-        segmentPaint.color = viewedColor;
-      } else {
-        // Gradient for unviewed segments
-        segmentPaint.shader = const LinearGradient(
-          colors: [
-            Color(0xFFF58529),
-            Color(0xFFDD2A7B),
-            Color(0xFF8134AF),
-            Color(0xFF515BD4),
-          ],
-          begin: Alignment.topRight,
-          end: Alignment.bottomLeft,
-        ).createShader(Rect.fromCircle(center: center, radius: radius));
-      }
-
-      canvas.drawArc(
-        rect,
-        _toRadians(startAngle),
-        _toRadians(segmentDegrees),
-        false,
-        segmentPaint,
-      );
-
-      startAngle += segmentDegrees + gapDegrees;
-    }
-  }
-
-  double _toRadians(double degrees) => degrees * 3.141592653589793 / 180.0;
-
-  @override
-  bool shouldRepaint(_StoryRingPainter oldDelegate) =>
-      oldDelegate.segmentCount != segmentCount ||
-      oldDelegate.viewedFlags != viewedFlags ||
-      oldDelegate.strokeWidth != strokeWidth;
 }

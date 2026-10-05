@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:sieves_mob/core/l10n/app_localizations.dart';
 
@@ -342,29 +341,11 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
     final theme = Theme.of(context);
     return Row(
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            onPressed: () => context.go('/home'),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            color: AppColors.cx43C19F,
-          ),
-        ),
-        SizedBox(width: 12.w),
+        // Tab root: no back button (see MainShell).
         Text(
           AppLocalizations.of(context).workEntries,
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: 22.sp,
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),
@@ -448,12 +429,16 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
                       ),
                     ),
                     SizedBox(width: 8.w),
-                    Text(
-                      currentMonth,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        color: theme.colorScheme.onSurfaceVariant,
-                        fontWeight: FontWeight.w500,
+                    Flexible(
+                      child: Text(
+                        currentMonth,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          color: theme.colorScheme.onSurfaceVariant,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                     SizedBox(width: 8.w),
@@ -547,16 +532,15 @@ class _AttendanceState extends State<Attendance> with SingleTickerProviderStateM
                 ),
                 SizedBox(width: 4.w),
               ],
+              // Cache indicator: 16 px, no extra padding (design.md §7.6) so
+              // it never squeezes the month navigator on narrow screens.
               if (_isFromCache)
-                Padding(
-                  padding: EdgeInsets.only(right: 4.w),
-                  child: Tooltip(
-                    message: 'Loaded from cache',
-                    child: Icon(
-                      Icons.offline_bolt_rounded,
-                      color: AppColors.cxWarning,
-                      size: 20.sp,
-                    ),
+                Tooltip(
+                  message: 'Loaded from cache',
+                  child: Icon(
+                    Icons.offline_bolt_rounded,
+                    color: AppColors.cxWarning,
+                    size: 16.sp,
                   ),
                 ),
               IconButton(

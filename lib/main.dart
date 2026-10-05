@@ -112,7 +112,7 @@ class _MyAppState extends State<MyApp> {
       final isAuthenticated = await authManager.restoreSession();
 
       setState(() {
-        _initialRoute = isAuthenticated ? '/home' : AppRoutes.login;
+        _initialRoute = isAuthenticated ? AppRoutes.landing : AppRoutes.login;
         _router = AppRoutes.createRouter(
           _initialRoute,
           navigatorKey: rootNavigatorKey,

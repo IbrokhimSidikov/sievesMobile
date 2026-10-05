@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/router/app_routes.dart';
 import '../../../core/services/auth/auth_cubit.dart';
 import '../../../core/services/auth/auth_state.dart';
 
@@ -29,7 +30,7 @@ class _SplashScreenState extends State<SplashScreen> {
         // Navigate based on authentication state
         if (state is AuthAuthenticated) {
           // User is logged in, go to home
-          context.go('/home');
+          context.go(AppRoutes.landing);
         } else if (state is AuthUnauthenticated) {
           // User is not logged in, go to login
           context.go('/login');

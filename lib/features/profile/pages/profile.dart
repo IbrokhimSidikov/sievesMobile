@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -17,8 +18,11 @@ import '../../../core/services/cache/profile_cache_service.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/utils/work_time_calculator.dart';
 import '../../../core/model/work_entry_model.dart';
+import '../../../core/theme/app_accents.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../../../core/widgets/language_switcher.dart';
+import '../../../core/model/day_session_announcement_model.dart';
+import '../../home/shared/day_amount_chip.dart';
 import '../widgets/onboarding_checklist.dart';
 
 class Profile extends StatefulWidget {
@@ -28,7 +32,7 @@ class Profile extends StatefulWidget {
   State<Profile> createState() => _ProfileState();
 }
 
-class _ProfileState extends State<Profile> {
+class _ProfileState extends State<Profile> with WidgetsBindingObserver {
   final AuthManager _authManager = AuthManager();
   final AuthService _authService = AuthService();
   late final ApiService _apiService = ApiService(_authService);
@@ -59,12 +63,14 @@ class _ProfileState extends State<Profile> {
   double _bonusAmount = 0.0;
   String _bonusMonth = '';
   String? _error;
-  bool _isFromCache = false;
-  bool _isPrePaidFromCache = false;
-  bool _isVacationFromCache = false;
-  bool _isBonusFromCache = false;
   String? _role;
   String? _jobPositionName;
+
+  // ── Landing-tab extras (moved here from the old Home page) ──────────
+  int _unreadNotificationCount = 0;
+  Timer? _unreadRefreshTimer;
+  String? _currentEmployeeStatus;
+  DaySessionAnnouncement? _dayAnnouncement;
 
   @override
   void initState() {
@@ -74,19 +80,62 @@ class _ProfileState extends State<Profile> {
     _loadPrePaidAmount();
     _loadVacationDays();
     _loadBonusData();
+
+    WidgetsBinding.instance.addObserver(this);
+    _loadCurrentStatus();
+    _loadDayAnnouncement();
+    _loadUnreadCount();
+    // Keep the bell badge fresh while this tab is alive.
+    _unreadRefreshTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+      if (mounted) _loadUnreadCount();
+    });
   }
 
   @override
   void dispose() {
+    _unreadRefreshTimer?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 
-  Future<void> _loadProfileData({bool forceRefresh = false}) async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      _loadUnreadCount();
+      _loadCurrentStatus();
+      _loadDayAnnouncement();
+    }
+  }
+
+  Future<void> _loadUnreadCount() async {
+    final count = await _apiService.getUnreadNotificationCount();
+    if (mounted) setState(() => _unreadNotificationCount = count);
+  }
+
+  Future<void> _loadCurrentStatus() async {
+    final employeeId = _authManager.currentEmployeeId;
+    if (employeeId == null) return;
+    final status = await _apiService.getCurrentEmployeeStatus(employeeId);
+    if (mounted) setState(() => _currentEmployeeStatus = status);
+  }
+
+  Future<void> _loadDayAnnouncement() async {
+    final announcement = await _apiService.getCurrentDaySessionAnnouncement();
+    // Keep the last value on a failed refresh instead of hiding the chip.
+    if (mounted && announcement != null) {
+      setState(() => _dayAnnouncement = announcement);
+    }
+  }
+
+  Future<void> _loadProfileData({
+    bool forceRefresh = false,
+    bool showLoading = true,
+  }) async {
     try {
       setState(() {
-        _isLoading = true;
+        if (showLoading) _isLoading = true;
         _error = null;
-        _isFromCache = false;
       });
 
       // Get current identity from AuthManager
@@ -111,7 +160,6 @@ class _ProfileState extends State<Profile> {
               _role = cachedData['role'] as String?;
               _jobPositionName = cachedData['jobPositionName'] as String?;
               _isLoading = false;
-              _isFromCache = true;
             });
           }
           return;
@@ -225,7 +273,6 @@ class _ProfileState extends State<Profile> {
           _role = role;
           _jobPositionName = jobPositionName;
           _isLoading = false;
-          _isFromCache = false;
         });
       }
     } catch (e) {
@@ -303,7 +350,6 @@ class _ProfileState extends State<Profile> {
     try {
       setState(() {
         _isLoadingPrePaid = true;
-        _isPrePaidFromCache = false;
       });
 
       // Get individual_id from employee
@@ -339,7 +385,6 @@ class _ProfileState extends State<Profile> {
                       ?.cast<Map<String, dynamic>>() ??
                   [];
               _isLoadingPrePaid = false;
-              _isPrePaidFromCache = true;
             });
           }
           return;
@@ -396,7 +441,6 @@ class _ProfileState extends State<Profile> {
             _prePaidAmount = result.amount;
             _currentMonthTransactions = result.transactions;
             _isLoadingPrePaid = false;
-            _isPrePaidFromCache = false;
           });
           print(
             '💰 Total pre-paid amount: ${result.amount} UZS from ${result.transactions.length} transactions',
@@ -771,9 +815,10 @@ class _ProfileState extends State<Profile> {
       await _cacheService.clearAllCachesForUser(employeeId, individualId);
     }
 
-    // Reload all data
+    // Reload all data. Keep the current content on screen (pull-to-refresh
+    // shows its own spinner) instead of flipping to the page shimmer.
     await Future.wait([
-      _loadProfileData(forceRefresh: true),
+      _loadProfileData(forceRefresh: true, showLoading: false),
       _loadCurrentMonthWorkEntries(),
       _loadPrePaidAmount(forceRefresh: true),
       _loadVacationDays(forceRefresh: true),
@@ -788,7 +833,6 @@ class _ProfileState extends State<Profile> {
     try {
       setState(() {
         _isLoadingVacation = true;
-        _isVacationFromCache = false;
       });
 
       final employeeId = _authManager.currentEmployeeId;
@@ -817,7 +861,6 @@ class _ProfileState extends State<Profile> {
                 (cachedData['vacationDates'] as List?)?.cast<String>() ?? [],
               );
               _isLoadingVacation = false;
-              _isVacationFromCache = true;
             });
           }
           return;
@@ -905,7 +948,6 @@ class _ProfileState extends State<Profile> {
           _totalVacationDays = totalVacations;
           _vacationDates = vacationDates;
           _isLoadingVacation = false;
-          _isVacationFromCache = false;
         });
       } else {
         // Vacations exist - calculate from most recent vacation date
@@ -976,7 +1018,6 @@ class _ProfileState extends State<Profile> {
           _totalVacationDays = totalVacations;
           _vacationDates = vacationDates;
           _isLoadingVacation = false;
-          _isVacationFromCache = false;
         });
       }
     } catch (e) {
@@ -1024,7 +1065,6 @@ class _ProfileState extends State<Profile> {
     try {
       setState(() {
         _isLoadingBonus = true;
-        _isBonusFromCache = false;
       });
 
       final employeeId = _authManager.currentEmployeeId;
@@ -1047,7 +1087,6 @@ class _ProfileState extends State<Profile> {
               _bonusAmount = (cachedData['amount'] as num?)?.toDouble() ?? 0.0;
               _bonusMonth = cachedData['month'] as String? ?? '';
               _isLoadingBonus = false;
-              _isBonusFromCache = true;
             });
           }
           return;
@@ -1125,7 +1164,6 @@ class _ProfileState extends State<Profile> {
             _bonusAmount = bonusAmount;
             _bonusMonth = monthName;
             _isLoadingBonus = false;
-            _isBonusFromCache = false;
           });
           print('✅ Loaded bonus: $bonusAmount UZS for $monthName');
         }
@@ -1421,12 +1459,125 @@ class _ProfileState extends State<Profile> {
                 ),
         ),
         child: SafeArea(
+          bottom: false,
           child: _isLoading
               ? _buildLoadingState()
               : _error != null
               ? _buildErrorState()
               : _buildProfileContent(),
         ),
+      ),
+    );
+  }
+
+  /// Loading silhouette for the header row and the profile card: 44 px end
+  /// slots with a centered title bar, then avatar + status, name + email,
+  /// divider and the 2×2 details grid.
+  Widget _buildHeaderAndProfileShimmer() {
+    final tokens = context.tokens;
+
+    Widget box(double w, double h, {double radius = 8}) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(
+            color: tokens.surfaceTint,
+            borderRadius: BorderRadius.circular(radius.r),
+          ),
+        );
+
+    Widget cell() => Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            box(56.w, 12.h, radius: 4),
+            SizedBox(height: 6.h),
+            box(double.infinity, 16.h),
+          ],
+        );
+
+    return Shimmer.fromColors(
+      baseColor: tokens.surfaceTint,
+      highlightColor: tokens.surfaceElevated,
+      period: const Duration(milliseconds: 1500),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header: [44 slot]  ── title ──  [44 bell]
+          SizedBox(
+            height: 44.w,
+            child: Row(
+              children: [
+                box(44.w, 44.w, radius: 12),
+                Expanded(child: Center(child: box(96.w, 22.h))),
+                box(44.w, 44.w, radius: 12),
+              ],
+            ),
+          ),
+          SizedBox(height: 16.h),
+
+          // Profile card
+          Container(
+            width: double.infinity,
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: tokens.surface,
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(color: tokens.outline),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Column(
+                      children: [
+                        Container(
+                          width: 64.w,
+                          height: 64.w,
+                          decoration: BoxDecoration(
+                            color: tokens.surfaceTint,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(height: 6.h),
+                        box(48.w, 10.h, radius: 4),
+                      ],
+                    ),
+                    SizedBox(width: 14.w),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          box(150.w, 18.h),
+                          SizedBox(height: 8.h),
+                          box(120.w, 12.h, radius: 4),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 14.h),
+                  child: Divider(height: 1, thickness: 1, color: tokens.outline),
+                ),
+                Row(
+                  children: [
+                    Expanded(child: cell()),
+                    SizedBox(width: 12.w),
+                    Expanded(child: cell()),
+                  ],
+                ),
+                SizedBox(height: 12.h),
+                Row(
+                  children: [
+                    Expanded(child: cell()),
+                    SizedBox(width: 12.w),
+                    Expanded(child: box(double.infinity, 40.h, radius: 12)),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -1442,284 +1593,30 @@ class _ProfileState extends State<Profile> {
         : Colors.grey.shade50;
 
     return SingleChildScrollView(
-      padding: EdgeInsets.all(20.w),
+      padding: EdgeInsets.fromLTRB(
+        20.w,
+        12.h,
+        20.w,
+        20.w + MediaQuery.paddingOf(context).bottom,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header shimmer - more refined
-          Row(
-            children: [
-              Shimmer.fromColors(
-                baseColor: shimmerBase,
-                highlightColor: shimmerHighlight,
-                child: Container(
-                  width: 40.w,
-                  height: 40.h,
-                  decoration: BoxDecoration(
-                    color: shimmerBase,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Shimmer.fromColors(
-                  baseColor: shimmerBase,
-                  highlightColor: shimmerHighlight,
-                  child: Container(
-                    height: 28.h,
-                    decoration: BoxDecoration(
-                      color: shimmerBase,
-                      borderRadius: BorderRadius.circular(8.r),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: 12.w),
-              Shimmer.fromColors(
-                baseColor: shimmerBase,
-                highlightColor: shimmerHighlight,
-                child: Container(
-                  width: 48.w,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: shimmerBase,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-              SizedBox(width: 8.w),
-              Shimmer.fromColors(
-                baseColor: shimmerBase,
-                highlightColor: shimmerHighlight,
-                child: Container(
-                  width: 48.w,
-                  height: 48.h,
-                  decoration: BoxDecoration(
-                    color: shimmerBase,
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 24.h),
-
-          // Profile card shimmer with gradient effect
-          Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cxRoyalBlue.withOpacity(0.3),
-                  AppColors.cxEmeraldGreen.withOpacity(0.3),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24.r),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cxRoyalBlue.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(24.w),
-              child: Column(
-                children: [
-                  // Profile photo shimmer
-                  Shimmer.fromColors(
-                    baseColor: Colors.white.withOpacity(0.3),
-                    highlightColor: Colors.white.withOpacity(0.5),
-                    child: Container(
-                      width: 100.w,
-                      height: 100.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.4),
-                          width: 3,
-                        ),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  // Name shimmer
-                  Shimmer.fromColors(
-                    baseColor: Colors.white.withOpacity(0.3),
-                    highlightColor: Colors.white.withOpacity(0.5),
-                    child: Container(
-                      width: 180.w,
-                      height: 24.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 8.h),
-                  // Email shimmer
-                  Shimmer.fromColors(
-                    baseColor: Colors.white.withOpacity(0.3),
-                    highlightColor: Colors.white.withOpacity(0.5),
-                    child: Container(
-                      width: 220.w,
-                      height: 16.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-                  // Role badge shimmer
-                  Shimmer.fromColors(
-                    baseColor: Colors.white.withOpacity(0.2),
-                    highlightColor: Colors.white.withOpacity(0.4),
-                    child: Container(
-                      width: 140.w,
-                      height: 40.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(12.r),
-                        border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
-                          width: 1,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+          // Header + profile card shimmer (same silhouette as the real widgets)
+          _buildHeaderAndProfileShimmer(),
           SizedBox(height: 20.h),
 
-          // Work hours card shimmer with gradient
+          // Work hours card shimmer (same silhouette as the real card)
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.cxEmeraldGreen.withOpacity(0.3),
-                  AppColors.cxEmeraldGreen.withOpacity(0.25),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(24.r),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.cxEmeraldGreen.withOpacity(0.15),
-                  blurRadius: 20,
-                  offset: Offset(0, 10),
-                ),
-              ],
+              color: context.tokens.surface,
+              borderRadius: BorderRadius.circular(20.r),
+              border: Border.all(color: context.tokens.outline),
             ),
             child: Padding(
-              padding: EdgeInsets.all(24.w),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Shimmer.fromColors(
-                        baseColor: Colors.white.withOpacity(0.3),
-                        highlightColor: Colors.white.withOpacity(0.5),
-                        child: Container(
-                          width: 52.w,
-                          height: 52.h,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.3),
-                            borderRadius: BorderRadius.circular(16.r),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 16.w),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Shimmer.fromColors(
-                              baseColor: Colors.white.withOpacity(0.3),
-                              highlightColor: Colors.white.withOpacity(0.5),
-                              child: Container(
-                                width: 120.w,
-                                height: 20.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                ),
-                              ),
-                            ),
-                            SizedBox(height: 6.h),
-                            Shimmer.fromColors(
-                              baseColor: Colors.white.withOpacity(0.3),
-                              highlightColor: Colors.white.withOpacity(0.5),
-                              child: Container(
-                                width: 90.w,
-                                height: 14.h,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.3),
-                                  borderRadius: BorderRadius.circular(6.r),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 24.h),
-                  Shimmer.fromColors(
-                    baseColor: Colors.white.withOpacity(0.3),
-                    highlightColor: Colors.white.withOpacity(0.5),
-                    child: Container(
-                      width: 160.w,
-                      height: 48.h,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(12.r),
-                      ),
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Shimmer.fromColors(
-                          baseColor: Colors.white.withOpacity(0.2),
-                          highlightColor: Colors.white.withOpacity(0.4),
-                          child: Container(
-                            height: 100.h,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                          ),
-                        ),
-                      ),
-                      SizedBox(width: 12.w),
-                      Expanded(
-                        child: Shimmer.fromColors(
-                          baseColor: Colors.white.withOpacity(0.2),
-                          highlightColor: Colors.white.withOpacity(0.4),
-                          child: Container(
-                            height: 100.h,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.2),
-                              borderRadius: BorderRadius.circular(16.r),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
+              child: _buildWorkHoursShimmer(),
             ),
           ),
           SizedBox(height: 20.h),
@@ -1972,27 +1869,41 @@ class _ProfileState extends State<Profile> {
       return _buildErrorState();
     }
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.all(20.w),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _buildHeader(),
-          SizedBox(height: 24.h),
-          _buildProfileCard(),
-          SizedBox(height: 20.h),
-          _buildWorkHoursCard(),
-          SizedBox(height: 20.h),
-          _buildBonusCard(),
-          SizedBox(height: 20.h),
-          _buildPrePaidCard(),
-          SizedBox(height: 20.h),
-          _buildVacationDaysCard(),
-          SizedBox(height: 20.h),
-          _buildJobInfoCard(),
-          SizedBox(height: 20.h),
-          _buildFeedbackButton(),
-        ],
+    final tokens = context.tokens;
+    return RefreshIndicator(
+      onRefresh: _forceRefresh,
+      color: tokens.primary,
+      backgroundColor: tokens.surfaceElevated,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          20.w,
+          12.h,
+          20.w,
+          20.w + MediaQuery.paddingOf(context).bottom,
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildHeader(),
+            SizedBox(height: 16.h),
+            _buildProfileCard(),
+            SizedBox(height: 20.h),
+            _buildWorkHoursCard(),
+            SizedBox(height: 20.h),
+            _buildBonusCard(),
+            SizedBox(height: 20.h),
+            _buildPrePaidCard(),
+            SizedBox(height: 20.h),
+            _buildVacationDaysCard(),
+            SizedBox(height: 20.h),
+            _buildFeedbackButton(),
+            SizedBox(height: 24.h),
+            _buildLogoutButton(),
+          ],
+        ),
       ),
     );
   }
@@ -2089,97 +2000,83 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildHeader() {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final isAnyCached =
-        _isFromCache ||
-        _isPrePaidFromCache ||
-        _isVacationFromCache ||
-        _isBonusFromCache;
+    final tokens = context.tokens;
+    // Managers and directors only (enforced by the API via `canView`).
+    final showDayRate = _dayAnnouncement?.canView == true;
 
-    return Row(
-      children: [
-        IconButton(
-          onPressed: () => Navigator.pop(context),
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: theme.colorScheme.onSurface,
-            size: 24.sp,
-          ),
-        ),
-        SizedBox(width: 8.w),
-        Expanded(
-          child: Text(
-            AppLocalizations.of(context).profile,
-            style: TextStyle(
-              fontSize: 28.sp,
-              fontWeight: FontWeight.w700,
-              color: theme.colorScheme.onSurface,
-              letterSpacing: 0.5,
-            ),
-          ),
-        ),
-        // Cache indicator
-        if (isAnyCached)
-          Padding(
-            padding: EdgeInsets.only(right: 8.w),
-            child: Tooltip(
-              message: 'Loaded from cache',
-              child: Icon(
-                Icons.offline_bolt_rounded,
-                color: AppColors.cxWarning,
-                size: 20.sp,
+    // Title is centered on the full width; the day-rate chip and the bell
+    // sit on top at the edges so an uneven chip width never shifts the title.
+    return SizedBox(
+      height: 44.w,
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: Center(
+              child: Text(
+                AppLocalizations.of(context).profile,
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 22.sp,
+                  fontWeight: FontWeight.w700,
+                  color: tokens.textPrimary,
+                  letterSpacing: -0.3,
+                ),
               ),
             ),
           ),
-        // Refresh button
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                AppColors.cx43C19F.withOpacity(0.1),
-                AppColors.cx4AC1A7.withOpacity(0.05),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              if (showDayRate)
+                DayAmountChip(announcement: _dayAnnouncement!)
+              else
+                SizedBox(width: 44.w),
+              // Notifications (with unread badge)
+              _buildNotificationButton(),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Full-width destructive button at the end of the page. Confirmation is
+  /// handled inside [_handleLogout].
+  Widget _buildLogoutButton() {
+    final tokens = context.tokens;
+    return Semantics(
+      button: true,
+      label: AppLocalizations.of(context).logoutButton,
+      child: Material(
+        color: tokens.error,
+        borderRadius: BorderRadius.circular(12.r),
+        child: InkWell(
+          onTap: _handleLogout,
+          borderRadius: BorderRadius.circular(12.r),
+          child: SizedBox(
+            height: 52.h,
+            width: double.infinity,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.logout_rounded, size: 20.sp, color: tokens.textOnAccent),
+                SizedBox(width: 8.w),
+                Text(
+                  AppLocalizations.of(context).logoutButton,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textOnAccent,
+                  ),
+                ),
               ],
             ),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(
-              color: AppColors.cx43C19F.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: IconButton(
-            onPressed: _forceRefresh,
-            icon: Icon(
-              Icons.refresh_rounded,
-              color: AppColors.cx43C19F,
-              size: 24.sp,
-            ),
-            tooltip: 'Refresh',
           ),
         ),
-        SizedBox(width: 8.w),
-        Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                Colors.red.withOpacity(0.1),
-                Colors.red.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12.r),
-            border: Border.all(color: Colors.red.withOpacity(0.2), width: 1),
-          ),
-          child: IconButton(
-            onPressed: _handleLogout,
-            icon: Icon(
-              Icons.logout_rounded,
-              color: Colors.red.shade600,
-              size: 24.sp,
-            ),
-            tooltip: 'Logout',
-          ),
-        ),
-      ],
+      ),
     );
   }
 
@@ -2204,154 +2101,320 @@ class _ProfileState extends State<Profile> {
       }
     }
 
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final colorScheme = Theme.of(context).colorScheme;
-    const accent = AppColors.cxRoyalBlue;
-    final cardBg = isDarkMode ? colorScheme.surface : AppColors.cxPureWhite;
-    final borderColor = isDarkMode
-        ? accent.withOpacity(0.18)
-        : accent.withOpacity(0.12);
-    final primaryText = colorScheme.onSurface;
-    final secondaryText = isDarkMode
-        ? colorScheme.onSurfaceVariant
-        : const Color(0xFF6B7280);
+    final l = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final accent = tokens.primary;
 
     final fullName =
         '${employeeIndividual?['firstName'] ?? ''} ${employeeIndividual?['lastName'] ?? ''}'
             .trim();
+    final branchName = employee?['branch']?['name'] as String?;
+
+    // Key/value cells shown in a two-column grid under the header.
+    final cells = <_ProfileCell>[
+      if (branchName != null && branchName.isNotEmpty)
+        _ProfileCell(l.branch, Text(branchName, style: _cellValueStyle)),
+      if (_jobPositionName != null)
+        _ProfileCell(l.jobPosition, Text(_jobPositionName!, style: _cellValueStyle)),
+      if (_role != null) _ProfileCell(l.role, Text(_role!, style: _cellValueStyle)),
+      // Career shortcut fills the last grid slot (no label of its own).
+      _ProfileCell('', _buildCareerButton()),
+    ];
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: cardBg,
+        color: tokens.surface,
         borderRadius: BorderRadius.circular(20.r),
-        border: Border.all(color: borderColor, width: 1),
+        border: Border.all(color: tokens.outline),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(isDarkMode ? 0.18 : 0.06),
+            color: tokens.shadow,
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+        padding: EdgeInsets.all(16.w),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // ── Avatar ───────────────────────────────────────────────
-            Container(
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: accent.withOpacity(0.25),
-                  width: 2,
+            // ── Header: avatar + status, name + email, onboarding ───
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildAvatar(photoUrl, accent),
+                    SizedBox(height: 6.h),
+                    _buildStatusLabel(),
+                  ],
                 ),
-              ),
-              child: ClipOval(
-                child: SizedBox(
-                  width: 72.w,
-                  height: 72.h,
-                  child: photoUrl != null
-                      ? Image.network(
-                          photoUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                              _buildDefaultAvatar(accent),
-                        )
-                      : _buildDefaultAvatar(accent),
+                SizedBox(width: 14.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        fullName.isNotEmpty ? fullName : 'No name',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 18.sp,
+                          fontWeight: FontWeight.w700,
+                          color: tokens.textPrimary,
+                          height: 1.25,
+                        ),
+                      ),
+                      SizedBox(height: 4.h),
+                      Text(
+                        identity?['email'] ?? 'No email',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                          color: tokens.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+                // Onboarding check-list (new employees only)
+                SizedBox(width: 8.w),
+                const OnboardingChecklistIcon(),
+              ],
             ),
-            SizedBox(width: 16.w),
 
-            // ── Info ─────────────────────────────────────────────────
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    fullName.isNotEmpty ? fullName : 'No name',
-                    style: TextStyle(
-                      fontSize: 18.sp,
-                      fontWeight: FontWeight.w700,
-                      color: primaryText,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  SizedBox(height: 3.h),
-                  Text(
-                    identity?['email'] ?? 'No email',
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      color: secondaryText,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  if (_role != null || _jobPositionName != null) ...[
-                    SizedBox(height: 10.h),
-                    Wrap(
-                      spacing: 6.w,
-                      runSpacing: 6.h,
-                      children: [
-                        if (_role != null)
-                          _buildChip(
-                            icon: Icons.admin_panel_settings_rounded,
-                            label: _role!,
-                            accent: accent,
-                            isDarkMode: isDarkMode,
-                          ),
-                        if (_jobPositionName != null)
-                          _buildChip(
-                            icon: Icons.work_outline_rounded,
-                            label: _jobPositionName!,
-                            accent: accent,
-                            isDarkMode: isDarkMode,
-                          ),
-                      ],
+            // ── Details grid ────────────────────────────────────────
+            if (cells.isNotEmpty) ...[
+              Padding(
+                padding: EdgeInsets.symmetric(vertical: 14.h),
+                child: Divider(height: 1, thickness: 1, color: tokens.outline),
+              ),
+              for (var i = 0; i < cells.length; i += 2) ...[
+                if (i > 0) SizedBox(height: 12.h),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: _buildProfileCell(cells[i])),
+                    SizedBox(width: 12.w),
+                    Expanded(
+                      child: i + 1 < cells.length
+                          ? _buildProfileCell(cells[i + 1])
+                          : const SizedBox.shrink(),
                     ),
                   ],
-                ],
-              ),
-            ),
-
-            // ── Onboarding check-list (new employees) ────────────────
-            SizedBox(width: 8.w),
-            const OnboardingChecklistIcon(),
+                ),
+              ],
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildChip({
-    required IconData icon,
-    required String label,
-    required Color accent,
-    required bool isDarkMode,
-  }) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 9.w, vertical: 4.h),
-      decoration: BoxDecoration(
-        color: accent.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(20.r),
+  /// Flat, full-width grid-cell button that opens the Career page.
+  /// Violet 12 % fill with a 20 % border, no shadow (design.md §7.6 chip
+  /// style); 40 px tall so it lines up with a label + value cell beside it.
+  Widget _buildCareerButton() {
+    final l = AppLocalizations.of(context);
+    final accent = AppAccents.violet.resolve(context);
+    return Semantics(
+      button: true,
+      label: l.careerTitle,
+      child: Material(
+        color: accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(12.r),
+        child: InkWell(
+          onTap: () => context.push(AppRoutes.careerpage),
+          borderRadius: BorderRadius.circular(12.r),
+          child: Container(
+            height: 40.h,
+            padding: EdgeInsets.symmetric(horizontal: 12.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12.r),
+              border: Border.all(color: accent.withValues(alpha: 0.20)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.stairs_rounded, size: 18.sp, color: accent),
+                SizedBox(width: 8.w),
+                Expanded(
+                  child: Text(
+                    l.careerTitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: 12.sp,
+                      fontWeight: FontWeight.w600,
+                      color: accent,
+                      height: 1.2,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, size: 18.sp, color: accent),
+              ],
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  TextStyle get _cellValueStyle => TextStyle(
+        fontSize: 14.sp,
+        fontWeight: FontWeight.w600,
+        color: context.tokens.textPrimary,
+        height: 1.3,
+      );
+
+  /// Caption label over a value; the value is a widget so it can be a chip.
+  Widget _buildProfileCell(_ProfileCell cell) {
+    if (cell.label.isEmpty) return cell.value;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          cell.label,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            fontSize: 12.sp,
+            fontWeight: FontWeight.w500,
+            color: context.tokens.textSecondary,
+            height: 1.2,
+          ),
+        ),
+        SizedBox(height: 4.h),
+        DefaultTextStyle.merge(
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          child: cell.value,
+        ),
+      ],
+    );
+  }
+
+  /// 44×44 header tile with the unread-notification count badge.
+  Widget _buildNotificationButton() {
+    final tokens = context.tokens;
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          width: 44.w,
+          height: 44.w,
+          decoration: BoxDecoration(
+            color: tokens.primary.withValues(alpha: 0.12),
+            borderRadius: BorderRadius.circular(12.r),
+            border: Border.all(color: tokens.primary.withValues(alpha: 0.20)),
+          ),
+          child: IconButton(
+            padding: EdgeInsets.zero,
+            onPressed: () async {
+              await context.push(AppRoutes.notificationNew);
+              _loadUnreadCount();
+            },
+            icon: Icon(
+              Icons.notifications_rounded,
+              color: tokens.primary,
+              size: 24.sp,
+            ),
+            tooltip: AppLocalizations.of(context).notifications,
+          ),
+        ),
+        if (_unreadNotificationCount > 0)
+          Positioned(
+            right: -4.w,
+            top: -4.h,
+            child: Container(
+              constraints: BoxConstraints(minWidth: 18.w, minHeight: 18.h),
+              padding: EdgeInsets.symmetric(horizontal: 5.w, vertical: 2.h),
+              decoration: BoxDecoration(
+                color: tokens.error,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(color: tokens.background, width: 1.5),
+              ),
+              child: Center(
+                child: Text(
+                  _unreadNotificationCount > 99
+                      ? '99+'
+                      : '$_unreadNotificationCount',
+                  style: TextStyle(
+                    color: tokens.textOnAccent,
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w700,
+                    height: 1.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  /// Compact ONLINE / OFFLINE label under the avatar: 6 px dot + overline
+  /// text in the semantic color. Falls back to the cached status until the
+  /// live one arrives.
+  Widget _buildStatusLabel() {
+    final tokens = context.tokens;
+    final status =
+        (_currentEmployeeStatus ?? _authManager.currentEmployeeStatus)
+            ?.toLowerCase() ??
+        'offline';
+    final isOnline = status == 'online';
+    final color = isOnline ? tokens.success : tokens.textTertiary;
+
+    return SizedBox(
+      width: 64.w,
       child: Row(
-        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: accent, size: 12.sp),
+          Container(
+            width: 6.w,
+            height: 6.w,
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+          ),
           SizedBox(width: 4.w),
           Text(
-            label,
+            isOnline ? 'ONLINE' : 'OFFLINE',
             style: TextStyle(
               fontSize: 11.sp,
-              fontWeight: FontWeight.w600,
-              color: accent,
+              fontWeight: FontWeight.w700,
+              color: color,
+              letterSpacing: 0.6,
+              height: 1.0,
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  /// Profile photo with a thin accent ring.
+  Widget _buildAvatar(String? photoUrl, Color accent) {
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(color: accent.withOpacity(0.25), width: 2),
+      ),
+      child: ClipOval(
+        child: SizedBox(
+          width: 64.w,
+          height: 64.w,
+          child: photoUrl != null
+              ? Image.network(
+                  photoUrl,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, __, ___) => _buildDefaultAvatar(accent),
+                )
+              : _buildDefaultAvatar(accent),
+        ),
       ),
     );
   }
@@ -2368,33 +2431,20 @@ class _ProfileState extends State<Profile> {
   }
 
   Widget _buildWorkHoursCard() {
-    // Use work entries fetched from API (already filtered to current month)
-    final currentMonthEntries = _workEntries;
+    final l = AppLocalizations.of(context);
+    final tokens = context.tokens;
+    final accent = AppAccents.teal.resolve(context);
+    final entries = _workEntries;
 
-    // Calculate hours using WorkTimeCalculator
-    final totalHoursFormatted = WorkTimeCalculator.calculateTotalHours(
-      currentMonthEntries,
-    );
-    final totalHours = WorkTimeCalculator.getTotalHoursAsDouble(
-      currentMonthEntries,
-    );
-    final dayHoursFormatted = WorkTimeCalculator.calculateDayHours(
-      currentMonthEntries,
-    );
-    final dayHours = WorkTimeCalculator.getDayHoursAsDouble(
-      currentMonthEntries,
-    );
-    final nightHoursFormatted = WorkTimeCalculator.calculateNightHours(
-      currentMonthEntries,
-    );
-    final nightHours = WorkTimeCalculator.getNightHoursAsDouble(
-      currentMonthEntries,
-    );
-    final isOvertime = WorkTimeCalculator.isOvertime(currentMonthEntries);
+    final totalFormatted = WorkTimeCalculator.calculateTotalHours(entries);
+    final totalHours = WorkTimeCalculator.getTotalHoursAsDouble(entries);
+    final dayFormatted = WorkTimeCalculator.calculateDayHours(entries);
+    final nightFormatted = WorkTimeCalculator.calculateNightHours(entries);
+    final isOvertime = WorkTimeCalculator.isOvertime(entries);
 
-    // Calculate days worked (unique dates with closed entries)
+    // Days worked = distinct dates with a closed entry.
     final uniqueDays = <String>{};
-    for (final entry in currentMonthEntries) {
+    for (final entry in entries) {
       if (!entry.isOpen && entry.checkInTime != null) {
         try {
           final dt = DateTime.parse(entry.checkInTime!);
@@ -2403,277 +2453,168 @@ class _ProfileState extends State<Profile> {
       }
     }
     final daysWorked = uniqueDays.length;
-
-    // Display current month
     final month = _getCurrentMonthString();
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            AppColors.cxEmeraldGreen,
-            AppColors.cxEmeraldGreen.withOpacity(0.8),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24.r),
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(20.r),
+        border: Border.all(color: accent.withValues(alpha: 0.20)),
         boxShadow: [
           BoxShadow(
-            color: AppColors.cxEmeraldGreen.withOpacity(0.3),
-            blurRadius: 20,
-            offset: Offset(0, 10),
+            color: tokens.shadow,
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(24.w),
+        padding: EdgeInsets.symmetric(horizontal: 20.w, vertical: 18.h),
         child: _isLoadingWorkEntries
             ? _buildWorkHoursShimmer()
             : Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header with icon and title
+                  // ── Header row ──────────────────────────────────────
                   Row(
                     children: [
                       Container(
-                        padding: EdgeInsets.all(12.w),
+                        width: 40.w,
+                        height: 40.w,
                         decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(16.r),
+                          color: accent.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12.r),
                         ),
                         child: Icon(
                           Icons.access_time_rounded,
-                          color: AppColors.cxPureWhite,
-                          size: 28.sp,
+                          color: accent,
+                          size: 22.sp,
                         ),
                       ),
-                      SizedBox(width: 16.w),
+                      SizedBox(width: 12.w),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              AppLocalizations.of(context).workHours,
+                              l.workHours,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 22.sp,
+                                fontSize: 16.sp,
                                 fontWeight: FontWeight.w700,
-                                color: AppColors.cxPureWhite,
+                                color: tokens.textPrimary,
+                                height: 1.25,
                               ),
                             ),
+                            SizedBox(height: 2.h),
                             Text(
                               month,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                               style: TextStyle(
-                                fontSize: 14.sp,
-                                color: AppColors.cxPureWhite.withOpacity(0.8),
+                                fontSize: 12.sp,
+                                fontWeight: FontWeight.w500,
+                                color: tokens.textSecondary,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      // Days worked compact stat
+                      SizedBox(width: 8.w),
+                      if (isOvertime) ...[
+                        _buildWorkHoursChip(
+                          label: 'OVERTIME',
+                          color: tokens.warning,
+                          icon: Icons.bolt_rounded,
+                        ),
+                        SizedBox(width: 6.w),
+                      ],
                       Tooltip(
-                        message: AppLocalizations.of(context).daysWorkedTooltip(daysWorked, month),
+                        message: l.daysWorkedTooltip(daysWorked, month),
                         triggerMode: TooltipTriggerMode.tap,
                         showDuration: const Duration(seconds: 3),
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.9),
-                          borderRadius: BorderRadius.circular(10.r),
+                        child: _buildWorkHoursChip(
+                          label: '$daysWorked ${l.daysWorkedLabel}',
+                          color: accent,
+                          icon: Icons.event_available_rounded,
                         ),
-                        textStyle: TextStyle(
-                          color: AppColors.cxEmeraldGreen,
-                          fontSize: 12.sp,
-                          fontWeight: FontWeight.w500,
-                          height: 1.5,
-                        ),
-                        preferBelow: true,
-                        child: Container(
-                          padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 6.h),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxPureWhite.withOpacity(0.2),
-                            borderRadius: BorderRadius.circular(12.r),
-                            border: Border.all(
-                              color: AppColors.cxPureWhite.withOpacity(0.4),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                '$daysWorked',
-                                style: TextStyle(
-                                  fontSize: 16.sp,
-                                  fontWeight: FontWeight.w800,
-                                  color: AppColors.cxPureWhite,
-                                  height: 1,
-                                ),
-                              ),
-                              SizedBox(height: 2.h),
-                              Text(
-                                AppLocalizations.of(context).daysWorkedLabel,
-                                style: TextStyle(
-                                  fontSize: 9.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.cxPureWhite.withOpacity(0.8),
-                                  letterSpacing: 0.3,
-                                ),
-                              ),
-                            ],
+                      ),
+                    ],
+                  ),
+
+                  Padding(
+                    padding: EdgeInsets.symmetric(vertical: 14.h),
+                    child: Divider(height: 1, thickness: 1, color: tokens.outline),
+                  ),
+
+                  // ── Total hours (hero) ──────────────────────────────
+                  Center(
+                    child: Text(
+                      l.totalHours,
+                      style: TextStyle(
+                        fontSize: 12.sp,
+                        fontWeight: FontWeight.w600,
+                        color: tokens.textSecondary,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 4.h),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.baseline,
+                    textBaseline: TextBaseline.alphabetic,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          totalFormatted,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 42.sp,
+                            fontWeight: FontWeight.w800,
+                            color: accent,
+                            letterSpacing: 0,
+                            height: 1.0,
+                            fontFeatures: const [FontFeature.tabularFigures()],
                           ),
                         ),
                       ),
                       SizedBox(width: 8.w),
-                      // Overtime badge
-                      if (isOvertime)
-                        Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 12.w,
-                            vertical: 6.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.orange.withOpacity(0.9),
-                            borderRadius: BorderRadius.circular(12.r),
-                          ),
-                          child: Text(
-                            'OVERTIME',
-                            style: TextStyle(
-                              fontSize: 10.sp,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.cxPureWhite,
-                            ),
-                          ),
+                      Text(
+                        '${totalHours.toStringAsFixed(1)}h',
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textSecondary,
+                          fontFeatures: const [FontFeature.tabularFigures()],
                         ),
+                      ),
                     ],
                   ),
-                  SizedBox(height: 24.h),
-                  // Total hours - prominent display with formatted time
-                  Center(
-                    child: Column(
-                      children: [
-                        Text(
-                          totalHoursFormatted,
-                          style: TextStyle(
-                            fontSize: 48.sp,
-                            fontWeight: FontWeight.w800,
-                            color: AppColors.cxPureWhite,
-                            height: 1.0,
-                            fontFeatures: [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                        SizedBox(height: 4.h),
-                        Text(
-                          '${AppLocalizations.of(context).totalHours} (${totalHours.toStringAsFixed(1)}h)',
-                          style: TextStyle(
-                            fontSize: 16.sp,
-                            fontWeight: FontWeight.w500,
-                            color: AppColors.cxPureWhite.withOpacity(0.9),
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(height: 24.h),
-                  // Day and Night hours breakdown
+                  SizedBox(height: 14.h),
+
+                  // ── Day / night breakdown ───────────────────────────
                   Row(
                     children: [
                       Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(16.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxPureWhite.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: AppColors.cxPureWhite.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.wb_sunny_outlined,
-                                color: AppColors.cxPureWhite,
-                                size: 24.sp,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                dayHoursFormatted,
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.cxPureWhite,
-                                  fontFeatures: [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                '${dayHours.toStringAsFixed(1)}h',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.cxPureWhite.withOpacity(0.9),
-                                ),
-                              ),
-                              Text(
-                                AppLocalizations.of(context).dayHours,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.cxPureWhite.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ),
+                        child: _buildHoursMini(
+                          icon: Icons.wb_sunny_rounded,
+                          label: l.dayHours,
+                          value: dayFormatted,
+                          color: tokens.warning,
                         ),
                       ),
-                      SizedBox(width: 16.w),
+                      SizedBox(width: 8.w),
                       Expanded(
-                        child: Container(
-                          padding: EdgeInsets.all(16.w),
-                          decoration: BoxDecoration(
-                            color: AppColors.cxPureWhite.withOpacity(0.15),
-                            borderRadius: BorderRadius.circular(16.r),
-                            border: Border.all(
-                              color: AppColors.cxPureWhite.withOpacity(0.2),
-                              width: 1,
-                            ),
-                          ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.nightlight_round_outlined,
-                                color: AppColors.cxPureWhite,
-                                size: 24.sp,
-                              ),
-                              SizedBox(height: 8.h),
-                              Text(
-                                nightHoursFormatted,
-                                style: TextStyle(
-                                  fontSize: 18.sp,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.cxPureWhite,
-                                  fontFeatures: [FontFeature.tabularFigures()],
-                                ),
-                              ),
-                              SizedBox(height: 4.h),
-                              Text(
-                                '${nightHours.toStringAsFixed(1)}h',
-                                style: TextStyle(
-                                  fontSize: 14.sp,
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.cxPureWhite.withOpacity(0.9),
-                                ),
-                              ),
-                              Text(
-                                AppLocalizations.of(context).nightHours,
-                                style: TextStyle(
-                                  fontSize: 12.sp,
-                                  color: AppColors.cxPureWhite.withOpacity(0.8),
-                                ),
-                              ),
-                            ],
-                          ),
+                        child: _buildHoursMini(
+                          icon: Icons.nightlight_round,
+                          label: l.nightHours,
+                          value: nightFormatted,
+                          color: tokens.info,
                         ),
                       ),
                     ],
@@ -2684,188 +2625,141 @@ class _ProfileState extends State<Profile> {
     );
   }
 
-  Widget _buildWorkHoursShimmer() {
-    return Shimmer.fromColors(
-      baseColor: AppColors.cxPureWhite.withOpacity(0.2),
-      highlightColor: AppColors.cxPureWhite.withOpacity(0.4),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  /// Small tinted chip used in the Work Hours header (days worked, overtime).
+  Widget _buildWorkHoursChip({
+    required String label,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      height: 28.h,
+      padding: EdgeInsets.symmetric(horizontal: 8.w),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // Header shimmer
-          Row(
-            children: [
-              Container(
-                width: 52.w,
-                height: 52.h,
-                decoration: BoxDecoration(
-                  color: AppColors.cxPureWhite.withOpacity(0.3),
-                  borderRadius: BorderRadius.circular(16.r),
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      width: 120.w,
-                      height: 24.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.cxPureWhite.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(8.r),
-                      ),
-                    ),
-                    SizedBox(height: 8.h),
-                    Container(
-                      width: 80.w,
-                      height: 14.h,
-                      decoration: BoxDecoration(
-                        color: AppColors.cxPureWhite.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(6.r),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+          Icon(icon, size: 14.sp, color: color),
+          SizedBox(width: 4.w),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12.sp,
+              fontWeight: FontWeight.w600,
+              color: color,
+              height: 1.0,
+            ),
           ),
-          SizedBox(height: 24.h),
+        ],
+      ),
+    );
+  }
 
-          // Total hours shimmer - prominent display
-          Center(
+  /// Quiet secondary stat (day / night hours): tinted tile, icon, label, value.
+  Widget _buildHoursMini({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    final tokens = context.tokens;
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 8.h),
+      decoration: BoxDecoration(
+        color: tokens.surfaceTint,
+        borderRadius: BorderRadius.circular(12.r),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 16.sp, color: color),
+          SizedBox(width: 8.w),
+          Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  width: 180.w,
-                  height: 56.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(12.r),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 11.sp,
+                    fontWeight: FontWeight.w600,
+                    color: tokens.textSecondary,
+                    height: 1.2,
                   ),
                 ),
-                SizedBox(height: 8.h),
-                Container(
-                  width: 140.w,
-                  height: 18.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(6.r),
+                SizedBox(height: 2.h),
+                Text(
+                  value,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: tokens.textPrimary,
+                    height: 1.2,
+                    fontFeatures: const [FontFeature.tabularFigures()],
                   ),
                 ),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
 
-          SizedBox(height: 24.h),
+  Widget _buildWorkHoursShimmer() {
+    final tokens = context.tokens;
 
-          // Day and Night hours shimmer breakdown
+    Widget box(double w, double h, {double radius = 8}) => Container(
+          width: w,
+          height: h,
+          decoration: BoxDecoration(
+            color: tokens.surfaceTint,
+            borderRadius: BorderRadius.circular(radius.r),
+          ),
+        );
+
+    return Shimmer.fromColors(
+      baseColor: tokens.surfaceTint,
+      highlightColor: tokens.surfaceElevated,
+      period: const Duration(milliseconds: 1500),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
           Row(
             children: [
+              box(40.w, 40.w, radius: 12),
+              SizedBox(width: 12.w),
               Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: AppColors.cxPureWhite.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 24.w,
-                        height: 24.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Container(
-                        width: 60.w,
-                        height: 20.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Container(
-                        width: 40.w,
-                        height: 16.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Container(
-                        width: 70.w,
-                        height: 12.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    box(110.w, 16.h),
+                    SizedBox(height: 6.h),
+                    box(70.w, 12.h, radius: 4),
+                  ],
                 ),
               ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Container(
-                  padding: EdgeInsets.all(16.w),
-                  decoration: BoxDecoration(
-                    color: AppColors.cxPureWhite.withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(16.r),
-                    border: Border.all(
-                      color: AppColors.cxPureWhite.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 24.w,
-                        height: 24.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      SizedBox(height: 8.h),
-                      Container(
-                        width: 60.w,
-                        height: 20.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(6.r),
-                        ),
-                      ),
-                      SizedBox(height: 6.h),
-                      Container(
-                        width: 40.w,
-                        height: 16.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                      SizedBox(height: 4.h),
-                      Container(
-                        width: 70.w,
-                        height: 12.h,
-                        decoration: BoxDecoration(
-                          color: AppColors.cxPureWhite.withOpacity(0.3),
-                          borderRadius: BorderRadius.circular(4.r),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+              box(64.w, 28.h),
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.symmetric(vertical: 14.h),
+            child: Divider(height: 1, thickness: 1, color: tokens.outline),
+          ),
+          box(64.w, 12.h, radius: 4),
+          SizedBox(height: 6.h),
+          box(150.w, 36.h),
+          SizedBox(height: 14.h),
+          Row(
+            children: [
+              Expanded(child: box(double.infinity, 48.h, radius: 12)),
+              SizedBox(width: 8.w),
+              Expanded(child: box(double.infinity, 48.h, radius: 12)),
             ],
           ),
         ],
@@ -4241,168 +4135,14 @@ class _ProfileState extends State<Profile> {
       ),
     );
   }
+}
 
-  Widget _buildJobInfoCard() {
-    final jobPosition = _profileData?['employee']?['jobPosition'];
-    final branch = _profileData?['employee']?['branch'];
+/// One label/value pair in the profile card grid.
+class _ProfileCell {
+  const _ProfileCell(this.label, this.value);
 
-    return _buildInfoCard(
-      title: AppLocalizations.of(context).jobInformation,
-      icon: Icons.work_outline,
-      children: [
-        _buildInfoRow(
-          AppLocalizations.of(context).branch,
-          branch?['name'] ?? 'Not specified',
-        ),
-        _buildInfoRow(
-          AppLocalizations.of(context).department,
-          _profileData?['employee']?['department']?['name'] ?? 'Not specified',
-        ),
-      ],
-    );
-  }
-
-  Widget _buildInfoCard({
-    required String title,
-    required IconData icon,
-    required List<Widget> children,
-  }) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-
-    // Dark mode colors
-    final cardBgStart = isDarkMode
-        ? const Color(0xFF1E1E2E)
-        : AppColors.cxPureWhite;
-    final cardBgEnd = isDarkMode
-        ? const Color(0xFF252538)
-        : AppColors.cxPureWhite;
-    final borderColor = isDarkMode
-        ? const Color(0xFF3D3D5C)
-        : Colors.transparent;
-    final primaryText = isDarkMode
-        ? const Color(0xFFF0F0F5)
-        : AppColors.cxBlack;
-    final blueColor = isDarkMode
-        ? const Color(0xFF818CF8)
-        : AppColors.cxRoyalBlue;
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        gradient: isDarkMode
-            ? LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [cardBgStart, cardBgEnd],
-              )
-            : null,
-        color: isDarkMode ? null : AppColors.cxPureWhite,
-        borderRadius: BorderRadius.circular(20.r),
-        border: isDarkMode
-            ? Border.all(color: borderColor.withOpacity(0.4), width: 1.5)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.cxBlack.withOpacity(isDarkMode ? 0.4 : 0.1),
-            blurRadius: isDarkMode ? 20 : 15,
-            offset: Offset(0, isDarkMode ? 8 : 5),
-            spreadRadius: isDarkMode ? -2 : 0,
-          ),
-          if (isDarkMode)
-            BoxShadow(
-              color: blueColor.withOpacity(0.1),
-              blurRadius: 24,
-              offset: Offset(0, 0),
-              spreadRadius: -6,
-            ),
-        ],
-      ),
-      child: Padding(
-        padding: EdgeInsets.all(20.w),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(8.w),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        blueColor.withOpacity(isDarkMode ? 0.2 : 0.1),
-                        blueColor.withOpacity(isDarkMode ? 0.15 : 0.1),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(12.r),
-                  ),
-                  child: Icon(icon, color: blueColor, size: 24.sp),
-                ),
-                SizedBox(width: 12.w),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 20.sp,
-                          fontWeight: FontWeight.w600,
-                          color: primaryText,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 16.h),
-            ...children,
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInfoRow(String label, String value) {
-    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
-    final primaryText = isDarkMode
-        ? const Color(0xFFF0F0F5)
-        : AppColors.cxBlack;
-    final secondaryText = isDarkMode
-        ? const Color(0xFFA8A8B8)
-        : AppColors.cxBlack;
-
-    return Padding(
-      padding: EdgeInsets.only(bottom: 12.h),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              label,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: secondaryText.withOpacity(0.6),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: 14.sp,
-                color: primaryText,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  final String label;
+  final Widget value;
 }
 
 class _VacationPeriod {

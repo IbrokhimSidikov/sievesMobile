@@ -6,6 +6,7 @@ import '../../../core/theme/app_tokens.dart';
 import '../models/career_roadmap.dart';
 import '../models/career_timeline_model.dart';
 import 'career_format.dart';
+import 'salary_step_sheet.dart';
 
 /// Indigo hero header (design.md §7.2): back tile, title, and — once loaded —
 /// the employee's name, position, current step, tenure and key counts.
@@ -170,39 +171,81 @@ class _Identity extends StatelessWidget {
         ],
         if (profile.salaryStructureName != null) ...[
           SizedBox(height: 8.h),
-          Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.w, vertical: 4.h),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.18),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(Icons.stairs_rounded, size: 14.sp, color: Colors.white),
-                SizedBox(width: 4.w),
-                Flexible(
-                  child: Text(
-                    [
-                      '${l.careerStep}: ${profile.salaryStructureName}',
-                      if (stepDays != null)
-                        l.careerDaysShort.replaceAll('{n}', '$stepDays'),
-                    ].join(' · '),
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.white,
+          _StepPill(
+            text: [
+              '${l.careerStep}: ${profile.salaryStructureName}',
+              if (stepDays != null)
+                l.careerDaysShort.replaceAll('{n}', '$stepDays'),
+            ].join(' · '),
+            // Tap opens the step description when the API provides one.
+            onHint: profile.salaryStructureDescription == null
+                ? null
+                : () => showSalaryStepSheet(
+                      context,
+                      name: profile.salaryStructureName!,
+                      description: profile.salaryStructureDescription!,
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
           ),
         ],
       ],
+    );
+  }
+}
+
+/// Translucent step pill on the hero; shows an "i" and becomes tappable
+/// when [onHint] is set.
+class _StepPill extends StatelessWidget {
+  final String text;
+  final VoidCallback? onHint;
+
+  const _StepPill({required this.text, this.onHint});
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = Container(
+      height: 28.h,
+      padding: EdgeInsets.symmetric(horizontal: 10.w),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.28)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.stairs_rounded, size: 14.sp, color: Colors.white),
+          SizedBox(width: 4.w),
+          Flexible(
+            child: Text(
+              text,
+              style: TextStyle(
+                fontSize: 12.sp,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          if (onHint != null) ...[
+            SizedBox(width: 6.w),
+            const SalaryStepHintIcon(color: Colors.white),
+          ],
+        ],
+      ),
+    );
+    if (onHint == null) return pill;
+    return Semantics(
+      button: true,
+      label: text,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onHint,
+          borderRadius: BorderRadius.circular(999),
+          child: pill,
+        ),
+      ),
     );
   }
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:sieves_mob/core/l10n/app_localizations.dart';
 
@@ -620,29 +619,11 @@ class _BreakRecordsState extends State<BreakRecords> with SingleTickerProviderSt
     return Row(
 
       children: [
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12.r),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(theme.brightness == Brightness.dark ? 0.3 : 0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: IconButton(
-            onPressed: () => context.go('/home'),
-            icon: const Icon(Icons.arrow_back_ios_new_rounded),
-            color: AppColors.cxWarning,
-          ),
-        ),
-        SizedBox(width: 12.w),
+        // Tab root: no back button (see MainShell).
         Text(
           AppLocalizations.of(context).breakRecords,
           style: TextStyle(
-            fontSize: 20.sp,
+            fontSize: 22.sp,
             fontWeight: FontWeight.bold,
             color: theme.colorScheme.onSurface,
           ),

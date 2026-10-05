@@ -2,301 +2,69 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../../core/constants/app_colors.dart';
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/router/app_routes.dart';
+import '../../../core/theme/app_accents.dart';
+import '../../../core/theme/app_tokens.dart';
 
+/// HR hub: Calendar, Training test, Training game and Exam.
+///
+/// Flat layout per design.md: standard header with a back tile tinted in the
+/// HR accent (indigo), then a list of `flat` cards (surface, hairline outline,
+/// no shadow, no gradient).
 class HrPage extends StatelessWidget {
   const HrPage({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final localizations = AppLocalizations.of(context);
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-    final theme = Theme.of(context);
-    return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-              theme.scaffoldBackgroundColor,
-              theme.colorScheme.surface,
-              theme.colorScheme.surfaceContainerHighest,
-            ]
-                : [
-              AppColors.cxWhite,
-              AppColors.cxF5F7F9,
-              AppColors.cxF7F6F9,
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              _buildHeader(context, localizations, isDark, theme),
-              Expanded(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.w),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      _buildHrCard(
-                        context,
-                        title: localizations.calendar,
-                        subtitle: localizations.calendarSubtitle1,
-                        icon: Icons.calendar_month_outlined,
-                        gradientColors: [
-                          AppColors.cxRoyalBlue,
-                          AppColors.cx1C1C1E.withOpacity(0.2),
-                        ],
-                        onTap: () => context.push('/calendar'),
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      SizedBox(height: 24.h),
-                      _buildHrCard(
-                        context,
-                        title: localizations.trainingTest,
-                        subtitle: localizations.trainingTestSubtitle,
-                        icon: Icons.phonelink_sharp,
-                        gradientColors: [
-                          AppColors.cxPurple,
-                          AppColors.cx1C1C1E.withOpacity(0.2),
-                        ],
-                        onTap: () => context.push('/trainingTestPage'),
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      SizedBox(height: 24.h),
-                      _buildHrCard(
-                        context,
-                        title: localizations.trainingGame,
-                        subtitle: localizations.trainingGameSubtitle,
-                        icon: Icons.sports_esports_rounded,
-                        gradientColors: [
-                          AppColors.cxEmeraldGreen,
-                          AppColors.cx1C1C1E.withOpacity(0.2),
-                        ],
-                        onTap: () => context.push('/trainingGameTestPage'),
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                      SizedBox(height: 24.h),
-                      _buildHrCard(
-                        context,
-                        title: localizations.examPageTitle,
-                        subtitle: localizations.examPageSubtitle,
-                        icon: Icons.newspaper,
-                        gradientColors: [
-                          AppColors.cx02D5F5,
-                          AppColors.cx1C1C1E.withOpacity(0.2),
-                        ],
-                        onTap: () => context.push('/examPage'),
-                        isDark: isDark,
-                        theme: theme,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  Widget _buildHeader(BuildContext context, AppLocalizations localizations, bool isDark, ThemeData theme) {
-    return Container(
-      padding: EdgeInsets.symmetric(horizontal: 24.w, vertical: 20.h),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: isDark
-              ? [
-            theme.colorScheme.primary,
-            theme.colorScheme.primaryContainer,
-          ]
-              : [
-            AppColors.cx43C19F,
-            AppColors.cx4AC1A7,
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: isDark
-                ? theme.colorScheme.primary.withOpacity(0.3)
-                : AppColors.cx43C19F.withOpacity(0.3),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(12.r),
-                decoration: BoxDecoration(
-                  color: AppColors.cxWhite.withOpacity(isDark ? 0.15 : 0.2),
-                  borderRadius: BorderRadius.circular(16.r),
-                  border: Border.all(
-                    color: AppColors.cxWhite.withOpacity(isDark ? 0.2 : 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: Icon(
-                  Icons.menu_book,
-                  color: AppColors.cxWhite,
-                  size: 32.sp,
-                ),
-              ),
-              SizedBox(width: 16.w),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      localizations.hrTitle,
-                      style: TextStyle(
-                        fontSize: 24.sp,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.cxWhite,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    SizedBox(height: 4.h),
-                    Text(
-                      localizations.hrSubtitle,
-                      style: TextStyle(
-                        fontSize: 14.sp,
-                        fontWeight: FontWeight.w400,
-                        color: AppColors.cxWhite.withOpacity(0.9),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
+    final l = AppLocalizations.of(context);
+    final tokens = context.tokens;
 
-  Widget _buildHrCard(
-      BuildContext context, {
-        required String title,
-        required String subtitle,
-        required IconData icon,
-        required List<Color> gradientColors,
-        required VoidCallback onTap,
-        required bool isDark,
-        required ThemeData theme,
-      }) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(24.r),
-      child: Container(
-        padding: EdgeInsets.all(24.r),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: isDark
-                ? [
-              gradientColors[0].withOpacity(0.8),
-              gradientColors[1].withOpacity(0.6),
-            ]
-                : gradientColors,
-          ),
-          borderRadius: BorderRadius.circular(24.r),
-          // boxShadow: [
-          //   BoxShadow(
-          //     color: gradientColors[0].withOpacity(isDark ? 0.3 : 0.4),
-          //     blurRadius: 20,
-          //     offset: const Offset(0, 10),
-          //   ),
-          //   BoxShadow(
-          //     color: gradientColors[0].withOpacity(isDark ? 0.15 : 0.2),
-          //     blurRadius: 40,
-          //     offset: const Offset(0, 20),
-          //   ),
-          // ],
-          border: Border.all(
-            color: isDark
-                ? AppColors.cxWhite.withOpacity(0.1)
-                : AppColors.cxWhite.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
-        child: Row(
+    final items = <_HrItem>[
+      _HrItem(
+        title: l.calendar,
+        subtitle: l.calendarSubtitle1,
+        icon: Icons.calendar_month_rounded,
+        accent: AppAccents.blue,
+        route: AppRoutes.calendar,
+      ),
+      _HrItem(
+        title: l.trainingTest,
+        subtitle: l.trainingTestSubtitle,
+        icon: Icons.quiz_rounded,
+        accent: AppAccents.violet,
+        route: AppRoutes.trainingTestPage,
+      ),
+      _HrItem(
+        title: l.trainingGame,
+        subtitle: l.trainingGameSubtitle,
+        icon: Icons.sports_esports_rounded,
+        accent: AppAccents.green,
+        route: AppRoutes.trainingGameTestPage,
+      ),
+      _HrItem(
+        title: l.examPageTitle,
+        subtitle: l.examPageSubtitle,
+        icon: Icons.assignment_rounded,
+        accent: AppAccents.purple,
+        route: AppRoutes.examPage,
+      ),
+    ];
+
+    return Scaffold(
+      backgroundColor: tokens.background,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: EdgeInsets.all(16.r),
-              decoration: BoxDecoration(
-                color: AppColors.cxWhite.withOpacity(isDark ? 0.15 : 0.2),
-                borderRadius: BorderRadius.circular(20.r),
-                border: Border.all(
-                  color: AppColors.cxWhite.withOpacity(isDark ? 0.2 : 0.3),
-                  width: 1.5,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(isDark ? 0.2 : 0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Icon(
-                icon,
-                color: AppColors.cxWhite,
-                size: 40.sp,
-              ),
-            ),
-            SizedBox(width: 20.w),
+            _HrHeader(title: l.hrTitle, subtitle: l.hrSubtitle),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 20.sp,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.cxWhite,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                  SizedBox(height: 6.h),
-                  Text(
-                    subtitle,
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w400,
-                      color: AppColors.cxWhite.withOpacity(0.9),
-                      height: 1.3,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            SizedBox(width: 12.w),
-            Container(
-              padding: EdgeInsets.all(8.r),
-              decoration: BoxDecoration(
-                color: AppColors.cxWhite.withOpacity(isDark ? 0.15 : 0.2),
-                borderRadius: BorderRadius.circular(12.r),
-              ),
-              child: Icon(
-                Icons.arrow_forward_ios_rounded,
-                color: AppColors.cxWhite,
-                size: 20.sp,
+              child: ListView.separated(
+                physics: const BouncingScrollPhysics(),
+                padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 24.h),
+                itemCount: items.length,
+                separatorBuilder: (_, __) => SizedBox(height: 12.h),
+                itemBuilder: (context, index) => _HrCard(item: items[index]),
               ),
             ),
           ],
@@ -306,3 +74,183 @@ class HrPage extends StatelessWidget {
   }
 }
 
+class _HrItem {
+  const _HrItem({
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    required this.accent,
+    required this.route,
+  });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final AppAccent accent;
+  final String route;
+}
+
+/// Standard header (design.md §7.2): 44 px back tile in the page accent,
+/// headline title, caption subtitle underneath.
+class _HrHeader extends StatelessWidget {
+  const _HrHeader({required this.title, required this.subtitle});
+
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final accent = AppAccents.indigo.resolve(context);
+
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20.w, 8.h, 20.w, 16.h),
+      child: Row(
+        children: [
+          Semantics(
+            button: true,
+            label: MaterialLocalizations.of(context).backButtonTooltip,
+            child: Material(
+              color: tokens.surface,
+              borderRadius: BorderRadius.circular(12.r),
+              child: InkWell(
+                onTap: () => context.canPop()
+                    ? context.pop()
+                    : context.go(AppRoutes.home),
+                borderRadius: BorderRadius.circular(12.r),
+                child: Container(
+                  width: 44.w,
+                  height: 44.w,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: tokens.outline),
+                  ),
+                  child: Icon(
+                    Icons.arrow_back_ios_new_rounded,
+                    size: 20.sp,
+                    color: accent,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          SizedBox(width: 12.w),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 22.sp,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                    height: 1.25,
+                    color: tokens.textPrimary,
+                  ),
+                ),
+                SizedBox(height: 2.h),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12.sp,
+                    fontWeight: FontWeight.w500,
+                    color: tokens.textSecondary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Flat module card: 44 px accent icon tile, title, subtitle, chevron.
+class _HrCard extends StatelessWidget {
+  const _HrCard({required this.item});
+
+  final _HrItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final accent = item.accent.resolve(context);
+
+    return Semantics(
+      button: true,
+      label: item.title,
+      child: Material(
+        color: tokens.surface,
+        borderRadius: BorderRadius.circular(16.r),
+        child: InkWell(
+          onTap: () => context.push(item.route),
+          borderRadius: BorderRadius.circular(16.r),
+          child: Container(
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.r),
+              border: Border.all(color: tokens.outline),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 44.w,
+                  height: 44.w,
+                  decoration: BoxDecoration(
+                    color: accent.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12.r),
+                    border: Border.all(color: accent.withValues(alpha: 0.20)),
+                  ),
+                  child: Icon(item.icon, size: 24.sp, color: accent),
+                ),
+                SizedBox(width: 16.w),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        item.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 16.sp,
+                          fontWeight: FontWeight.w600,
+                          color: tokens.textPrimary,
+                          height: 1.25,
+                        ),
+                      ),
+                      SizedBox(height: 2.h),
+                      Text(
+                        item.subtitle,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          fontWeight: FontWeight.w500,
+                          color: tokens.textSecondary,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                SizedBox(width: 8.w),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20.sp,
+                  color: tokens.textTertiary,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}

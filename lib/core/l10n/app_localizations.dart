@@ -24,6 +24,11 @@ class AppLocalizations {
       // Home Page
       'dear': 'Dear',
       'dashboard': 'Dashboard',
+      'productivity': 'Productivity',
+      'productivitySubtitle': 'Tools to track and improve your work',
+      'noProductivityModules': 'No productivity tools are available for your role yet.',
+      'others': 'Others',
+      'othersSubtitle': 'All other modules',
       'profileSubtitle': 'Profile information',
       'attendance': 'Attendance',
       'attendanceSubtitle': 'Work hours & tracking',
@@ -73,6 +78,9 @@ class AppLocalizations {
       'seeAll': 'See all',
       'jobInformation': 'Job Information',
       'branch': 'Branch',
+      'jobPosition': 'Position',
+      'role': 'Role',
+      'dayRate': 'Day rate',
       'department': 'Department',
       'logoutTitle': 'Logout Confirmation',
       'logoutDesc': 'Are you sure you want to logout?',
@@ -624,6 +632,11 @@ class AppLocalizations {
       // Home Page
       'dear': 'Hurmatli',
       'dashboard': 'Bosh Sahifa',
+      'productivity': 'Samaradorlik',
+      'productivitySubtitle': 'Ish samaradorligini kuzatish vositalari',
+      'noProductivityModules': 'Sizning lavozimingiz uchun hozircha samaradorlik vositalari mavjud emas.',
+      'others': 'Boshqalar',
+      'othersSubtitle': 'Boshqa barcha bo\'limlar',
       'profileSubtitle': 'Profil maʼlumotlari',
       'attendance': 'Davomat',
       'attendanceSubtitle': 'Ish soatlari va keldi-ketdi',
@@ -674,6 +687,9 @@ class AppLocalizations {
       'dayCount': '{count} kun',
       'jobInformation': 'Ish ma’lumotlari',
       'branch': 'Filial',
+      'jobPosition': 'Lavozim',
+      'role': 'Rol',
+      'dayRate': 'Kunlik stavka',
       'department': 'Bo‘lim',
       'logoutTitle': 'Chiqishni tasdiqlash',
       'logoutDesc': 'Haqiqatan ham chiqmoqchimisiz?',
@@ -1258,6 +1274,11 @@ class AppLocalizations {
       // Home page
       'dear': 'Уважаемый',
       'dashboard': 'Главная',
+      'productivity': 'Продуктивность',
+      'productivitySubtitle': 'Инструменты для учёта и роста эффективности',
+      'noProductivityModules': 'Для вашей роли пока нет инструментов продуктивности.',
+      'others': 'Другое',
+      'othersSubtitle': 'Все остальные модули',
       'profileSubtitle': 'Информация профиля',
       'attendance': 'Посещаемость',
       'attendanceSubtitle': 'Рабочие часы и отслеживание',
@@ -1307,6 +1328,9 @@ class AppLocalizations {
       'seeAll': 'Все',
       'jobInformation': 'Информация о работе',
       'branch': 'Филиал',
+      'jobPosition': 'Должность',
+      'role': 'Роль',
+      'dayRate': 'Дневная ставка',
       'department': 'Отдел',
       'logoutTitle': 'Подтверждение выхода',
       'logoutDesc': 'Вы уверены, что хотите выйти?',
@@ -1851,6 +1875,11 @@ class AppLocalizations {
   String get lightMode => translate('light_mode');
   String get dear => translate('dear');
   String get dashboard => translate('dashboard');
+  String get productivity => translate('productivity');
+  String get productivitySubtitle => translate('productivitySubtitle');
+  String get noProductivityModules => translate('noProductivityModules');
+  String get others => translate('others');
+  String get othersSubtitle => translate('othersSubtitle');
   String get profileSubtitle => translate('profileSubtitle');
   String get attendance => translate('attendance');
   String get attendanceSubtitle => translate('attendanceSubtitle');
@@ -1967,6 +1996,9 @@ class AppLocalizations {
   }
   String get jobInformation => translate('jobInformation');
   String get branch => translate('branch');
+  String get jobPosition => translate('jobPosition');
+  String get role => translate('role');
+  String get dayRate => translate('dayRate');
   String get department => translate('department');
   String get logoutTitle => translate('logoutTitle');
   String get logoutDesc => translate('logoutDesc');

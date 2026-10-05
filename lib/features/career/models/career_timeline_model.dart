@@ -29,6 +29,9 @@ class CareerProfile {
   final String? jobPositionName;
   final String? salaryStructureName;
 
+  /// `t_salary_structure.description` of the current step; shown as a hint.
+  final String? salaryStructureDescription;
+
   /// Start of the first employment contract.
   final DateTime? hireDate;
 
@@ -43,6 +46,7 @@ class CareerProfile {
     this.branchName,
     this.jobPositionName,
     this.salaryStructureName,
+    this.salaryStructureDescription,
     this.hireDate,
     this.exitDate,
     this.isActive = true,
@@ -56,6 +60,9 @@ class CareerProfile {
       branchName: json['branchName'] as String?,
       jobPositionName: json['jobPositionName'] as String?,
       salaryStructureName: json['salaryStructureName'] as String?,
+      salaryStructureDescription: _blankToNull(
+        json['salaryStructureDescription'] as String?,
+      ),
       hireDate: _parseDate(json['hireDate']),
       exitDate: _parseDate(json['exitDate']),
       isActive: json['isActive'] as bool? ?? true,
@@ -75,6 +82,7 @@ class CareerEvent {
   final CareerEventType type;
   final CareerChange? change;
   final String? salaryStructureName;
+  final String? salaryStructureDescription;
   final String? trainingTheme;
   final String? refNumber;
 
@@ -83,6 +91,7 @@ class CareerEvent {
     this.date,
     this.change,
     this.salaryStructureName,
+    this.salaryStructureDescription,
     this.trainingTheme,
     this.refNumber,
   });
@@ -104,10 +113,18 @@ class CareerEvent {
         _ => null,
       },
       salaryStructureName: json['salaryStructureName'] as String?,
+      salaryStructureDescription: _blankToNull(
+        json['salaryStructureDescription'] as String?,
+      ),
       trainingTheme: json['trainingTheme'] as String?,
       refNumber: json['refNumber'] as String?,
     );
   }
+}
+
+String? _blankToNull(String? value) {
+  final trimmed = value?.trim();
+  return trimmed == null || trimmed.isEmpty ? null : trimmed;
 }
 
 /// `YYYY-MM-DD` as a local calendar date.

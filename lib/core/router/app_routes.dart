@@ -31,6 +31,8 @@ import '../../features/lms/models/test_with_sessions.dart';
 import '../../features/notification/pages/notifications_new.dart';
 import '../../features/login/pages/login_page.dart';
 import '../../features/profile/pages/profile.dart';
+import '../../features/productivity/pages/productivity_page.dart';
+import '../../features/shell/pages/main_shell.dart';
 import '../../features/face-verification/pages/face_verification_page.dart';
 import '../../features/training-test/pages/training_test_page.dart';
 import '../../features/training-game-test/pages/training_game_landing_page.dart';
@@ -47,7 +49,14 @@ import '../services/auth/auth_manager.dart';
 class AppRoutes {
   static const String login = '/login';
   // static const String login = '/login';
+  /// "Others" tab: the hub for every module that is not a tab of its own.
+  /// Kept at `/home` so existing `context.go('/home')` back-navigation lands
+  /// on the hub the inner page was opened from.
   static const String home = '/home';
+
+  /// Where an authenticated user lands: the Profile tab.
+  static const String landing = profile;
+  static const String productivity = '/productivity';
   static const String profile = '/profile';
   static const String attendance = '/attendance';
   static const String breakRecords = '/breakRecords';
@@ -107,32 +116,68 @@ class AppRoutes {
         //   name: login,
         //   builder: (context, state) => const Login()
         // ),
-        GoRoute(
-          path: '/home',
-          name: home,
-          pageBuilder: (context, state) => CustomTransitionPage(
-            key: state.pageKey,
-            child: const Home(),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  return FadeTransition(opacity: animation, child: child);
-                },
-          ),
-        ),
-        GoRoute(
-          path: '/profile',
-          name: profile,
-          builder: (context, state) => const Profile(),
-        ),
-        GoRoute(
-          path: '/attendance',
-          name: attendance,
-          builder: (context, state) => const Attendance(),
-        ),
-        GoRoute(
-          path: '/breakRecords',
-          name: breakRecords,
-          builder: (context, state) => const BreakRecords(),
+        // ── Bottom-navigation shell ──────────────────────────────────
+        // Five branches, each with its own navigator. Everything else below
+        // stays on the root navigator, so pushed pages cover the tab bar.
+        StatefulShellRoute.indexedStack(
+          builder: (context, state, navigationShell) =>
+              MainShell(navigationShell: navigationShell),
+          branches: [
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  name: profile,
+                  pageBuilder: (context, state) =>
+                      NoTransitionPage(key: state.pageKey, child: const Profile()),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/attendance',
+                  name: attendance,
+                  pageBuilder: (context, state) =>
+                      NoTransitionPage(key: state.pageKey, child: const Attendance()),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/breakRecords',
+                  name: breakRecords,
+                  pageBuilder: (context, state) => NoTransitionPage(
+                    key: state.pageKey,
+                    child: const BreakRecords(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/productivity',
+                  name: productivity,
+                  pageBuilder: (context, state) => NoTransitionPage(
+                    key: state.pageKey,
+                    child: const ProductivityPage(),
+                  ),
+                ),
+              ],
+            ),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/home',
+                  name: home,
+                  pageBuilder: (context, state) =>
+                      NoTransitionPage(key: state.pageKey, child: const Home()),
+                ),
+              ],
+            ),
+          ],
         ),
         GoRoute(
           path: '/breakOrder',

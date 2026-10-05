@@ -27,6 +27,10 @@ class RoadmapItem {
   /// Salary step name for hire / contract stops.
   final String? detail;
 
+  /// Explanation of that salary step (`t_salary_structure.description`),
+  /// surfaced as a tap-to-open hint next to [detail].
+  final String? detailHint;
+
   /// Anniversary length in months (milestone and upcoming stops).
   final int? milestoneMonths;
 
@@ -48,6 +52,7 @@ class RoadmapItem {
     required this.kind,
     this.date,
     this.detail,
+    this.detailHint,
     this.milestoneMonths,
     this.daysLeft,
     this.dayNumber,
@@ -59,6 +64,7 @@ class RoadmapItem {
     kind: kind,
     date: date,
     detail: detail,
+    detailHint: detailHint,
     milestoneMonths: milestoneMonths,
     daysLeft: daysLeft,
     dayNumber: dayNumber,
@@ -138,6 +144,7 @@ List<RoadmapItem> buildRoadmap(CareerTimeline timeline) {
         kind: kind,
         date: event.date,
         detail: event.salaryStructureName,
+        detailHint: event.salaryStructureDescription,
       ),
     );
   }

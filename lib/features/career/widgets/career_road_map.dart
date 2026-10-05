@@ -7,6 +7,7 @@ import '../../../core/l10n/app_localizations.dart';
 import '../../../core/theme/app_tokens.dart';
 import '../models/career_roadmap.dart';
 import 'career_format.dart';
+import 'salary_step_sheet.dart';
 
 /// Winding road from the hire day down to "today" and on to the next locked
 /// anniversaries. Stops alternate left and right; the travelled stretch is
@@ -604,16 +605,18 @@ class _StopCard extends StatelessWidget {
           ),
           if (detail != null) ...[
             SizedBox(height: 2.h),
-            Text(
-              detail,
-              style: TextStyle(
-                fontSize: 12.sp,
-                fontWeight: FontWeight.w500,
-                height: 1.3,
-                color: isToday ? style.color : t.textSecondary,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+            _StepDetail(
+              text: detail,
+              color: isToday ? style.color : t.textSecondary,
+              hintColor: style.color,
+              // Only contract stops carry a step; the hint opens its description.
+              onHint: item.detail != null && item.detailHint != null
+                  ? () => showSalaryStepSheet(
+                        context,
+                        name: item.detail!,
+                        description: item.detailHint!,
+                      )
+                  : null,
             ),
           ],
           if (item.daysInStep != null) ...[
@@ -621,6 +624,58 @@ class _StopCard extends StatelessWidget {
             _StepDaysPill(item: item, color: style.color),
           ],
         ],
+      ),
+    );
+  }
+}
+
+/// Detail line under a stop title. When [onHint] is set the line ends with
+/// an "i" icon and the whole line is tappable.
+class _StepDetail extends StatelessWidget {
+  final String text;
+  final Color color;
+  final Color hintColor;
+  final VoidCallback? onHint;
+
+  const _StepDetail({
+    required this.text,
+    required this.color,
+    required this.hintColor,
+    this.onHint,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = Text(
+      text,
+      style: TextStyle(
+        fontSize: 12.sp,
+        fontWeight: FontWeight.w500,
+        height: 1.3,
+        color: color,
+      ),
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+    );
+    if (onHint == null) return label;
+
+    return Semantics(
+      button: true,
+      label: text,
+      child: InkWell(
+        onTap: onHint,
+        borderRadius: BorderRadius.circular(8.r),
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 4.h),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Flexible(child: label),
+              SizedBox(width: 4.w),
+              SalaryStepHintIcon(color: hintColor),
+            ],
+          ),
+        ),
       ),
     );
   }

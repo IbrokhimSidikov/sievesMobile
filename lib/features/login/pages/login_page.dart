@@ -188,7 +188,7 @@ class _LoginPageState extends State<LoginPage> {
     }
     if (!mounted) return;
     HapticFeedback.lightImpact();
-    context.go(AppRoutes.home);
+    context.go(AppRoutes.landing);
   }
 
   Future<void> _onLoginError(LoginErrorType type) async {
