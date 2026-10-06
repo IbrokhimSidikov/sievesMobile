@@ -18,16 +18,27 @@ final NumberFormat _format = NumberFormat('#,##0.##', 'en_US');
 String formatRateAmount(double value) =>
     _format.format(value).replaceAll(',', ' ');
 
-double? _parse(String text) =>
+/// `12 650.5` / `12,650.5` -> `12650.5`
+double? parseRateAmount(String text) =>
     double.tryParse(text.replaceAll(' ', '').replaceAll(',', '.'));
 
+/// Why the calculator sheet was closed.
+enum RateSheetAction {
+  /// The editor tapped "Edit rates"; the caller opens the editor sheet.
+  edit,
+}
+
+enum _RateSide { buy, sell }
+
 /// Two-way converter between the announcement's currency and UZS, using the
-/// day's amount as the rate: 1 [currency] = amount UZS.
-Future<void> showRateCalculatorSheet(
+/// day's buy or sell rate (switchable): 1 [currency] = rate UZS.
+/// Resolves with [RateSheetAction.edit] when an editor asks to change the
+/// rates, null otherwise.
+Future<RateSheetAction?> showRateCalculatorSheet(
   BuildContext context,
   DaySessionAnnouncement announcement,
 ) {
-  return showModalBottomSheet(
+  return showModalBottomSheet<RateSheetAction>(
     context: context,
     isScrollControlled: true,
     backgroundColor: context.tokens.surface,
@@ -35,7 +46,9 @@ Future<void> showRateCalculatorSheet(
       borderRadius: BorderRadius.vertical(top: Radius.circular(28.r)),
     ),
     builder: (_) => _RateCalculatorSheet(
-      rate: announcement.amount!,
+      buyRate: announcement.buyAmount!,
+      sellRate: announcement.sellAmount!,
+      canEdit: announcement.canEdit,
       foreignCurrency:
           announcement.currencyCode ??
           announcement.currencySymbol ??
@@ -45,11 +58,15 @@ Future<void> showRateCalculatorSheet(
 }
 
 class _RateCalculatorSheet extends StatefulWidget {
-  final double rate;
+  final double buyRate;
+  final double sellRate;
+  final bool canEdit;
   final String foreignCurrency;
 
   const _RateCalculatorSheet({
-    required this.rate,
+    required this.buyRate,
+    required this.sellRate,
+    required this.canEdit,
     required this.foreignCurrency,
   });
 
@@ -58,10 +75,13 @@ class _RateCalculatorSheet extends StatefulWidget {
 }
 
 class _RateCalculatorSheetState extends State<_RateCalculatorSheet> {
+  _RateSide _side = _RateSide.buy;
   final _foreignController = TextEditingController(text: '1');
   late final _localController = TextEditingController(
-    text: formatRateAmount(widget.rate),
+    text: formatRateAmount(_rate),
   );
+
+  double get _rate => _side == _RateSide.buy ? widget.buyRate : widget.sellRate;
 
   @override
   void dispose() {
@@ -71,17 +91,25 @@ class _RateCalculatorSheetState extends State<_RateCalculatorSheet> {
   }
 
   void _onForeignChanged(String text) {
-    final value = _parse(text);
+    final value = parseRateAmount(text);
     _localController.text = value == null
         ? ''
-        : formatRateAmount(value * widget.rate);
+        : formatRateAmount(value * _rate);
   }
 
   void _onLocalChanged(String text) {
-    final value = _parse(text);
-    _foreignController.text = value == null || widget.rate == 0
+    final value = parseRateAmount(text);
+    _foreignController.text = value == null || _rate == 0
         ? ''
-        : formatRateAmount(value / widget.rate);
+        : formatRateAmount(value / _rate);
+  }
+
+  void _onSideChanged(_RateSide side) {
+    if (side == _side) return;
+    HapticFeedback.selectionClick();
+    setState(() => _side = side);
+    // Keep the foreign amount, recompute the local one with the new rate.
+    _onForeignChanged(_foreignController.text);
   }
 
   @override
@@ -113,18 +141,46 @@ class _RateCalculatorSheetState extends State<_RateCalculatorSheet> {
               ),
             ),
             SizedBox(height: 16.h),
-            Text(
-              l.rateCalculator,
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w700,
-                color: tokens.textPrimary,
-              ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    l.rateCalculator,
+                    style: TextStyle(
+                      fontSize: 18.sp,
+                      fontWeight: FontWeight.w700,
+                      color: tokens.textPrimary,
+                    ),
+                  ),
+                ),
+                if (widget.canEdit)
+                  TextButton.icon(
+                    onPressed: () =>
+                        Navigator.of(context).pop(RateSheetAction.edit),
+                    icon: Icon(Icons.edit_rounded, size: 16.sp),
+                    label: Text(l.editRates),
+                    style: TextButton.styleFrom(
+                      foregroundColor: tokens.primary,
+                      textStyle: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+              ],
             ),
-            SizedBox(height: 4.h),
+            SizedBox(height: 12.h),
+            _SideToggle(
+              side: _side,
+              buyLabel: '${l.buyLabel} · ${formatRateAmount(widget.buyRate)}',
+              sellLabel:
+                  '${l.sellLabel} · ${formatRateAmount(widget.sellRate)}',
+              onChanged: _onSideChanged,
+            ),
+            SizedBox(height: 12.h),
             Text(
               '1 ${widget.foreignCurrency} = '
-              '${formatRateAmount(widget.rate)} $_localCurrency',
+              '${formatRateAmount(_rate)} $_localCurrency',
               style: TextStyle(
                 fontSize: 14.sp,
                 fontWeight: FontWeight.w600,
@@ -132,7 +188,7 @@ class _RateCalculatorSheetState extends State<_RateCalculatorSheet> {
               ),
             ),
             SizedBox(height: 16.h),
-            _AmountField(
+            RateAmountField(
               controller: _foreignController,
               currency: widget.foreignCurrency,
               onChanged: _onForeignChanged,
@@ -146,7 +202,7 @@ class _RateCalculatorSheetState extends State<_RateCalculatorSheet> {
                 color: tokens.textSecondary,
               ),
             ),
-            _AmountField(
+            RateAmountField(
               controller: _localController,
               currency: _localCurrency,
               onChanged: _onLocalChanged,
@@ -164,17 +220,104 @@ class _RateCalculatorSheetState extends State<_RateCalculatorSheet> {
   }
 }
 
-class _AmountField extends StatelessWidget {
+/// Pill tabs (design.md §7.12) choosing between the buy and sell rate.
+class _SideToggle extends StatelessWidget {
+  final _RateSide side;
+  final String buyLabel;
+  final String sellLabel;
+  final ValueChanged<_RateSide> onChanged;
+
+  const _SideToggle({
+    required this.side,
+    required this.buyLabel,
+    required this.sellLabel,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.tokens;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    Widget pill(_RateSide value, String label) {
+      final selected = value == side;
+      return Expanded(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: () => onChanged(value),
+          child: Semantics(
+            button: true,
+            selected: selected,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              height: 36.h,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: selected
+                    ? (isDark ? tokens.surfaceElevated : tokens.surface)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(8.r),
+                boxShadow: [
+                  if (selected && !isDark)
+                    BoxShadow(
+                      color: tokens.shadow.withValues(alpha: 0.12),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                ],
+              ),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 14.sp,
+                  fontWeight: FontWeight.w600,
+                  color: selected ? tokens.textPrimary : tokens.textSecondary,
+                ),
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Container(
+      padding: EdgeInsets.all(2.w),
+      decoration: BoxDecoration(
+        color: tokens.surfaceTint,
+        borderRadius: BorderRadius.circular(8.r),
+      ),
+      child: Row(
+        children: [
+          pill(_RateSide.buy, buyLabel),
+          pill(_RateSide.sell, sellLabel),
+        ],
+      ),
+    );
+  }
+}
+
+/// Large numeric input with a currency suffix, shared by the calculator and
+/// the rate editor.
+class RateAmountField extends StatelessWidget {
   final TextEditingController controller;
   final String currency;
-  final ValueChanged<String> onChanged;
+  final ValueChanged<String>? onChanged;
   final bool autofocus;
+  final FocusNode? focusNode;
+  final TextInputAction? textInputAction;
+  final ValueChanged<String>? onSubmitted;
 
-  const _AmountField({
+  const RateAmountField({
+    super.key,
     required this.controller,
     required this.currency,
-    required this.onChanged,
+    this.onChanged,
     this.autofocus = false,
+    this.focusNode,
+    this.textInputAction,
+    this.onSubmitted,
   });
 
   @override
@@ -187,8 +330,11 @@ class _AmountField extends StatelessWidget {
 
     return TextField(
       controller: controller,
+      focusNode: focusNode,
       autofocus: autofocus,
       onChanged: onChanged,
+      onSubmitted: onSubmitted,
+      textInputAction: textInputAction,
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9., ]'))],
       style: TextStyle(

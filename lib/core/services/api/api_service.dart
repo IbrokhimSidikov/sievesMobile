@@ -1751,8 +1751,9 @@ class ApiService {
       if (response.statusCode == 200) {
         print('✅ [API] Raw response body: ${response.body}');
         final decoded = jsonDecode(response.body);
-        final List<dynamic> data =
-            decoded is List ? decoded : (decoded['data'] as List? ?? []);
+        final List<dynamic> data = decoded is List
+            ? decoded
+            : (decoded['data'] as List? ?? []);
         print('✅ [API] Fetched ${data.length} game sessions');
         return data;
       } else {
@@ -2057,7 +2058,9 @@ class ApiService {
         print('✅ [API] Order cancelled successfully');
         return true;
       }
-      print('❌ [API] Error cancelling order: ${response.statusCode} - ${response.body}');
+      print(
+        '❌ [API] Error cancelling order: ${response.statusCode} - ${response.body}',
+      );
       return false;
     } catch (e) {
       print('❌ [API] Exception cancelling order: $e');
@@ -2095,7 +2098,9 @@ class ApiService {
         print('✅ [API] Cancel telegram post sent');
         return true;
       }
-      print('❌ [API] Error sending telegram post: ${response.statusCode} - ${response.body}');
+      print(
+        '❌ [API] Error sending telegram post: ${response.statusCode} - ${response.body}',
+      );
       return false;
     } catch (e) {
       print('❌ [API] Exception sending telegram post: $e');
@@ -2157,15 +2162,16 @@ class ApiService {
 
   // ==================== DAY SESSION ANNOUNCEMENT ====================
 
-  /// Amount set by an admin for the current day session of the employee's
-  /// branch. Returns null on network/server error; a returned object with a
-  /// null `amount` means nothing was set for today.
+  static const String _daySessionAnnouncementCurrentUrl =
+      'https://api.v3.sievesapp.com/day-session-announcement/current';
+
+  /// Buy/sell rates set by an admin for the current day session of the
+  /// employee's branch. Returns null on network/server error; a returned
+  /// object with null amounts means nothing was set for today.
   Future<DaySessionAnnouncement?> getCurrentDaySessionAnnouncement() async {
     try {
       final headers = await _getHeaders();
-      final uri = Uri.parse(
-        'https://api.v3.sievesapp.com/day-session-announcement/current',
-      );
+      final uri = Uri.parse(_daySessionAnnouncementCurrentUrl);
       final response = await _httpClient.get(uri, headers: headers);
       if (response.statusCode == 200) {
         return DaySessionAnnouncement.fromJson(
@@ -2181,6 +2187,53 @@ class ApiService {
       print('❌ [API] Exception loading day session announcement: $e');
       return null;
     }
+  }
+
+  /// Sets today's buy/sell rates for the employee's branch day session.
+  /// Only the employees the server lists as editors may call this; everyone
+  /// else gets a [DaySessionAnnouncementException] with the server's message.
+  /// Returns the refreshed announcement on success.
+  Future<DaySessionAnnouncement> setDaySessionAnnouncement({
+    required double buyAmount,
+    required double sellAmount,
+  }) async {
+    final http.Response response;
+    try {
+      final headers = await _getHeaders();
+      final uri = Uri.parse(_daySessionAnnouncementCurrentUrl);
+      response = await _httpClient.post(
+        uri,
+        headers: headers,
+        body: jsonEncode({'buy_amount': buyAmount, 'sell_amount': sellAmount}),
+      );
+    } catch (e) {
+      print('❌ [API] Exception saving day session announcement: $e');
+      throw DaySessionAnnouncementException(e.toString());
+    }
+
+    if (response.statusCode == 200 || response.statusCode == 201) {
+      return DaySessionAnnouncement.fromJson(
+        json.decode(response.body) as Map<String, dynamic>,
+      );
+    }
+
+    print(
+      '❌ [API] Failed to save day session announcement: '
+      '${response.statusCode} - ${response.body}',
+    );
+    String? serverMessage;
+    try {
+      final decoded = jsonDecode(response.body);
+      if (decoded is Map && decoded['message'] is String) {
+        serverMessage = (decoded['message'] as String).trim();
+      }
+    } catch (_) {}
+    throw DaySessionAnnouncementException(
+      serverMessage?.isNotEmpty == true
+          ? serverMessage!
+          : 'Failed to save day rates',
+      statusCode: response.statusCode,
+    );
   }
 
   // ==================== ONBOARDING CHECKLIST ====================

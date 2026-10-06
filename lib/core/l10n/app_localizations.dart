@@ -26,7 +26,8 @@ class AppLocalizations {
       'dashboard': 'Dashboard',
       'productivity': 'Productivity',
       'productivitySubtitle': 'Tools to track and improve your work',
-      'noProductivityModules': 'No productivity tools are available for your role yet.',
+      'noProductivityModules':
+          'No productivity tools are available for your role yet.',
       'others': 'Others',
       'othersSubtitle': 'All other modules',
       'profileSubtitle': 'Profile information',
@@ -52,6 +53,16 @@ class AppLocalizations {
       'checklistSubtitle': 'Manage your tasks',
       'rateCalculator': 'Rate calculator',
       'rateCalculatorHint': 'Enter an amount in either field',
+      'buyLabel': 'Buy',
+      'sellLabel': 'Sell',
+      'buyRate': 'Buy rate',
+      'sellRate': 'Sell rate',
+      'setDayRates': "Set today's rates",
+      'editRates': 'Edit rates',
+      'save': 'Save',
+      'ratesRequired': 'Enter both rates',
+      'ratesSaved': 'Rates saved',
+      'ratesSaveFailed': 'Could not save rates',
       'faceIdSubtitle': 'Work entry device',
       'calendar': 'Calendar',
       'calendarSubtitle': 'Training schedule',
@@ -101,7 +112,8 @@ class AppLocalizations {
       'noEntries': 'No work entries found for this month',
       'noPhotosAvailable': 'No photos available for this entry',
       'daysWorkedLabel': 'days',
-      'daysWorkedTooltip': '{count} days worked in {month}\n(closed entries: check-in & check-out)',
+      'daysWorkedTooltip':
+          '{count} days worked in {month}\n(closed entries: check-in & check-out)',
 
       //Break Records
       'availableBreakBalance': 'Available Balance',
@@ -206,21 +218,31 @@ class AppLocalizations {
       'captureFace': 'Capture Face',
       // Face verification snackbar messages
       'snackbarNoEmployeeData': 'Employee data not found. Please log in again.',
-      'snackbarDaySessionFailed': 'Could not fetch today\'s work session. Please try again.',
+      'snackbarDaySessionFailed':
+          'Could not fetch today\'s work session. Please try again.',
       'snackbarNoProfilePhoto': 'No profile photo found. Please contact HR.',
-      'snackbarProfilePhotoDownloadFailed': 'Failed to download your profile photo. Check your connection.',
-      'snackbarFaceVerifFailed': 'Face does not match your profile. Please try again.',
+      'snackbarProfilePhotoDownloadFailed':
+          'Failed to download your profile photo. Check your connection.',
+      'snackbarFaceVerifFailed':
+          'Face does not match your profile. Please try again.',
       'snackbarPhotoUploadFailed': 'Failed to upload your photo. Please retry.',
-      'snackbarStatusFetchFailed': 'Could not fetch your work status. Please retry.',
-      'snackbarWorkEntryFailed': 'Work entry could not be saved. Please try again.',
-      'snackbarMoodRequired': 'Please choose your mood to proceed with check-in.',
-      'snackbarCameraRequired': 'Camera was cancelled. Tap the button to try again.',
-      'snackbarLocationUnavailable': 'Location unavailable — proceeding without it.',
-      'snackbarNetworkError': 'Network error. Please check your internet connection.',
+      'snackbarStatusFetchFailed':
+          'Could not fetch your work status. Please retry.',
+      'snackbarWorkEntryFailed':
+          'Work entry could not be saved. Please try again.',
+      'snackbarMoodRequired':
+          'Please choose your mood to proceed with check-in.',
+      'snackbarCameraRequired':
+          'Camera was cancelled. Tap the button to try again.',
+      'snackbarLocationUnavailable':
+          'Location unavailable — proceeding without it.',
+      'snackbarNetworkError':
+          'Network error. Please check your internet connection.',
       'snackbarVerifyingFace': 'Verifying your identity, please wait…',
       'snackbarFaceVerifSuccess': 'Identity verified successfully!',
       'snackbarWorkEntryCreating': 'Recording your attendance…',
-      'snackbarUnexpectedError': 'An unexpected error occurred. Please try again.',
+      'snackbarUnexpectedError':
+          'An unexpected error occurred. Please try again.',
       //checklist
       'mySubmissions': 'My Submissions',
       'submissionsFound': 'submissions found',
@@ -382,10 +404,12 @@ class AppLocalizations {
       'terminated': 'Terminated',
       'backToCourseList': 'Back to Courses',
       'exitSession': 'Exit Session?',
-      'exitSessionMsg': 'Leaving will terminate your test session. Your progress will be lost.',
+      'exitSessionMsg':
+          'Leaving will terminate your test session. Your progress will be lost.',
       'exit': 'Exit',
       'submitTestTitle': 'Submit Test?',
-      'unansweredMsg': 'You have {count} unanswered question(s). Submit anyway?',
+      'unansweredMsg':
+          'You have {count} unanswered question(s). Submit anyway?',
       'failedToLoadQuestions': 'Failed to Load Questions',
       'noQuestionsAvailable': 'No Questions Available',
       'noMcqQuestions': 'This course has no multiple-choice questions yet.',
@@ -397,10 +421,11 @@ class AppLocalizations {
       //feedback page
       'thankYou': 'Thank you',
       'feedbackSubmitted': 'Feedback submitted successfully',
-      'done':'Done',
+      'done': 'Done',
       'submitting': 'Submitting...',
       'submissionError': 'Submission Error',
-      'submissionErrorMessage': 'We couldn\'t process your feedback. Please try again later.',
+      'submissionErrorMessage':
+          'We couldn\'t process your feedback. Please try again later.',
       'tryAgain': 'Try Again',
       'close': 'Close',
       //Trainings modal
@@ -453,8 +478,8 @@ class AppLocalizations {
       'taskCreated': 'Task created',
       'searchEmployees': 'Search employees…',
       'pickDueDate': 'Pick due date',
-      'examPageTitle':'Exam',
-      'examPageSubtitle':'Pass an exam',
+      'examPageTitle': 'Exam',
+      'examPageSubtitle': 'Pass an exam',
       'examListTitle': 'Exams',
       'examListSubtitle': 'Your assigned exams',
       'examNoAssigned': 'No exams assigned',
@@ -497,10 +522,11 @@ class AppLocalizations {
       'examSelectAllThatApply': 'Select all that apply',
       'examSelectOne': 'Select one answer',
       'examViewResult': 'View result',
-      'introEmployeeListTitle':'Onboarding/Training',
-      'introEmployeeListSubtitle':'Track employee productivity',
+      'introEmployeeListTitle': 'Onboarding/Training',
+      'introEmployeeListSubtitle': 'Track employee productivity',
       'introEmployeesHeader': 'Introduction Trainings',
-      'introEmployeesSubtitle': 'Select an employee to view their onboarding checklist',
+      'introEmployeesSubtitle':
+          'Select an employee to view their onboarding checklist',
       'introSearchHint': 'Search employees',
       'introNoEmployees': 'No employees found',
       'introChecklistTitle': 'Training Checklist',
@@ -524,8 +550,7 @@ class AppLocalizations {
       'salaryProgress': 'Salary Progress',
       'salaryProgressSubtitle': 'Your growth journey',
       'salaryProgressError': 'Could not load your salary progress',
-      'salaryProgressRetryHint':
-          'Please check your connection and try again.',
+      'salaryProgressRetryHint': 'Please check your connection and try again.',
       'salaryProgressRetry': 'Retry',
       'salaryProgressEmpty': 'No salary history yet',
       'salaryProgressEmptyHint':
@@ -564,28 +589,35 @@ class AppLocalizations {
       'loginInvalidCredentials': 'Incorrect username or password',
       'loginNetworkError': 'No connection. Check your internet and try again',
       'loginTooManyAttempts': 'Too many attempts. Wait a moment and try again',
-      'loginMfaRequired': 'This account uses two-factor authentication, which the app does not support yet',
-      'loginIdentityNotFound': 'No employee profile is linked to this account. Contact your manager',
-      'loginNotConfigured': 'Password sign-in is not enabled for this app. Contact support',
+      'loginMfaRequired':
+          'This account uses two-factor authentication, which the app does not support yet',
+      'loginIdentityNotFound':
+          'No employee profile is linked to this account. Contact your manager',
+      'loginNotConfigured':
+          'Password sign-in is not enabled for this app. Contact support',
       'loginFailedGeneric': 'Sign-in failed. Please try again',
       'sessionExpired': 'Your session has expired. Please sign in again',
       'saveLoginTitle': 'Save your login?',
-      'saveLoginBody': 'Next time you can sign in with {biometric} instead of typing your password. Your login is stored securely on this device only.',
+      'saveLoginBody':
+          'Next time you can sign in with {biometric} instead of typing your password. Your login is stored securely on this device only.',
       'saveLoginYes': 'Save',
       'saveLoginNo': 'Not now',
       'signInWith': 'Sign in with {biometric}',
       'biometricReason': 'Sign in to Sieves',
-      'biometricFailed': '{biometric} check did not pass. Enter your password instead',
-      'savedLoginInvalid': 'Your saved password no longer works. Please sign in again',
+      'biometricFailed':
+          '{biometric} check did not pass. Enter your password instead',
+      'savedLoginInvalid':
+          'Your saved password no longer works. Please sign in again',
       'useAnotherAccount': 'Use another account',
       'faceId': 'Face ID',
       'fingerprint': 'Fingerprint',
       'biometrics': 'Biometrics',
       'biometricPromptTitle': 'Sign in with {biometric}?',
-      'biometricPromptBody': 'Confirm with {biometric} to sign in without typing your password.',
+      'biometricPromptBody':
+          'Confirm with {biometric} to sign in without typing your password.',
       'biometricPromptAccept': 'Use {biometric}',
       'biometricPromptDecline': 'Enter password',
-      'careerTitle':'Career Progress',
+      'careerTitle': 'Career Progress',
       'careerSubtitle': "Your journey with the team",
       'careerSince': "Since {date}",
       'careerWithTeam': "with the team",
@@ -616,7 +648,8 @@ class AppLocalizations {
       'careerLoadError': "Couldn't load your career",
       'careerLoadErrorHint': "Check your connection and try again.",
       'careerEmpty': "No career history yet",
-      'careerEmptyHint': "Your roadmap appears once your employment contract is added.",
+      'careerEmptyHint':
+          "Your roadmap appears once your employment contract is added.",
     },
     'uz': {
       'title': 'Sieves',
@@ -634,7 +667,8 @@ class AppLocalizations {
       'dashboard': 'Bosh Sahifa',
       'productivity': 'Samaradorlik',
       'productivitySubtitle': 'Ish samaradorligini kuzatish vositalari',
-      'noProductivityModules': 'Sizning lavozimingiz uchun hozircha samaradorlik vositalari mavjud emas.',
+      'noProductivityModules':
+          'Sizning lavozimingiz uchun hozircha samaradorlik vositalari mavjud emas.',
       'others': 'Boshqalar',
       'othersSubtitle': 'Boshqa barcha bo\'limlar',
       'profileSubtitle': 'Profil maʼlumotlari',
@@ -660,6 +694,16 @@ class AppLocalizations {
       'checklistSubtitle': 'Vazifalarni boshqarish',
       'rateCalculator': 'Kurs kalkulyatori',
       'rateCalculatorHint': 'Istalgan maydonga summa kiriting',
+      'buyLabel': 'Olish',
+      'sellLabel': 'Sotish',
+      'buyRate': 'Olish kursi',
+      'sellRate': 'Sotish kursi',
+      'setDayRates': 'Bugungi kurslarni kiriting',
+      'editRates': "Kurslarni o'zgartirish",
+      'save': 'Saqlash',
+      'ratesRequired': 'Ikkala kursni kiriting',
+      'ratesSaved': 'Kurslar saqlandi',
+      'ratesSaveFailed': "Kurslarni saqlab bo'lmadi",
       'faceIdSubtitle': 'Ishga keldi-ketdi',
       'calendar': 'Kalendar',
       'calendarSubtitle': 'Trening jadvali',
@@ -710,7 +754,8 @@ class AppLocalizations {
       'noEntries': 'Bu oy uchun ish yozuvlari topilmadi',
       'noPhotosAvailable': 'Bu yozuv uchun rasmlar mavjud emas',
       'daysWorkedLabel': 'kun',
-      'daysWorkedTooltip': '{month} ichida {count} kun ishlandi\n(yopilgan kunlar: kirish & chiqish)',
+      'daysWorkedTooltip':
+          '{month} ichida {count} kun ishlandi\n(yopilgan kunlar: kirish & chiqish)',
 
       //Break Records
       'availableBreakBalance': 'Mavjud balans',
@@ -816,17 +861,24 @@ class AppLocalizations {
       "processing": "Qayta ishlanmoqda...",
       "captureFace": "Yuzni suratga olish",
       // Face verification snackbar messages
-      'snackbarNoEmployeeData': 'Xodim ma\'lumotlari topilmadi. Iltimos, qayta kiring.',
-      'snackbarDaySessionFailed': 'Bugungi ish sessiyasini olishda xatolik yuz berdi. Qayta urining.',
+      'snackbarNoEmployeeData':
+          'Xodim ma\'lumotlari topilmadi. Iltimos, qayta kiring.',
+      'snackbarDaySessionFailed':
+          'Bugungi ish sessiyasini olishda xatolik yuz berdi. Qayta urining.',
       'snackbarNoProfilePhoto': 'Profil rasmi topilmadi. HR bilan bog\'laning.',
-      'snackbarProfilePhotoDownloadFailed': 'Profil rasmini yuklab bo\'lmadi. Internetni tekshiring.',
-      'snackbarFaceVerifFailed': 'Yuz profilingizga mos kelmadi. Qayta urining.',
+      'snackbarProfilePhotoDownloadFailed':
+          'Profil rasmini yuklab bo\'lmadi. Internetni tekshiring.',
+      'snackbarFaceVerifFailed':
+          'Yuz profilingizga mos kelmadi. Qayta urining.',
       'snackbarPhotoUploadFailed': 'Rasmni yuklashda xatolik. Qayta urining.',
-      'snackbarStatusFetchFailed': 'Ish holatini olishda xatolik. Qayta urining.',
+      'snackbarStatusFetchFailed':
+          'Ish holatini olishda xatolik. Qayta urining.',
       'snackbarWorkEntryFailed': 'Keldi-ketdi yozib bo\'lmadi. Qayta urining.',
       'snackbarMoodRequired': 'Kirish uchun kayfiyatingizni tanlang.',
-      'snackbarCameraRequired': 'Kamera bekor qilindi. Qayta urinish uchun tugmani bosing.',
-      'snackbarLocationUnavailable': 'Manzil aniqlanmadi — joylashuvizsiz davom etilmoqda.',
+      'snackbarCameraRequired':
+          'Kamera bekor qilindi. Qayta urinish uchun tugmani bosing.',
+      'snackbarLocationUnavailable':
+          'Manzil aniqlanmadi — joylashuvizsiz davom etilmoqda.',
       'snackbarNetworkError': 'Tarmoq xatosi. Internet aloqasini tekshiring.',
       'snackbarVerifyingFace': 'Shaxsingiz tasdiqlanmoqda, kuting…',
       'snackbarFaceVerifSuccess': 'Shaxsingiz muvaffaqiyatli tasdiqlandi!',
@@ -988,17 +1040,21 @@ class AppLocalizations {
       'failed': 'O\'tilmadi',
       'congratulationsMsg': 'Tabriklaymiz!',
       'betterLuckMsg': 'Keyingi safar omad',
-      'resultsBasedOnAnswered': 'Natijalar faqat javob berilgan savollarga asoslanadi',
-      'scoredOutOf': '{total} ta savoldan {correct} tasiga to\'g\'ri javob berdingiz',
+      'resultsBasedOnAnswered':
+          'Natijalar faqat javob berilgan savollarga asoslanadi',
+      'scoredOutOf':
+          '{total} ta savoldan {correct} tasiga to\'g\'ri javob berdingiz',
       'timeSpent': 'Sarflangan vaqt',
       'answered': 'Javob berildi',
       'terminated': 'Tugatildi',
       'backToCourseList': 'Kurslarga qaytish',
       'exitSession': 'Chiqasizmi?',
-      'exitSessionMsg': 'Chiqish test sessiyasini tugatadi. Jarayoningiz yo\'qoladi.',
+      'exitSessionMsg':
+          'Chiqish test sessiyasini tugatadi. Jarayoningiz yo\'qoladi.',
       'exit': 'Chiqish',
       'submitTestTitle': 'Testni yuborish?',
-      'unansweredMsg': '{count} ta savolga javob berilmadi. Baribir yuborasizmi?',
+      'unansweredMsg':
+          '{count} ta savolga javob berilmadi. Baribir yuborasizmi?',
       'failedToLoadQuestions': 'Savollarni yuklashda xatolik',
       'noQuestionsAvailable': 'Savollar mavjud emas',
       'noMcqQuestions': 'Bu kursda hali ko\'p tanlovli savollar yo\'q.',
@@ -1013,7 +1069,8 @@ class AppLocalizations {
       "done": "Bosh Sahifa",
       "submitting": "Yuborilmoqda...",
       "submissionError": "Xatolik",
-      "submissionErrorMessage": "Formani yuborishda xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring.",
+      "submissionErrorMessage":
+          "Formani yuborishda xatolik yuz berdi. Iltimos, keyinroq qayta urinib ko'ring.",
       "tryAgain": "Qayta urinish",
       "close": "Yopish",
       //Trainings modal
@@ -1110,8 +1167,8 @@ class AppLocalizations {
       'examSelectAllThatApply': 'Barcha to\'g\'ri javoblarni tanlang',
       'examSelectOne': 'Bitta javobni tanlang',
       'examViewResult': 'Natijani ko\'rish',
-      'introEmployeeListTitle':'Tanishtiruv va Treininglar',
-      'introEmployeeListSubtitle':'Tanishtiruv cheklisti',
+      'introEmployeeListTitle': 'Tanishtiruv va Treininglar',
+      'introEmployeeListSubtitle': 'Tanishtiruv cheklisti',
       'introEmployeesHeader': 'Tanishtiruv treninglari',
       'introEmployeesSubtitle': 'Cheklistni ko\'rish uchun hodimni tanlang',
       'introSearchHint': 'Hodimlarni qidirish',
@@ -1175,15 +1232,21 @@ class AppLocalizations {
       'showPassword': 'Parolni ko\'rsatish',
       'hidePassword': 'Parolni yashirish',
       'loginInvalidCredentials': 'Foydalanuvchi nomi yoki parol noto\'g\'ri',
-      'loginNetworkError': 'Internet aloqasi yo\'q. Ulanishni tekshirib, qayta urinib ko\'ring',
-      'loginTooManyAttempts': 'Juda ko\'p urinish. Biroz kutib, qayta urinib ko\'ring',
-      'loginMfaRequired': 'Bu hisobda ikki bosqichli tekshiruv yoqilgan, ilova hozircha uni qo\'llab-quvvatlamaydi',
-      'loginIdentityNotFound': 'Bu hisobga xodim profili bog\'lanmagan. Menejeringizga murojaat qiling',
-      'loginNotConfigured': 'Parol orqali kirish bu ilova uchun yoqilmagan. Qo\'llab-quvvatlash xizmatiga murojaat qiling',
+      'loginNetworkError':
+          'Internet aloqasi yo\'q. Ulanishni tekshirib, qayta urinib ko\'ring',
+      'loginTooManyAttempts':
+          'Juda ko\'p urinish. Biroz kutib, qayta urinib ko\'ring',
+      'loginMfaRequired':
+          'Bu hisobda ikki bosqichli tekshiruv yoqilgan, ilova hozircha uni qo\'llab-quvvatlamaydi',
+      'loginIdentityNotFound':
+          'Bu hisobga xodim profili bog\'lanmagan. Menejeringizga murojaat qiling',
+      'loginNotConfigured':
+          'Parol orqali kirish bu ilova uchun yoqilmagan. Qo\'llab-quvvatlash xizmatiga murojaat qiling',
       'loginFailedGeneric': 'Kirish amalga oshmadi. Qayta urinib ko\'ring',
       'sessionExpired': 'Sessiya muddati tugadi. Qayta kiring',
       'saveLoginTitle': 'Login ma\'lumotlari saqlansinmi?',
-      'saveLoginBody': 'Keyingi safar parol o\'rniga {biometric} orqali kirishingiz mumkin. Ma\'lumotlar faqat shu qurilmada xavfsiz saqlanadi.',
+      'saveLoginBody':
+          'Keyingi safar parol o\'rniga {biometric} orqali kirishingiz mumkin. Ma\'lumotlar faqat shu qurilmada xavfsiz saqlanadi.',
       'saveLoginYes': 'Saqlash',
       'saveLoginNo': 'Hozir emas',
       'signInWith': '{biometric} orqali kirish',
@@ -1195,10 +1258,11 @@ class AppLocalizations {
       'fingerprint': 'Barmoq izi',
       'biometrics': 'Biometriya',
       'biometricPromptTitle': '{biometric} orqali kirilsinmi?',
-      'biometricPromptBody': 'Parol yozmasdan kirish uchun {biometric} bilan tasdiqlang.',
+      'biometricPromptBody':
+          'Parol yozmasdan kirish uchun {biometric} bilan tasdiqlang.',
       'biometricPromptAccept': '{biometric} ishlatish',
       'biometricPromptDecline': 'Parol kiritish',
-      'careerTitle':'Kariera yo\'li',
+      'careerTitle': 'Kariera yo\'li',
       'careerSubtitle': "Jamoadagi yo'lingiz",
       'careerSince': "{date} dan beri",
       'careerWithTeam': "jamoada",
@@ -1229,8 +1293,8 @@ class AppLocalizations {
       'careerLoadError': "Kariera ma'lumotlari yuklanmadi",
       'careerLoadErrorHint': "Internetni tekshirib, qayta urinib ko'ring.",
       'careerEmpty': "Hali kariera tarixi yo'q",
-      'careerEmptyHint': "Mehnat shartnomangiz kiritilgach, yo'l xaritangiz shu yerda paydo bo'ladi.",
-
+      'careerEmptyHint':
+          "Mehnat shartnomangiz kiritilgach, yo'l xaritangiz shu yerda paydo bo'ladi.",
     },
     'ru': {
       'trainingTest': 'Тестирование',
@@ -1276,7 +1340,8 @@ class AppLocalizations {
       'dashboard': 'Главная',
       'productivity': 'Продуктивность',
       'productivitySubtitle': 'Инструменты для учёта и роста эффективности',
-      'noProductivityModules': 'Для вашей роли пока нет инструментов продуктивности.',
+      'noProductivityModules':
+          'Для вашей роли пока нет инструментов продуктивности.',
       'others': 'Другое',
       'othersSubtitle': 'Все остальные модули',
       'profileSubtitle': 'Информация профиля',
@@ -1302,6 +1367,16 @@ class AppLocalizations {
       'checklistSubtitle': 'Управляйте задачами',
       'rateCalculator': 'Калькулятор курса',
       'rateCalculatorHint': 'Введите сумму в любое поле',
+      'buyLabel': 'Покупка',
+      'sellLabel': 'Продажа',
+      'buyRate': 'Курс покупки',
+      'sellRate': 'Курс продажи',
+      'setDayRates': 'Курсы на сегодня',
+      'editRates': 'Изменить курсы',
+      'save': 'Сохранить',
+      'ratesRequired': 'Введите оба курса',
+      'ratesSaved': 'Курсы сохранены',
+      'ratesSaveFailed': 'Не удалось сохранить курсы',
       'faceIdSubtitle': 'Устройство распознавания',
       'calendar': 'Календарь',
       'calendarSubtitle': 'Расписание тренингов',
@@ -1351,7 +1426,8 @@ class AppLocalizations {
       'noEntries': 'За этот месяц рабочие записи не найдены',
       'noPhotosAvailable': 'Фотографии для этой записи недоступны',
       'daysWorkedLabel': 'дней',
-      'daysWorkedTooltip': '{count} дней отработано в {month}\n(закрытые записи: приход & уход)',
+      'daysWorkedTooltip':
+          '{count} дней отработано в {month}\n(закрытые записи: приход & уход)',
 
       //Break Records
       'availableBreakBalance': 'Доступный баланс',
@@ -1456,22 +1532,33 @@ class AppLocalizations {
       'processing': 'Обработка...',
       'captureFace': 'Сделать селфи',
       // Face verification snackbar messages
-      'snackbarNoEmployeeData': 'Данные сотрудника не найдены. Пожалуйста, войдите снова.',
-      'snackbarDaySessionFailed': 'Не удалось получить текущую сессию. Попробуйте снова.',
+      'snackbarNoEmployeeData':
+          'Данные сотрудника не найдены. Пожалуйста, войдите снова.',
+      'snackbarDaySessionFailed':
+          'Не удалось получить текущую сессию. Попробуйте снова.',
       'snackbarNoProfilePhoto': 'Фото профиля не найдено. Обратитесь в HR.',
-      'snackbarProfilePhotoDownloadFailed': 'Не удалось загрузить фото профиля. Проверьте соединение.',
-      'snackbarFaceVerifFailed': 'Лицо не совпадает с профилем. Попробуйте снова.',
-      'snackbarPhotoUploadFailed': 'Не удалось загрузить фото. Попробуйте снова.',
-      'snackbarStatusFetchFailed': 'Не удалось получить статус. Попробуйте снова.',
-      'snackbarWorkEntryFailed': 'Не удалось сохранить отметку. Попробуйте снова.',
-      'snackbarMoodRequired': 'Пожалуйста, выберите настроение для отметки прихода.',
-      'snackbarCameraRequired': 'Камера отменена. Нажмите кнопку, чтобы попробовать снова.',
-      'snackbarLocationUnavailable': 'Местоположение недоступно — продолжаем без него.',
+      'snackbarProfilePhotoDownloadFailed':
+          'Не удалось загрузить фото профиля. Проверьте соединение.',
+      'snackbarFaceVerifFailed':
+          'Лицо не совпадает с профилем. Попробуйте снова.',
+      'snackbarPhotoUploadFailed':
+          'Не удалось загрузить фото. Попробуйте снова.',
+      'snackbarStatusFetchFailed':
+          'Не удалось получить статус. Попробуйте снова.',
+      'snackbarWorkEntryFailed':
+          'Не удалось сохранить отметку. Попробуйте снова.',
+      'snackbarMoodRequired':
+          'Пожалуйста, выберите настроение для отметки прихода.',
+      'snackbarCameraRequired':
+          'Камера отменена. Нажмите кнопку, чтобы попробовать снова.',
+      'snackbarLocationUnavailable':
+          'Местоположение недоступно — продолжаем без него.',
       'snackbarNetworkError': 'Ошибка сети. Проверьте подключение к интернету.',
       'snackbarVerifyingFace': 'Подтверждение личности, подождите…',
       'snackbarFaceVerifSuccess': 'Личность успешно подтверждена!',
       'snackbarWorkEntryCreating': 'Запись посещения…',
-      'snackbarUnexpectedError': 'Произошла неожиданная ошибка. Попробуйте снова.',
+      'snackbarUnexpectedError':
+          'Произошла неожиданная ошибка. Попробуйте снова.',
       //checklist
       'mySubmissions': 'Мои задания',
       'submissionsFound': 'заданий найдено',
@@ -1612,23 +1699,28 @@ class AppLocalizations {
       'failed': 'Не пройдено',
       'congratulationsMsg': 'Поздравляем!',
       'betterLuckMsg': 'Удачи в следующий раз',
-      'resultsBasedOnAnswered': 'Результаты основаны только на отвеченных вопросах',
+      'resultsBasedOnAnswered':
+          'Результаты основаны только на отвеченных вопросах',
       'scoredOutOf': 'Вы правильно ответили на {correct} из {total} вопросов',
       'timeSpent': 'Затраченное время',
       'answered': 'Отвечено',
       'terminated': 'Завершена',
       'backToCourseList': 'Вернуться к курсам',
       'exitSession': 'Выйти из сессии?',
-      'exitSessionMsg': 'Выход завершит тестовую сессию. Прогресс будет потерян.',
+      'exitSessionMsg':
+          'Выход завершит тестовую сессию. Прогресс будет потерян.',
       'exit': 'Выйти',
       'submitTestTitle': 'Отправить тест?',
-      'unansweredMsg': 'Вы не ответили на {count} вопрос(ов). Всё равно отправить?',
+      'unansweredMsg':
+          'Вы не ответили на {count} вопрос(ов). Всё равно отправить?',
       'failedToLoadQuestions': 'Не удалось загрузить вопросы',
       'noQuestionsAvailable': 'Вопросы недоступны',
-      'noMcqQuestions': 'В этом курсе пока нет вопросов с множественным выбором.',
+      'noMcqQuestions':
+          'В этом курсе пока нет вопросов с множественным выбором.',
       'goBack': 'Назад',
       'submittingEllipsis': 'Отправка…',
-      'sessionEndedBg': 'Сессия завершена — вы переключились на другое приложение.',
+      'sessionEndedBg':
+          'Сессия завершена — вы переключились на другое приложение.',
       'sessionEndedExit': 'Сессия завершена — вы вышли из теста.',
       'sessionWasTerminated': 'Сессия была завершена.',
       //feedback form
@@ -1637,7 +1729,8 @@ class AppLocalizations {
       "done": "Готово",
       "submitting": "Отправка...",
       "submissionError": "Ошибка отправки",
-      "submissionErrorMessage": "Не удалось обработать ваш отзыв. Пожалуйста, попробуйте позже.",
+      "submissionErrorMessage":
+          "Не удалось обработать ваш отзыв. Пожалуйста, попробуйте позже.",
       "tryAgain": "Попробовать снова",
       "close": "Закрыть",
       //Trainings modal
@@ -1735,7 +1828,8 @@ class AppLocalizations {
       'examSelectOne': 'Выберите один ответ',
       'examViewResult': 'Посмотреть результат',
       'introEmployeeListTitle': 'Производительность сотрудников',
-      'introEmployeeListSubtitle': 'Отслеживайте производительность сотрудников',
+      'introEmployeeListSubtitle':
+          'Отслеживайте производительность сотрудников',
       'introEmployeesHeader': 'Вводные тренинги',
       'introEmployeesSubtitle': 'Выберите сотрудника, чтобы открыть чек-лист',
       'introSearchHint': 'Поиск сотрудников',
@@ -1761,8 +1855,7 @@ class AppLocalizations {
       'salaryProgress': 'Рост зарплаты',
       'salaryProgressSubtitle': 'Ваш путь роста',
       'salaryProgressError': 'Не удалось загрузить данные о зарплате',
-      'salaryProgressRetryHint':
-          'Проверьте подключение и попробуйте снова.',
+      'salaryProgressRetryHint': 'Проверьте подключение и попробуйте снова.',
       'salaryProgressRetry': 'Повторить',
       'salaryProgressEmpty': 'История зарплаты пока пуста',
       'salaryProgressEmptyHint':
@@ -1799,30 +1892,38 @@ class AppLocalizations {
       'showPassword': 'Показать пароль',
       'hidePassword': 'Скрыть пароль',
       'loginInvalidCredentials': 'Неверное имя пользователя или пароль',
-      'loginNetworkError': 'Нет соединения. Проверьте интернет и попробуйте снова',
-      'loginTooManyAttempts': 'Слишком много попыток. Подождите немного и попробуйте снова',
-      'loginMfaRequired': 'Для этого аккаунта включена двухфакторная проверка, приложение пока её не поддерживает',
-      'loginIdentityNotFound': 'К этому аккаунту не привязан профиль сотрудника. Обратитесь к менеджеру',
-      'loginNotConfigured': 'Вход по паролю не включён для этого приложения. Обратитесь в поддержку',
+      'loginNetworkError':
+          'Нет соединения. Проверьте интернет и попробуйте снова',
+      'loginTooManyAttempts':
+          'Слишком много попыток. Подождите немного и попробуйте снова',
+      'loginMfaRequired':
+          'Для этого аккаунта включена двухфакторная проверка, приложение пока её не поддерживает',
+      'loginIdentityNotFound':
+          'К этому аккаунту не привязан профиль сотрудника. Обратитесь к менеджеру',
+      'loginNotConfigured':
+          'Вход по паролю не включён для этого приложения. Обратитесь в поддержку',
       'loginFailedGeneric': 'Не удалось войти. Попробуйте снова',
       'sessionExpired': 'Сессия истекла. Войдите снова',
       'saveLoginTitle': 'Сохранить вход?',
-      'saveLoginBody': 'В следующий раз вы сможете войти через {biometric}, не вводя пароль. Данные хранятся только на этом устройстве.',
+      'saveLoginBody':
+          'В следующий раз вы сможете войти через {biometric}, не вводя пароль. Данные хранятся только на этом устройстве.',
       'saveLoginYes': 'Сохранить',
       'saveLoginNo': 'Не сейчас',
       'signInWith': 'Войти через {biometric}',
       'biometricReason': 'Вход в Sieves',
       'biometricFailed': 'Проверка {biometric} не пройдена. Введите пароль',
-      'savedLoginInvalid': 'Сохранённый пароль больше не подходит. Войдите снова',
+      'savedLoginInvalid':
+          'Сохранённый пароль больше не подходит. Войдите снова',
       'useAnotherAccount': 'Войти в другой аккаунт',
       'faceId': 'Face ID',
       'fingerprint': 'Отпечаток пальца',
       'biometrics': 'Биометрия',
       'biometricPromptTitle': 'Войти через {biometric}?',
-      'biometricPromptBody': 'Подтвердите через {biometric}, чтобы войти без ввода пароля.',
+      'biometricPromptBody':
+          'Подтвердите через {biometric}, чтобы войти без ввода пароля.',
       'biometricPromptAccept': 'Использовать {biometric}',
       'biometricPromptDecline': 'Ввести пароль',
-      'careerTitle':'Карьера',
+      'careerTitle': 'Карьера',
       'careerSubtitle': "Ваш путь в команде",
       'careerSince': "С {date}",
       'careerWithTeam': "в команде",
@@ -1853,8 +1954,8 @@ class AppLocalizations {
       'careerLoadError': "Не удалось загрузить карьеру",
       'careerLoadErrorHint': "Проверьте соединение и попробуйте снова.",
       'careerEmpty': "Истории карьеры пока нет",
-      'careerEmptyHint': "Дорожная карта появится после добавления трудового договора.",
-
+      'careerEmptyHint':
+          "Дорожная карта появится после добавления трудового договора.",
     },
   };
 
@@ -1904,6 +2005,16 @@ class AppLocalizations {
   String get checklistSubtitle => translate('checklistSubtitle');
   String get rateCalculator => translate('rateCalculator');
   String get rateCalculatorHint => translate('rateCalculatorHint');
+  String get buyLabel => translate('buyLabel');
+  String get sellLabel => translate('sellLabel');
+  String get buyRate => translate('buyRate');
+  String get sellRate => translate('sellRate');
+  String get setDayRates => translate('setDayRates');
+  String get editRates => translate('editRates');
+  String get save => translate('save');
+  String get ratesRequired => translate('ratesRequired');
+  String get ratesSaved => translate('ratesSaved');
+  String get ratesSaveFailed => translate('ratesSaveFailed');
   // Task Management
   String get tasks => translate('tasks');
   String get tasksSubtitle => translate('tasksSubtitle');
@@ -1925,9 +2036,9 @@ class AppLocalizations {
   String get deleteImage => translate('deleteImage');
   String get deleteImageConfirm => translate('deleteImageConfirm');
   String get changeStatusTitle => translate('changeStatusTitle');
-  String changeStatusBody(String from, String to) => translate('changeStatusBody')
-      .replaceAll('{from}', from)
-      .replaceAll('{to}', to);
+  String changeStatusBody(String from, String to) => translate(
+    'changeStatusBody',
+  ).replaceAll('{from}', from).replaceAll('{to}', to);
   String get confirm => translate('confirm');
   String get cancelTask => translate('cancelTask');
   String get cancelTaskConfirm => translate('cancelTaskConfirm');
@@ -1994,6 +2105,7 @@ class AppLocalizations {
         return translate('dayCount').replaceAll('{count}', count.toString());
     }
   }
+
   String get jobInformation => translate('jobInformation');
   String get branch => translate('branch');
   String get jobPosition => translate('jobPosition');
@@ -2018,9 +2130,9 @@ class AppLocalizations {
   String get noEntries => translate('noEntries');
   String get noPhotosAvailable => translate('noPhotosAvailable');
   String get daysWorkedLabel => translate('daysWorkedLabel');
-  String daysWorkedTooltip(int count, String month) => translate('daysWorkedTooltip')
-      .replaceAll('{count}', '$count')
-      .replaceAll('{month}', month);
+  String daysWorkedTooltip(int count, String month) => translate(
+    'daysWorkedTooltip',
+  ).replaceAll('{count}', '$count').replaceAll('{month}', month);
 
   //Break Records
   String get availableBreakBalance => translate('availableBreakBalance');
@@ -2134,18 +2246,23 @@ class AppLocalizations {
   String get snackbarNoEmployeeData => translate('snackbarNoEmployeeData');
   String get snackbarDaySessionFailed => translate('snackbarDaySessionFailed');
   String get snackbarNoProfilePhoto => translate('snackbarNoProfilePhoto');
-  String get snackbarProfilePhotoDownloadFailed => translate('snackbarProfilePhotoDownloadFailed');
+  String get snackbarProfilePhotoDownloadFailed =>
+      translate('snackbarProfilePhotoDownloadFailed');
   String get snackbarFaceVerifFailed => translate('snackbarFaceVerifFailed');
-  String get snackbarPhotoUploadFailed => translate('snackbarPhotoUploadFailed');
-  String get snackbarStatusFetchFailed => translate('snackbarStatusFetchFailed');
+  String get snackbarPhotoUploadFailed =>
+      translate('snackbarPhotoUploadFailed');
+  String get snackbarStatusFetchFailed =>
+      translate('snackbarStatusFetchFailed');
   String get snackbarWorkEntryFailed => translate('snackbarWorkEntryFailed');
   String get snackbarMoodRequired => translate('snackbarMoodRequired');
   String get snackbarCameraRequired => translate('snackbarCameraRequired');
-  String get snackbarLocationUnavailable => translate('snackbarLocationUnavailable');
+  String get snackbarLocationUnavailable =>
+      translate('snackbarLocationUnavailable');
   String get snackbarNetworkError => translate('snackbarNetworkError');
   String get snackbarVerifyingFace => translate('snackbarVerifyingFace');
   String get snackbarFaceVerifSuccess => translate('snackbarFaceVerifSuccess');
-  String get snackbarWorkEntryCreating => translate('snackbarWorkEntryCreating');
+  String get snackbarWorkEntryCreating =>
+      translate('snackbarWorkEntryCreating');
   String get snackbarUnexpectedError => translate('snackbarUnexpectedError');
   //checklist
   String get mySubmissions => translate('mySubmissions');
@@ -2283,9 +2400,9 @@ class AppLocalizations {
   String get sessionWasTerminated => translate('sessionWasTerminated');
   String unansweredMsg(int count) =>
       translate('unansweredMsg').replaceAll('{count}', '$count');
-  String scoredOutOf(int correct, int total) => translate('scoredOutOf')
-      .replaceAll('{correct}', '$correct')
-      .replaceAll('{total}', '$total');
+  String scoredOutOf(int correct, int total) => translate(
+    'scoredOutOf',
+  ).replaceAll('{correct}', '$correct').replaceAll('{total}', '$total');
 
   // Leaderboard
   String get leaderboard => translate('leaderboard');
@@ -2337,7 +2454,8 @@ class AppLocalizations {
   String get examSelectOne => translate('examSelectOne');
   String get examViewResult => translate('examViewResult');
   String get introEmployeeListTitle => translate('introEmployeeListTitle');
-  String get introEmployeeListSubtitle => translate('introEmployeeListSubtitle');
+  String get introEmployeeListSubtitle =>
+      translate('introEmployeeListSubtitle');
   String get introEmployeesHeader => translate('introEmployeesHeader');
   String get introEmployeesSubtitle => translate('introEmployeesSubtitle');
   String get introSearchHint => translate('introSearchHint');
@@ -2348,10 +2466,9 @@ class AppLocalizations {
   String get introPending => translate('introPending');
   String get introRequired => translate('introRequired');
   String get introExtra => translate('introExtra');
-  String introCompletedOfTotal(int completed, int total) =>
-      translate('introCompletedOfTotal')
-          .replaceAll('{completed}', '$completed')
-          .replaceAll('{total}', '$total');
+  String introCompletedOfTotal(int completed, int total) => translate(
+    'introCompletedOfTotal',
+  ).replaceAll('{completed}', '$completed').replaceAll('{total}', '$total');
   String get introChecked => translate('introChecked');
   String get introNotChecked => translate('introNotChecked');
   String get introTapToCheck => translate('introTapToCheck');
@@ -2387,9 +2504,9 @@ class AppLocalizations {
   String get salaryChanges => translate('salaryChanges');
   String get salaryYouAreHere => translate('salaryYouAreHere');
   String get salaryNow => translate('salaryNow');
-  String stepXofY(int step, int total) => translate('stepXofY')
-      .replaceAll('{step}', '$step')
-      .replaceAll('{total}', '$total');
+  String stepXofY(int step, int total) => translate(
+    'stepXofY',
+  ).replaceAll('{step}', '$step').replaceAll('{total}', '$total');
   String stepShort(int step) =>
       translate('stepShort').replaceAll('{step}', '$step');
   String daysCount(int count) =>
@@ -2468,5 +2585,4 @@ class AppLocalizations {
   String biometricPromptAccept(String biometric) =>
       translate('biometricPromptAccept').replaceAll('{biometric}', biometric);
   String get biometricPromptDecline => translate('biometricPromptDecline');
-
 }

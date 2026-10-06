@@ -1477,22 +1477,22 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
     final tokens = context.tokens;
 
     Widget box(double w, double h, {double radius = 8}) => Container(
-          width: w,
-          height: h,
-          decoration: BoxDecoration(
-            color: tokens.surfaceTint,
-            borderRadius: BorderRadius.circular(radius.r),
-          ),
-        );
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: tokens.surfaceTint,
+        borderRadius: BorderRadius.circular(radius.r),
+      ),
+    );
 
     Widget cell() => Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            box(56.w, 12.h, radius: 4),
-            SizedBox(height: 6.h),
-            box(double.infinity, 16.h),
-          ],
-        );
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        box(56.w, 12.h, radius: 4),
+        SizedBox(height: 6.h),
+        box(double.infinity, 16.h),
+      ],
+    );
 
     return Shimmer.fromColors(
       baseColor: tokens.surfaceTint,
@@ -1557,7 +1557,11 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
                 ),
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 14.h),
-                  child: Divider(height: 1, thickness: 1, color: tokens.outline),
+                  child: Divider(
+                    height: 1,
+                    thickness: 1,
+                    color: tokens.outline,
+                  ),
                 ),
                 Row(
                   children: [
@@ -2031,7 +2035,12 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               if (showDayRate)
-                DayAmountChip(announcement: _dayAnnouncement!)
+                DayAmountChip(
+                  announcement: _dayAnnouncement!,
+                  apiService: _apiService,
+                  onChanged: (updated) =>
+                      setState(() => _dayAnnouncement = updated),
+                )
               else
                 SizedBox(width: 44.w),
               // Notifications (with unread badge)
@@ -2062,7 +2071,11 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.logout_rounded, size: 20.sp, color: tokens.textOnAccent),
+                Icon(
+                  Icons.logout_rounded,
+                  size: 20.sp,
+                  color: tokens.textOnAccent,
+                ),
                 SizedBox(width: 8.w),
                 Text(
                   AppLocalizations.of(context).logoutButton,
@@ -2115,8 +2128,12 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
       if (branchName != null && branchName.isNotEmpty)
         _ProfileCell(l.branch, Text(branchName, style: _cellValueStyle)),
       if (_jobPositionName != null)
-        _ProfileCell(l.jobPosition, Text(_jobPositionName!, style: _cellValueStyle)),
-      if (_role != null) _ProfileCell(l.role, Text(_role!, style: _cellValueStyle)),
+        _ProfileCell(
+          l.jobPosition,
+          Text(_jobPositionName!, style: _cellValueStyle),
+        ),
+      if (_role != null)
+        _ProfileCell(l.role, Text(_role!, style: _cellValueStyle)),
       // Career shortcut fills the last grid slot (no label of its own).
       _ProfileCell('', _buildCareerButton()),
     ];
@@ -2266,11 +2283,11 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
   }
 
   TextStyle get _cellValueStyle => TextStyle(
-        fontSize: 14.sp,
-        fontWeight: FontWeight.w600,
-        color: context.tokens.textPrimary,
-        height: 1.3,
-      );
+    fontSize: 14.sp,
+    fontWeight: FontWeight.w600,
+    color: context.tokens.textPrimary,
+    height: 1.3,
+  );
 
   /// Caption label over a value; the value is a widget so it can be a chip.
   Widget _buildProfileCell(_ProfileCell cell) {
@@ -2546,7 +2563,11 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
 
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 14.h),
-                    child: Divider(height: 1, thickness: 1, color: tokens.outline),
+                    child: Divider(
+                      height: 1,
+                      thickness: 1,
+                      color: tokens.outline,
+                    ),
                   ),
 
                   // ── Total hours (hero) ──────────────────────────────
@@ -2715,13 +2736,13 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
     final tokens = context.tokens;
 
     Widget box(double w, double h, {double radius = 8}) => Container(
-          width: w,
-          height: h,
-          decoration: BoxDecoration(
-            color: tokens.surfaceTint,
-            borderRadius: BorderRadius.circular(radius.r),
-          ),
-        );
+      width: w,
+      height: h,
+      decoration: BoxDecoration(
+        color: tokens.surfaceTint,
+        borderRadius: BorderRadius.circular(radius.r),
+      ),
+    );
 
     return Shimmer.fromColors(
       baseColor: tokens.surfaceTint,
@@ -2774,9 +2795,7 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
     final colorScheme = Theme.of(context).colorScheme;
 
     const accent = AppColors.cxPurple;
-    final cardBg = isDarkMode
-        ? colorScheme.surface
-        : const Color(0xFFF9F5FF);
+    final cardBg = isDarkMode ? colorScheme.surface : const Color(0xFFF9F5FF);
     final borderColor = isDarkMode
         ? accent.withOpacity(0.18)
         : accent.withOpacity(0.14);
@@ -2875,11 +2894,7 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
 
                   Padding(
                     padding: EdgeInsets.symmetric(vertical: 14.h),
-                    child: Divider(
-                      height: 1,
-                      thickness: 1,
-                      color: borderColor,
-                    ),
+                    child: Divider(height: 1, thickness: 1, color: borderColor),
                   ),
 
                   // ── Amount row ───────────────────────────────────────────
@@ -3101,9 +3116,7 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
     final colorScheme = Theme.of(context).colorScheme;
 
     const accent = AppColors.cxEmeraldGreen;
-    final cardBg = isDarkMode
-        ? colorScheme.surface
-        : const Color(0xFFF2FBF7);
+    final cardBg = isDarkMode ? colorScheme.surface : const Color(0xFFF2FBF7);
     final borderColor = isDarkMode
         ? accent.withOpacity(0.18)
         : accent.withOpacity(0.14);
@@ -3487,9 +3500,7 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
     final colorScheme = Theme.of(context).colorScheme;
 
     const accent = AppColors.cxBlue;
-    final cardBg = isDarkMode
-        ? colorScheme.surface
-        : const Color(0xFFF2F6FF);
+    final cardBg = isDarkMode ? colorScheme.surface : const Color(0xFFF2F6FF);
     final borderColor = isDarkMode
         ? accent.withOpacity(0.18)
         : accent.withOpacity(0.14);
@@ -3854,8 +3865,10 @@ class _ProfileState extends State<Profile> with WidgetsBindingObserver {
                               Align(
                                 alignment: Alignment.centerRight,
                                 child: TextButton(
-                                  onPressed: () =>
-                                      _showVacationHistorySheet(periods, accent),
+                                  onPressed: () => _showVacationHistorySheet(
+                                    periods,
+                                    accent,
+                                  ),
                                   style: TextButton.styleFrom(
                                     foregroundColor: accent,
                                     minimumSize: Size(44.w, 44.h),
